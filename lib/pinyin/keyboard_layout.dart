@@ -116,6 +116,28 @@ List<RimeKey> rimeKeysFor(InitialKey initial) {
   ];
 }
 
+/// The rimes that follow [initial], grouped by the vowel they begin with.
+///
+/// One group per vowel, in the order pinyin charts use. It turns a bank of two
+/// dozen keys into a few short lines that can be scanned rather than searched —
+/// `a ai ao an ang`, then `e ei en eng`, and so on — and the shared first letter
+/// makes each group obvious without needing a heading.
+///
+/// Every rime label begins with a vowel, so nothing falls outside the groups.
+List<List<RimeKey>> rimeRowsFor(InitialKey initial) {
+  final keys = rimeKeysFor(initial);
+  return [
+    for (final vowel in _vowelOrder)
+      [
+        for (final key in keys)
+          if (key.label.startsWith(vowel)) key,
+      ],
+  ].where((group) => group.isNotEmpty).toList();
+}
+
+/// The order pinyin charts list the vowels in.
+const List<String> _vowelOrder = ['a', 'o', 'e', 'i', 'u', 'ü'];
+
 /// The five toned forms of [initial] + [rime], for the tone bank.
 ///
 /// The learner picks from the actual candidates rather than from abstract tone

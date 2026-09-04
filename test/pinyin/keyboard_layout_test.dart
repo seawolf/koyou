@@ -106,6 +106,73 @@ void main() {
     }
   });
 
+  group('rime groups', () {
+    // Same class of bug as a missing key: a grouping that quietly drops one.
+    test('account for every rime, once each', () {
+      for (final initial in initialKeys) {
+        final grouped = [
+          for (final group in rimeRowsFor(initial))
+            for (final rime in group) rime.label,
+        ];
+        expect(
+          grouped,
+          unorderedEquals(rimeKeysFor(initial).map((rime) => rime.label)),
+          reason: 'grouping lost or duplicated a rime under ${initial.label}',
+        );
+      }
+    });
+
+    test('each group shares one starting vowel', () {
+      for (final initial in initialKeys) {
+        for (final group in rimeRowsFor(initial)) {
+          final vowel = group.first.label[0];
+          for (final rime in group) {
+            expect(
+              rime.label.startsWith(vowel),
+              isTrue,
+              reason: '${rime.label} is grouped under $vowel',
+            );
+          }
+        }
+      }
+    });
+
+    test('no group is empty, and none is left out', () {
+      for (final initial in initialKeys) {
+        final groups = rimeRowsFor(initial);
+        expect(groups, isNotEmpty, reason: initial.label);
+        for (final group in groups) {
+          expect(group, isNotEmpty, reason: initial.label);
+        }
+        // Distinct starting vowels, so a vowel is never split across groups.
+        final vowels = groups.map((group) => group.first.label[0]).toList();
+        expect(vowels.length, vowels.toSet().length, reason: initial.label);
+      }
+    });
+
+    test('read as the learner would list them', () {
+      expect(
+        rimeRowsFor(key('a')).map((g) => g.map((r) => r.label).join(' ')),
+        ['a ai ao an ang'],
+      );
+      expect(
+        rimeRowsFor(key('e')).map((g) => g.map((r) => r.label).join(' ')),
+        ['e er ei en eng'],
+      );
+      expect(
+        rimeRowsFor(key('n')).map((g) => g.map((r) => r.label).join(' ')),
+        [
+          'a ai ao an ang',
+          'ou ong',
+          'e ei en eng',
+          'i ie iao iu ian in iang ing',
+          'u uo uan',
+          'ü üe',
+        ],
+      );
+    });
+  });
+
   test('no bank offers the same label twice', () {
     for (final initial in initialKeys) {
       final labels = rimeKeysFor(initial).map((rime) => rime.label).toList();

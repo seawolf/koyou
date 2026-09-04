@@ -112,6 +112,13 @@ variables at the top of that script and re-run it.
   derived from it, so a syllable is made reachable by adding it there, never by
   adding a key to a widget. Anything the inventory omits is unreachable by
   design — that is what stops the keyboard offering `qong`.
+- **Never style a label with a `TextTheme` entry inside a button.**
+  `theme.textTheme.headlineSmall` and friends carry a colour, and it beats the
+  button's own foreground — which once put near-white text on the light fill of
+  the tone keys at 1.3:1. Put sizing on the `ButtonStyle`'s `textStyle` as a
+  bare `TextStyle`, and let the button colour its own text.
+  `test/screens/key_contrast_test.dart` measures every kind of key against WCAG
+  AA in both themes; run it after touching colours.
 - **No `print`.** The lint set forbids it.
 
 ## Identifiers that are expensive to change

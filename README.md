@@ -29,6 +29,9 @@ Staging it buys three things a full keyboard can't:
   `w` the key says `o`, because the syllable is written `wo`.
 - **Tones as words, not marks.** The last stage shows `nī ní nǐ nì ni` — a
   choice you can hear, rather than `ˉ ˊ ˇ ˋ ·`, a puzzle you have to decode.
+- **Grouped by vowel.** The rimes come in a line per starting vowel —
+  `a ai ao an ang`, then `ou ong`, then `e ei en eng` — so the bank is scanned
+  rather than searched.
 
 ### Two arrangements of the initial bank
 

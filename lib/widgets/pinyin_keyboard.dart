@@ -82,15 +82,25 @@ class PinyinKeyboard extends StatelessWidget {
           ],
       ],
     ),
-    ComposeStage.rime => Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    // Grouped by starting vowel, one block per group. Unlike the initial bank
+    // these are not uniform-width rows: rime labels run from one letter to
+    // four, and a group of ten would have to squeeze to fit on one line.
+    ComposeStage.rime => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 14,
       children: [
-        for (final rime in rimeKeysFor(draft.initial!))
-          _Key(
-            id: 'rime-${rime.label}',
-            label: rime.label,
-            onPressed: () => onRime(rime.rime),
+        for (final group in rimeRowsFor(draft.initial!))
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final rime in group)
+                _Key(
+                  id: 'rime-${rime.label}',
+                  label: rime.label,
+                  onPressed: () => onRime(rime.rime),
+                ),
+            ],
           ),
       ],
     ),
@@ -253,7 +263,7 @@ class _Key extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // One line, always, shrinking to fit rather than wrapping. The digraphs are
-    // the reason: in a nine-across row a key is about 34pt wide, and `zh` was
+    // the reason: in a ten-across row a key is about 30pt wide, and `zh` was
     // wrapping to a stacked "z/h" that read as two separate letters.
     final child = FittedBox(
       fit: BoxFit.scaleDown,
@@ -262,12 +272,24 @@ class _Key extends StatelessWidget {
         semanticsLabel: semanticsLabel,
         maxLines: 1,
         softWrap: false,
-        style: prominent ? theme.textTheme.headlineSmall : null,
       ),
     );
-    // Barely any horizontal padding: _Rows sets the width, and padding here
-    // was eating almost all of it.
+    // The size goes on the button, and carries no colour of its own.
+    //
+    // A TextTheme style here instead of a bare TextStyle brings its colour with
+    // it, and that colour wins over the button's own foreground — which put
+    // near-white text on the light fill of the tone keys, at 1.3:1.
     final style = ButtonStyle(
+      textStyle: prominent
+          ? WidgetStatePropertyAll(
+              TextStyle(
+                fontSize: theme.textTheme.headlineSmall?.fontSize,
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          : null,
+      // Barely any horizontal padding: _Rows sets the width, and padding here
+      // was eating almost all of it.
       padding: WidgetStatePropertyAll(
         EdgeInsets.symmetric(horizontal: prominent ? 14 : 4),
       ),
