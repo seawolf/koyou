@@ -26,8 +26,12 @@ class PinyinKeyboard extends StatelessWidget {
     required this.onBackTo,
     required this.onSpace,
     required this.onBackspace,
-    required this.onClear,
+    this.arrangement = KeyArrangement.articulatory,
   });
+
+  /// How the initial bank is laid out. Only affects that one bank — the rime
+  /// keys are multi-letter and have no keyboard positions to borrow.
+  final KeyArrangement arrangement;
 
   final Draft draft;
   final ValueChanged<InitialKey> onInitial;
@@ -36,7 +40,6 @@ class PinyinKeyboard extends StatelessWidget {
   final ValueChanged<ComposeStage> onBackTo;
   final VoidCallback onSpace;
   final VoidCallback onBackspace;
-  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -66,19 +69,20 @@ class PinyinKeyboard extends StatelessWidget {
   }
 
   Widget _bank(BuildContext context) => switch (draft.stage) {
-    ComposeStage.initial => Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final initial in initialKeys)
-          _Key(
-            id: 'initial-${initial.label}',
-            label: initial.label,
-            semanticsLabel: initial.label == bareVowelLabel
-                ? 'no initial'
-                : initial.label,
-            onPressed: () => onInitial(initial),
-          ),
+    ComposeStage.initial => _Rows(
+      rows: [
+        for (final row in initialRows(arrangement))
+          [
+            for (final initial in row)
+              _Key(
+                id: 'initial-${initial.label}',
+                label: initial.label,
+                semanticsLabel: initial.label == bareVowelLabel
+                    ? 'no initial'
+                    : initial.label,
+                onPressed: () => onInitial(initial),
+              ),
+          ],
       ],
     ),
     ComposeStage.rime => Wrap(
@@ -112,29 +116,37 @@ class PinyinKeyboard extends StatelessWidget {
     ),
   };
 
+  /// The two controls that get used constantly, at half the width each.
+  ///
+  /// They were icon buttons in the corner. Clearing everything is not in this
+  /// row on purpose — it lives in the app bar, away from the thumb, because it
+  /// is rare and destructive.
   Widget _controls(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Row(
         children: [
-          IconButton(
-            key: const Key('space'),
-            onPressed: onSpace,
-            icon: const Icon(Icons.space_bar),
-            tooltip: 'New word',
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: _Control(
+                id: 'space',
+                icon: Icons.space_bar,
+                label: 'New word',
+                onPressed: onSpace,
+              ),
+            ),
           ),
-          IconButton(
-            key: const Key('backspace'),
-            onPressed: onBackspace,
-            icon: const Icon(Icons.backspace_outlined),
-            tooltip: 'Back',
-          ),
-          const Spacer(),
-          IconButton(
-            key: const Key('clear'),
-            onPressed: onClear,
-            icon: const Icon(Icons.clear_all),
-            tooltip: 'Clear',
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: _Control(
+                id: 'backspace',
+                icon: Icons.backspace_outlined,
+                label: 'Back',
+                onPressed: onBackspace,
+              ),
+            ),
           ),
         ],
       ),
@@ -243,16 +255,26 @@ class _Key extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final child = Text(
-      label,
-      semanticsLabel: semanticsLabel,
-      style: prominent ? theme.textTheme.headlineSmall : null,
+    // One line, always, shrinking to fit rather than wrapping. The digraphs are
+    // the reason: in a nine-across row a key is about 34pt wide, and `zh` was
+    // wrapping to a stacked "z/h" that read as two separate letters.
+    final child = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        label,
+        semanticsLabel: semanticsLabel,
+        maxLines: 1,
+        softWrap: false,
+        style: prominent ? theme.textTheme.headlineSmall : null,
+      ),
     );
+    // Barely any horizontal padding: _Rows sets the width, and padding here
+    // was eating almost all of it.
     final style = ButtonStyle(
       padding: WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: prominent ? 18 : 14),
+        EdgeInsets.symmetric(horizontal: prominent ? 14 : 4),
       ),
-      minimumSize: WidgetStatePropertyAll(Size(prominent ? 72 : 56, 52)),
+      minimumSize: WidgetStatePropertyAll(Size(prominent ? 72 : 44, 52)),
     );
 
     return prominent
@@ -268,5 +290,80 @@ class _Key extends StatelessWidget {
             style: style,
             child: child,
           );
+  }
+}
+
+/// Lays keys out in fixed rows, every key the same width.
+///
+/// Width comes from the longest row, so a nine-across row fits the screen and
+/// every other row lines up with it. Capped, so an arrangement of short rows
+/// does not turn into a few enormous keys.
+class _Rows extends StatelessWidget {
+  const _Rows({required this.rows});
+
+  final List<List<Widget>> rows;
+
+  static const double _gap = 6;
+  static const double _maxKeyWidth = 64;
+
+  @override
+  Widget build(BuildContext context) {
+    final longest = rows.fold<int>(
+      0,
+      (most, row) => row.length > most ? row.length : most,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = ((constraints.maxWidth - _gap * (longest - 1)) / longest)
+            .clamp(0.0, _maxKeyWidth);
+        // Spacing between keys only, never after the last one: a trailing gap
+        // made the widest row overflow by exactly one gap.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: _gap,
+          children: [
+            for (final row in rows)
+              Row(
+                spacing: _gap,
+                children: [
+                  for (final key in row) SizedBox(width: width, child: key),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// A wide control key, labelled by icon.
+class _Control extends StatelessWidget {
+  const _Control({
+    required this.id,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String id;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: FilledButton.tonal(
+        key: Key(id),
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: EdgeInsets.zero,
+        ),
+        child: Icon(icon, semanticLabel: label),
+      ),
+    );
   }
 }

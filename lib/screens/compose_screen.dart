@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../pinyin/composition.dart';
+import '../pinyin/keyboard_layout.dart';
 import '../translation/translator.dart';
 import '../widgets/pinyin_keyboard.dart';
 
@@ -25,6 +26,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Composition _composition = const Composition();
   Translation? _translation;
 
+  /// Which initial-bank arrangement is in use. Switchable from the app bar so
+  /// the two can be compared by feel, which is the only way to choose between
+  /// them — see the note in `keyboard_layout.dart`.
+  KeyArrangement _arrangement = KeyArrangement.articulatory;
+
   void _edit(Composition next) {
     setState(() => _composition = next);
     _translate(next.text);
@@ -48,6 +54,30 @@ class _ComposeScreenState extends State<ComposeScreen> {
       appBar: AppBar(
         title: const Text('Kǒuyǔ'),
         backgroundColor: theme.colorScheme.primaryContainer,
+        actions: [
+          IconButton(
+            key: const Key('arrangement'),
+            onPressed: () => setState(() {
+              _arrangement = _arrangement == KeyArrangement.articulatory
+                  ? KeyArrangement.qwerty
+                  : KeyArrangement.articulatory;
+            }),
+            icon: const Icon(Icons.keyboard_outlined),
+            tooltip: switch (_arrangement) {
+              KeyArrangement.articulatory => 'Switch to QWERTY order',
+              KeyArrangement.qwerty => 'Switch to articulation order',
+            },
+          ),
+          // Away from the thumb: rare, and it throws away everything typed.
+          IconButton(
+            key: const Key('clear'),
+            onPressed: _composition.isEmpty
+                ? null
+                : () => _edit(_composition.cleared()),
+            icon: const Icon(Icons.clear_all),
+            tooltip: 'Clear',
+          ),
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) => Column(
@@ -65,6 +95,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
             ),
             Expanded(
               child: PinyinKeyboard(
+                arrangement: _arrangement,
                 draft: _composition.draft,
                 onInitial: (initial) =>
                     _edit(_composition.withInitial(initial)),
@@ -73,7 +104,6 @@ class _ComposeScreenState extends State<ComposeScreen> {
                 onBackTo: (stage) => _edit(_composition.backTo(stage)),
                 onSpace: () => _edit(_composition.space()),
                 onBackspace: () => _edit(_composition.backspace()),
-                onClear: () => _edit(_composition.cleared()),
               ),
             ),
           ],

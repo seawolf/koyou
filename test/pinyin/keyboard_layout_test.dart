@@ -123,6 +123,65 @@ void main() {
     }
   });
 
+  // How `w` went missing the first time: a hand-written layout that quietly
+  // omits a key. Every arrangement has to account for every initial.
+  group('arrangements', () {
+    test('each holds every initial exactly once', () {
+      for (final arrangement in KeyArrangement.values) {
+        final laid = [
+          for (final row in initialRows(arrangement))
+            for (final key in row) key.label,
+        ];
+        expect(
+          laid..sort(),
+          initialKeys.map((key) => key.label).toList()..sort(),
+          reason: '$arrangement does not match the available initials',
+        );
+      }
+    });
+
+    test('each lays out the same keys, not copies of them', () {
+      for (final arrangement in KeyArrangement.values) {
+        for (final row in initialRows(arrangement)) {
+          for (final key in row) {
+            expect(initialKeys, contains(key), reason: key.label);
+          }
+        }
+      }
+    });
+
+    test('qwerty puts the single letters at their home positions', () {
+      final rows = initialRows(KeyArrangement.qwerty);
+      String row(int index) => rows[index].map((key) => key.label).join(' ');
+
+      expect(row(0), 'q w r t y p $bareVowelLabel');
+      expect(row(1), 'sh s d f g h j k l');
+      expect(row(2), 'zh z x c ch b n m');
+    });
+
+    test('qwerty keeps each digraph beside the letter it extends', () {
+      final flat = [
+        for (final row in initialRows(KeyArrangement.qwerty))
+          for (final key in row) key.label,
+      ];
+      for (final pair in [('zh', 'z'), ('ch', 'c'), ('sh', 's')]) {
+        expect(
+          (flat.indexOf(pair.$1) - flat.indexOf(pair.$2)).abs(),
+          1,
+          reason: '${pair.$1} is not next to ${pair.$2}',
+        );
+      }
+    });
+
+    test('articulation order keeps the confusable sets together', () {
+      final rows = initialRows(KeyArrangement.articulatory);
+      expect(
+        rows.map((row) => row.map((key) => key.label).join()),
+        containsAll(['zhchshr', 'zcs']),
+      );
+    });
+  });
+
   test('the tone bank offers the five real candidates', () {
     final candidates = tonedCandidates(key('n'), 'i');
     expect(candidates.map((syllable) => syllable.written), [

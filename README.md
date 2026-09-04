@@ -30,6 +30,34 @@ Staging it buys three things a full keyboard can't:
 - **Tones as words, not marks.** The last stage shows `nī ní nǐ nì ni` — a
   choice you can hear, rather than `ˉ ˊ ˇ ˋ ·`, a puzzle you have to decode.
 
+### Two arrangements of the initial bank
+
+The keyboard icon in the app bar switches between them, so they can be compared
+by feel — which is the only way to choose.
+
+**Articulation order** groups the initials by where in the mouth they are made,
+which is how pinyin is taught: `b p m f`, `d t n l`, `g k h`, `j q x`,
+`zh ch sh r`, `z c s`. It keeps the confusable sets adjacent, which matters for
+an app about pronunciation. Seven rows of three or four, so the keys are wide
+(64pt on a 375pt phone) but the bank is tall and most of each row is empty.
+
+**QWERTY order** puts each initial at its familiar position. The fit is exact:
+20 of QWERTY's letters are pinyin initials, and there are exactly 20
+single-letter initials, so each sits at home. The vowel and `v` gaps take the
+digraphs, placed beside the letter they extend — `zh` by `z`, `ch` in the `v`
+slot, `sh` at the head of the home row. Three rows, and 34pt keys, which is
+about what iOS's own keyboard uses.
+
+Only the initial bank varies. The rime bank cannot follow: its keys are `iang`,
+`ueng`, `üe` — units with no position on a Latin keyboard.
+
+One caveat on the QWERTY fidelity: the top row loses four of its ten keys to the
+vowels, so it ends up the *shortest* row rather than the longest, and the
+letters left of `p` shift out of their true columns. Keeping those slots blank
+instead would preserve the columns exactly, at the cost of a visibly gappy row —
+a change to `_rowLabels` in
+[`keyboard_layout.dart`](lib/pinyin/keyboard_layout.dart) and nothing else.
+
 Choosing the tone is also what commits the syllable, because every Mandarin
 syllable has exactly one — there's deliberately no way to enter one without
 deciding its tone. Tone marks land where pinyin's rules say (`niú`, not `níu`),

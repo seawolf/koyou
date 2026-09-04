@@ -48,9 +48,62 @@ class RimeKey {
   final String rime;
 }
 
-/// The starting points, in the order pinyin is usually taught: grouped by where
-/// each is articulated, then the two glides, then the bare vowels.
+/// How the initial bank is laid out on screen.
+///
+/// Only the arrangement of the initial bank varies. The rime bank cannot follow
+/// suit: its keys are things like `iang` and `üe`, which have no position on a
+/// Latin keyboard.
+enum KeyArrangement {
+  /// Grouped by where in the mouth each sound is made — the order pinyin is
+  /// taught in, and the one that keeps the confusable sets side by side:
+  /// `zh ch sh r` together, `z c s` together.
+  articulatory,
+
+  /// QWERTY positions, for hands that already know them.
+  ///
+  /// The fit is exact: 20 of QWERTY's letters are pinyin initials, and there
+  /// are exactly 20 single-letter initials, so each sits at its home position.
+  /// That leaves the vowel and `v` gaps for the digraphs, which are placed
+  /// beside the letter they extend — `zh` by `z`, `ch` in the `v` slot next to
+  /// `c`, `sh` at the head of the home row — so a hand reaching for `z` lands
+  /// next to `zh`.
+  qwerty,
+}
+
+/// The starting points available, in articulation order.
 final List<InitialKey> initialKeys = _buildInitialKeys();
+
+/// The initial bank as rows, in [arrangement].
+///
+/// Rows are explicit rather than packed, because in both arrangements the rows
+/// carry meaning: one groups sounds that are made alike, the other reproduces
+/// the shape of a keyboard.
+List<List<InitialKey>> initialRows(KeyArrangement arrangement) {
+  final byLabel = {for (final key in initialKeys) key.label: key};
+  return [
+    for (final row in _rowLabels[arrangement]!)
+      [for (final label in row) byLabel[label]!],
+  ];
+}
+
+const Map<KeyArrangement, List<List<String>>> _rowLabels = {
+  KeyArrangement.articulatory: [
+    ['b', 'p', 'm', 'f'],
+    ['d', 't', 'n', 'l'],
+    ['g', 'k', 'h'],
+    ['j', 'q', 'x'],
+    ['zh', 'ch', 'sh', 'r'],
+    ['z', 'c', 's'],
+    ['y', 'w', bareVowelLabel],
+  ],
+  KeyArrangement.qwerty: [
+    // The top row's four vowel slots collapse; only the bare-vowel key needs
+    // one, and it sits among them, which is roughly where it belongs.
+    ['q', 'w', 'r', 't', 'y', 'p', bareVowelLabel],
+    ['sh', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+    ['zh', 'z', 'x', 'c', 'ch', 'b', 'n', 'm'],
+  ],
+};
 
 /// The rimes that legitimately follow [initial], labelled for spelling.
 List<RimeKey> rimeKeysFor(InitialKey initial) {

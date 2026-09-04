@@ -19,11 +19,18 @@ class _RecordingTranslator implements Translator {
 }
 
 void main() {
+  /// Pumps at phone size, which is what the keyboard is designed against. The
+  /// default 800x600 test window is shorter than any phone and pushes the last
+  /// row of the initial bank out of reach.
   Future<void> pump(
     WidgetTester tester, {
     Translator? translator,
     Brightness brightness = Brightness.light,
+    Size size = const Size(375, 812),
   }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
         theme: brightness == Brightness.light ? kLightTheme : kDarkTheme,
@@ -232,13 +239,9 @@ void main() {
 
   // Staging exists partly to keep the banks small enough to fit a phone.
   testWidgets('every bank fits phone width without clipping', (tester) async {
-    tester.view.physicalSize = const Size(375, 812);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
     await pump(tester);
 
-    for (final id in ['space', 'backspace', 'clear']) {
+    for (final id in ['space', 'backspace']) {
       expect(tester.getRect(find.byKey(Key(id))).right, lessThanOrEqualTo(375));
     }
     // Walk all three stages; a RenderFlex overflow would surface here.
@@ -249,12 +252,96 @@ void main() {
     expect(composed(tester), 'zhuāng');
   });
 
+  group('arrangements', () {
+    testWidgets('the app bar switches between them', (tester) async {
+      await pump(tester);
+
+      // Grouped by articulation to begin with: zh sits with ch sh r.
+      expect(find.byKey(const Key('initial-zh')), findsOneWidget);
+      final grouped = tester.getRect(find.byKey(const Key('initial-b')));
+
+      await tap(tester, 'arrangement');
+      final qwerty = tester.getRect(find.byKey(const Key('initial-b')));
+      expect(qwerty, isNot(grouped), reason: 'b did not move');
+
+      await tap(tester, 'arrangement');
+      expect(tester.getRect(find.byKey(const Key('initial-b'))), grouped);
+    });
+
+    // Both banks must be fully usable without scrolling: a key you have to
+    // scroll to is a key that moves, and one that is easy to miss entirely.
+    testWidgets('every key is reachable on a phone, in either', (tester) async {
+      await pump(tester);
+
+      for (final arrangement in KeyArrangement.values) {
+        for (final row in initialRows(arrangement)) {
+          for (final key in row) {
+            final finder = find.byKey(Key('initial-${key.label}'));
+            expect(finder, findsOneWidget, reason: '${key.label} missing');
+
+            final rect = tester.getRect(finder);
+            expect(
+              rect.bottom,
+              lessThanOrEqualTo(812),
+              reason: '${key.label} is below the fold in $arrangement',
+            );
+            expect(
+              rect.right,
+              lessThanOrEqualTo(375),
+              reason: '${key.label} runs off the edge in $arrangement',
+            );
+            // Narrow is fine for a dense keyboard — iOS ships ~32pt keys — but
+            // a collapse to nothing is not.
+            expect(rect.width, greaterThanOrEqualTo(30), reason: key.label);
+            expect(rect.height, greaterThanOrEqualTo(44), reason: key.label);
+          }
+        }
+        await tap(tester, 'arrangement');
+      }
+    });
+
+    // A digraph is one sound. If its key wraps, it reads as two letters, which
+    // is exactly the confusion this app should not be creating.
+    testWidgets('digraph keys stay on one line at phone width', (tester) async {
+      await pump(tester);
+      await tap(tester, 'arrangement');
+
+      double labelHeight(String label) => tester
+          .getRect(
+            find.descendant(
+              of: find.byKey(Key('initial-$label')),
+              matching: find.byType(Text),
+            ),
+          )
+          .height;
+
+      final oneLine = labelHeight('z');
+      for (final digraph in ['zh', 'ch', 'sh']) {
+        expect(
+          labelHeight(digraph),
+          lessThanOrEqualTo(oneLine),
+          reason: '$digraph wrapped onto a second line',
+        );
+      }
+    });
+
+    testWidgets('switching mid-syllable does not disturb the draft', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tap(tester, 'initial-n');
+      await tap(tester, 'arrangement');
+      // Still on the rime bank, still under n.
+      expect(find.text('then what follows it'), findsOneWidget);
+      await tap(tester, 'rime-i');
+      await tap(tester, 'tone-3');
+      expect(composed(tester), 'nǐ');
+    });
+  });
+
   // A keyboard whose keys move while you use it is worse than a cramped one.
   testWidgets('the keys do not move as text is composed', (tester) async {
-    tester.view.physicalSize = const Size(375, 812);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
     final translator = _RecordingTranslator()..reply = const Translation('you');
     await pump(tester, translator: translator);
 
