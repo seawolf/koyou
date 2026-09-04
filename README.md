@@ -1,10 +1,27 @@
 # Kǒuyǔ
 
-A Flutter app for practising spoken Mandarin.
+A Flutter app for Mandarin learners who want to **speak** — tones,
+pronunciation, comprehension — rather than learn to read and write characters.
 
-> **Status: foundations.** The project scaffold, theme, icon, and test suite
-> are in place, and the app builds and runs. The home screen is still a
-> placeholder greeting — the real functionality comes next.
+## The gap it fills
+
+There is nowhere to simply type `nǐ hǎo, shìjiè`.
+
+Dictionary apps accept pinyin, but a word at a time. Translation apps accept
+phrases, but want Hanzi. And every phone keyboard treats pinyin as a route to
+characters, converting it away at the first opportunity — so tone-marked pinyin,
+the thing a speaking learner actually works in, is the one thing you can't
+enter.
+
+So the input method is the app: pick an initial, pick a rime, pick a tone. The
+tone key doubles as enter, because every Mandarin syllable has exactly one — you
+cannot enter a syllable without deciding its tone, which is the habit worth
+building. Tone marks land where pinyin's rules say (`niú`, not `níu`), and the
+spelling irregularities are handled for you (`iu` alone is written `you`, `ü`
+after `j` is written `u`).
+
+> **Status: early.** The input method works and is tested. Translation is a
+> hand-written phrasebook standing in for a real model — see below.
 
 ## Requirements
 
@@ -47,10 +64,32 @@ flutter test
 | `lib/main.dart`          | Entry point; nothing but `runApp`                    |
 | `lib/app.dart`           | Root `MaterialApp` — routing and theme wiring        |
 | `lib/theme.dart`         | Brand seed colour and the light/dark themes          |
+| `lib/pinyin/`            | Pure Dart, no Flutter: tones, syllable spelling, and the editing model |
+| `lib/translation/`       | The `Translator` seam and its phrasebook stand-in    |
 | `lib/screens/`           | One file per screen                                  |
+| `lib/widgets/`           | Reusable widgets, e.g. the keyboard                  |
 | `test/`                  | Mirrors `lib/` (`lib/screens/x.dart` → `test/screens/x_test.dart`) |
 | `assets/icon/`           | Generated icon sources — see below                   |
 | `tool/generate_icons.sh` | Regenerates the icon; the source of truth for it     |
+
+`lib/pinyin/` deliberately imports no Flutter. The tone-placement and spelling
+rules are the part most likely to be subtly wrong, so they are testable without
+pumping a widget, and `Composition` holds every editing rule so the keyboard is
+a view over it rather than a widget full of logic.
+
+## Translation
+
+`lib/translation/translator.dart` is the seam a real model plugs into.
+
+What ships today is [`PhrasebookTranslator`](lib/translation/phrasebook_translator.dart):
+about 25 hand-written entries that match a whole phrase, fall back to glossing
+word by word, and otherwise return nothing. It is not translation — it exists so
+the compose-and-translate path runs end to end. The UI labels a word-by-word
+gloss as such, because word-by-word Mandarin is often misleading.
+
+Replacing it means writing one `Translator` and passing it to `ComposeScreen`;
+nothing else needs to change. Note that a `Translator` receives pinyin *with*
+tone marks, and must not normalise them away — tones are what disambiguate.
 
 ## The app icon
 

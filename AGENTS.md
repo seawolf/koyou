@@ -4,6 +4,25 @@ Notes for AI agents working in this repo. Human-facing setup and usage live in
 [README.md](README.md) — read that first; this file only adds what isn't
 obvious from the code.
 
+## What this app is for, and what it deliberately isn't
+
+Kǒuyǔ is for learners who want to **speak** Mandarin: tones, pronunciation,
+comprehension. It is not for learning to read or write characters.
+
+That single constraint decides a lot, so check features against it rather than
+against what other language apps do:
+
+- **Pinyin is the input and the output.** The gap this app exists to fill is
+  that nothing lets you simply type `nǐ hǎo, shìjiè`. Dictionary apps take
+  pinyin but one word at a time; translation apps take phrases but want Hanzi,
+  and every phone IME converts pinyin to characters at the first opportunity.
+  Do not add a Hanzi conversion step — that is the thing being avoided.
+- **Don't teach in small locked steps.** Duolingo-style gating was rejected on
+  purpose: a learner should be able to type a whole phrase on day one.
+- **Hanzi is not part of the learning surface.** It may be fine in incidental
+  places, but it is never what the learner is asked to read, recognise or
+  produce.
+
 ## Always run before finishing
 
 All three must pass. `flutter analyze` is configured to be clean, so treat any
@@ -44,22 +63,21 @@ setting this up:
 - **The app renders into a small box in the corner.** Flutter laid out against
   the viewport size it saw at load and missed a later resize. Reload.
 
-Neither affects iOS or Android, where system fonts cover Hanzi.
-
 ## Deliberate decisions, so don't "fix" them
 
-**No CJK font is bundled** — text falls back to the platform's own fonts, and
-on web to Flutter's runtime Noto download. This was weighed and chosen for the
-bundle size saved. Two consequences to keep in mind rather than work around:
+**No CJK font is bundled**, chosen for the bundle size saved. This costs much
+less than it first appears, because the learning surface is pinyin: tone-marked
+vowels (ǎ ē ǐ ò ǔ ǚ) are Latin, covered by system fonts everywhere, and not
+subject to the tofu or CDN problems above at all.
 
-- The web tofu flash above is expected, and web Hanzi depends on Google's CDN
-  being reachable.
-- Glyph forms are whatever each device picks. A device preferring a Japanese
-  font renders some characters in non-simplified forms (直, 骨, 次 among
-  others), which is wrong stroke information for a learner. If a learner ever
-  reports odd-looking characters, this is the cause, and bundling Noto Sans SC
-  — full or subset to the ~3,500 standard characters — is the fix. Raise it as
-  a decision; don't just add the asset.
+What it does mean: any Hanzi the app does show is at the mercy of whatever font
+the device picks, which on web needs Google's CDN, and on a device preferring a
+Japanese font renders some characters in non-simplified forms (直, 骨, 次 among
+others). That is wrong stroke information for a learner — but it only matters
+if Hanzi is put on the learning surface, which is against the product's grain
+anyway. Bundling Noto Sans SC (full, or subset to the ~3,500 standard
+characters) is the fix if that ever changes. Raise it as a decision; don't just
+add the asset.
 
 ## Generated files — do not hand-edit
 
@@ -80,9 +98,11 @@ variables at the top of that script and re-run it.
   legible in both light and dark — test both.
 - **One screen per file** in `lib/screens/`. Keep `lib/main.dart` to `runApp`
   and put app-level wiring in `lib/app.dart`.
-- **UI chrome is in English**; Mandarin appears as study content, and pairs
-  Hanzi with pinyin that carries tone marks (`Nǐ hǎo`, never `Ni hao` or
-  `Ni3 hao3`). Tones are the point of this app — never strip them.
+- **Pinyin with tone marks is the content; Hanzi is not.** Write `Nǐ hǎo`,
+  never `Ni hao` or `Ni3 hao3`. Tones distinguish words, so a toneless syllable
+  is not a simplified one, it is an ambiguous one — never strip or normalise
+  tones away, including in lookup keys and cache keys. UI chrome stays in
+  English.
 - **No `print`.** The lint set forbids it.
 
 ## Identifiers that are expensive to change

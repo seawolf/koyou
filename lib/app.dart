@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/compose_screen.dart';
 import 'theme.dart';
 
 class KouyuApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class KouyuApp extends StatelessWidget {
       title: 'Kǒuyǔ',
       theme: kLightTheme,
       darkTheme: kDarkTheme,
-      home: const HomeScreen(),
+      home: const ComposeScreen(),
     );
   }
 }
