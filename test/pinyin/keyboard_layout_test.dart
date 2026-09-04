@@ -22,7 +22,7 @@ void main() {
   test('offers every initial a learner would look for, w and y included', () {
     expect(
       initialKeys.map((initial) => initial.label),
-      containsAll(['b', 'zh', 'x', 'w', 'y', bareVowelLabel]),
+      containsAll(['b', 'zh', 'x', 'w', 'y', 'a', 'o', 'e']),
     );
   });
 
@@ -37,6 +37,46 @@ void main() {
       Syllable(initial: '', rime: wo.rime, tone: Tone.third).written,
       'wǒ',
     );
+  });
+
+  // The second thing that was unreachable in practice: ài was only behind a key
+  // labelled with a dash, so nothing on screen said `a`.
+  test('a, o and e are offered, and lead to their own syllables', () {
+    expect(
+      initialKeys.map((initial) => initial.label),
+      containsAll(bareVowelStarts),
+    );
+
+    expect(rimeKeysFor(key('a')).map((rime) => rime.label), [
+      'a',
+      'ai',
+      'ao',
+      'an',
+      'ang',
+    ]);
+    expect(rimeKeysFor(key('o')).map((rime) => rime.label), ['o', 'ou']);
+    expect(rimeKeysFor(key('e')).map((rime) => rime.label), [
+      'e',
+      'er',
+      'ei',
+      'en',
+      'eng',
+    ]);
+
+    final ai = rimeKeysFor(key('a')).firstWhere((rime) => rime.label == 'ai');
+    expect(Syllable(rime: ai.rime, tone: Tone.fourth).written, 'ài');
+  });
+
+  test('every vowel-initial syllable sits under its own first letter', () {
+    for (final vowel in bareVowelStarts) {
+      for (final rime in rimeKeysFor(key(vowel))) {
+        expect(
+          rime.label.startsWith(vowel),
+          isTrue,
+          reason: '${rime.label} is not under $vowel',
+        );
+      }
+    }
   });
 
   test('rime labels read as the finished syllable, not the phonology', () {
@@ -150,27 +190,50 @@ void main() {
       }
     });
 
-    test('qwerty puts the single letters at their home positions', () {
-      final rows = initialRows(KeyArrangement.qwerty);
-      String row(int index) => rows[index].map((key) => key.label).join(' ');
+    // The whole claim of the QWERTY arrangement: every letter is where a hand
+    // already expects it. Checked position by position against a real keyboard.
+    test('qwerty puts every single letter at its own home position', () {
+      const qwerty = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+      // The only three letters pinyin never starts a syllable with — and
+      // exactly as many as there are digraphs needing a home.
+      const unusedByPinyin = {'u', 'i', 'v'};
 
-      expect(row(0), 'q w r t y p $bareVowelLabel');
-      expect(row(1), 'sh s d f g h j k l');
-      expect(row(2), 'zh z x c ch b n m');
+      final rows = initialRows(KeyArrangement.qwerty);
+      expect(rows.length, qwerty.length);
+
+      for (var row = 0; row < rows.length; row++) {
+        final letters = qwerty[row].split('');
+        expect(
+          rows[row].length,
+          letters.length,
+          reason: 'row $row is not keyboard width',
+        );
+        for (var column = 0; column < letters.length; column++) {
+          final label = rows[row][column].label;
+          if (unusedByPinyin.contains(letters[column])) {
+            expect(
+              label.length,
+              2,
+              reason: '${letters[column]} should hold a digraph, got $label',
+            );
+          } else {
+            expect(label, letters[column], reason: '${letters[column]} moved');
+          }
+        }
+      }
     });
 
-    test('qwerty keeps each digraph beside the letter it extends', () {
+    test('qwerty keeps the digraphs somewhere defensible', () {
       final flat = [
         for (final row in initialRows(KeyArrangement.qwerty))
           for (final key in row) key.label,
       ];
-      for (final pair in [('zh', 'z'), ('ch', 'c'), ('sh', 's')]) {
-        expect(
-          (flat.indexOf(pair.$1) - flat.indexOf(pair.$2)).abs(),
-          1,
-          reason: '${pair.$1} is not next to ${pair.$2}',
-        );
-      }
+      int at(String label) => flat.indexOf(label);
+
+      // ch takes v, immediately after the c it extends.
+      expect(at('ch') - at('c'), 1);
+      // zh and sh take u and i, so they at least sit together.
+      expect((at('zh') - at('sh')).abs(), 1);
     });
 
     test('articulation order keeps the confusable sets together', () {

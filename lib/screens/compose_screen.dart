@@ -130,7 +130,10 @@ class _Reading extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (composition.isEmpty)
+          // Keyed off the preview, not off whether anything has been chosen: the
+          // vowel keys spell nothing on their own, so choosing `a` used to
+          // blank this area instead of leaving the prompt up.
+          if (composition.preview.isEmpty)
             Text(
               'Your pinyin appears here',
               style: theme.textTheme.titleMedium?.copyWith(

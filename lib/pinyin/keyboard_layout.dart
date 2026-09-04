@@ -94,14 +94,17 @@ const Map<KeyArrangement, List<List<String>>> _rowLabels = {
     ['j', 'q', 'x'],
     ['zh', 'ch', 'sh', 'r'],
     ['z', 'c', 's'],
-    ['y', 'w', bareVowelLabel],
+    // Everything that starts without an initial consonant.
+    ['y', 'w', 'a', 'o', 'e'],
   ],
+  // A true QWERTY, 10/9/7, every single letter at its own home position. Only
+  // u, i and v are unused by pinyin, and there are exactly three digraphs to
+  // put in them: ch takes v, beside the c it extends; zh and sh take u and i,
+  // where they at least sit beside each other.
   KeyArrangement.qwerty: [
-    // The top row's four vowel slots collapse; only the bare-vowel key needs
-    // one, and it sits among them, which is roughly where it belongs.
-    ['q', 'w', 'r', 't', 'y', 'p', bareVowelLabel],
-    ['sh', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-    ['zh', 'z', 'x', 'c', 'ch', 'b', 'n', 'm'],
+    ['q', 'w', 'e', 'r', 't', 'y', 'zh', 'sh', 'o', 'p'],
+    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+    ['z', 'x', 'c', 'ch', 'b', 'n', 'm'],
   ],
 };
 
@@ -144,8 +147,16 @@ const List<String> _consonantOrder = [
   'z', 'c', 's', //
 ];
 
-/// The label for the key that starts a syllable with no consonant at all.
-const String bareVowelLabel = '–';
+/// The vowels a syllable can start with when it has no initial consonant.
+///
+/// One key each, rather than a single key meaning "nothing in front". A learner
+/// typing `ài` looks for an `a`; being asked to recognise that the syllable has
+/// no initial is the same demand that made `wǒ` unfindable.
+///
+/// These are the one kind of key whose label is not part of the spelling — they
+/// are a way in, and the rime carries the whole syllable, so under `a` the keys
+/// read `a`, `ai`, `ao`, `an`, `ang`.
+const List<String> bareVowelStarts = ['a', 'o', 'e'];
 
 List<InitialKey> _buildInitialKeys() {
   final bare = syllableInventory['']!;
@@ -158,8 +169,6 @@ List<InitialKey> _buildInitialKeys() {
         rime,
   ];
 
-  final glided = {...writtenWith('y'), ...writtenWith('w')};
-
   return [
     for (final consonant in _consonantOrder)
       InitialKey(
@@ -168,16 +177,15 @@ List<InitialKey> _buildInitialKeys() {
         initial: consonant,
         rimes: syllableInventory[consonant]!,
       ),
+    // y and w spell themselves; the vowels only filter.
     InitialKey(label: 'y', spelling: 'y', initial: '', rimes: writtenWith('y')),
     InitialKey(label: 'w', spelling: 'w', initial: '', rimes: writtenWith('w')),
-    InitialKey(
-      label: bareVowelLabel,
-      spelling: '',
-      initial: '',
-      rimes: [
-        for (final rime in bare)
-          if (!glided.contains(rime)) rime,
-      ],
-    ),
+    for (final vowel in bareVowelStarts)
+      InitialKey(
+        label: vowel,
+        spelling: '',
+        initial: '',
+        rimes: writtenWith(vowel),
+      ),
   ];
 }

@@ -77,9 +77,6 @@ class PinyinKeyboard extends StatelessWidget {
               _Key(
                 id: 'initial-${initial.label}',
                 label: initial.label,
-                semanticsLabel: initial.label == bareVowelLabel
-                    ? 'no initial'
-                    : initial.label,
                 onPressed: () => onInitial(initial),
               ),
           ],

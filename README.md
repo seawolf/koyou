@@ -41,22 +41,27 @@ which is how pinyin is taught: `b p m f`, `d t n l`, `g k h`, `j q x`,
 an app about pronunciation. Seven rows of three or four, so the keys are wide
 (64pt on a 375pt phone) but the bank is tall and most of each row is empty.
 
-**QWERTY order** puts each initial at its familiar position. The fit is exact:
-20 of QWERTY's letters are pinyin initials, and there are exactly 20
-single-letter initials, so each sits at home. The vowel and `v` gaps take the
-digraphs, placed beside the letter they extend — `zh` by `z`, `ch` in the `v`
-slot, `sh` at the head of the home row. Three rows, and 34pt keys, which is
-about what iOS's own keyboard uses.
+**QWERTY order** puts every initial at its own home position — a real 10/9/7
+keyboard, not an approximation of one. The fit is exact: `u`, `i` and `v` are
+the only letters pinyin never starts a syllable with, and there are exactly
+three digraphs needing a home. `ch` takes `v`, right beside the `c` it extends;
+`zh` and `sh` take `u` and `i`, where they at least sit together. Three rows of
+about 30pt keys, which is what iOS's own top row gives.
 
 Only the initial bank varies. The rime bank cannot follow: its keys are `iang`,
 `ueng`, `üe` — units with no position on a Latin keyboard.
 
-One caveat on the QWERTY fidelity: the top row loses four of its ten keys to the
-vowels, so it ends up the *shortest* row rather than the longest, and the
-letters left of `p` shift out of their true columns. Keeping those slots blank
-instead would preserve the columns exactly, at the cost of a visibly gappy row —
-a change to `_rowLabels` in
-[`keyboard_layout.dart`](lib/pinyin/keyboard_layout.dart) and nothing else.
+### Starting a syllable that has no consonant
+
+`ài`, `wǒ` and `yī` all begin without an initial consonant, which pinyin charts
+treat as a single "zero initial" category. That is the wrong unit for a learner,
+who knows only that the word starts with an a, a w or a y.
+
+So there is a key for each: `y`, `w`, `a`, `o` and `e`. The first two spell
+themselves; the three vowels are only a way in, so under `a` the keys read `a`,
+`ai`, `ao`, `an`, `ang` — the whole syllable, since nothing precedes it. This is
+also what makes the QWERTY arrangement work, because `a`, `o` and `e` fill three
+of the gaps the vowels would otherwise leave.
 
 Choosing the tone is also what commits the syllable, because every Mandarin
 syllable has exactly one — there's deliberately no way to enter one without

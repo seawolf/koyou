@@ -84,6 +84,47 @@ void main() {
     expect(composed(tester), 'wǒ');
   });
 
+  // Reported as "how do I type ai?" — it was behind a key labelled `–`, and in
+  // the QWERTY arrangement `sh` sat exactly where a hand reaches for `a`.
+  testWidgets('a is offered, and reaches ài', (tester) async {
+    await pump(tester);
+
+    expect(find.byKey(const Key('initial-a')), findsOneWidget);
+    await type(tester, 'a', 'ai', 4);
+    expect(composed(tester), 'ài');
+  });
+
+  testWidgets('the prompt stays up while nothing is spelled yet', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(find.text('Your pinyin appears here'), findsOneWidget);
+
+    // A vowel key contributes no letters, so there is still nothing to show.
+    await tap(tester, 'initial-a');
+    expect(find.text('Your pinyin appears here'), findsOneWidget);
+
+    await tap(tester, 'rime-ai');
+    expect(find.text('Your pinyin appears here'), findsNothing);
+    expect(composed(tester), 'ai');
+  });
+
+  testWidgets('a sits at its home position in the QWERTY arrangement', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tap(tester, 'arrangement');
+
+    // Home row, first key — where a hand reaching for `a` actually lands.
+    final a = tester.getRect(find.byKey(const Key('initial-a')));
+    final s = tester.getRect(find.byKey(const Key('initial-s')));
+    expect(a.top, s.top, reason: 'a is not on the home row');
+    expect(a.left, lessThan(s.left), reason: 'a is not left of s');
+
+    await type(tester, 'a', 'ai', 4);
+    expect(composed(tester), 'ài');
+  });
+
   testWidgets('each stage replaces the last', (tester) async {
     await pump(tester);
 
@@ -290,9 +331,10 @@ void main() {
               lessThanOrEqualTo(375),
               reason: '${key.label} runs off the edge in $arrangement',
             );
-            // Narrow is fine for a dense keyboard — iOS ships ~32pt keys — but
-            // a collapse to nothing is not.
-            expect(rect.width, greaterThanOrEqualTo(30), reason: key.label);
+            // Narrow is fine for a dense keyboard: a ten-across row on a
+            // 375pt screen is about 30pt, which is what iOS's own top row
+            // gives. A collapse below that is not.
+            expect(rect.width, greaterThanOrEqualTo(28), reason: key.label);
             expect(rect.height, greaterThanOrEqualTo(44), reason: key.label);
           }
         }

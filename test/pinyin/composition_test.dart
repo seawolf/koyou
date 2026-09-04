@@ -58,13 +58,10 @@ void main() {
   });
 
   test('the bare-vowel key is a choice, not the absence of one', () {
-    final composition = const Composition().withInitial(key(bareVowelLabel));
+    final composition = const Composition().withInitial(key('a'));
     expect(composition.isEmpty, isFalse);
     expect(composition.stage, ComposeStage.rime);
-    expect(
-      type(const Composition(), bareVowelLabel, 'an', Tone.first).text,
-      'ān',
-    );
+    expect(type(const Composition(), 'a', 'an', Tone.first).text, 'ān');
   });
 
   group('the draft', () {
@@ -79,10 +76,7 @@ void main() {
     test('shows the initial alone while it waits for a rime', () {
       expect(const Composition().withInitial(key('zh')).preview, 'zh');
       // The bare-vowel key spells nothing, so there is nothing to show yet.
-      expect(
-        const Composition().withInitial(key(bareVowelLabel)).preview,
-        isEmpty,
-      );
+      expect(const Composition().withInitial(key('a')).preview, isEmpty);
     });
 
     test('offers the five real candidates once a rime is chosen', () {
