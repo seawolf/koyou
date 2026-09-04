@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../pinyin/composition.dart';
-import '../translation/phrasebook_translator.dart';
 import '../translation/translator.dart';
 import '../widgets/pinyin_keyboard.dart';
 
@@ -11,13 +10,11 @@ import '../widgets/pinyin_keyboard.dart';
 /// time, and translation apps take phrases but want Hanzi, so there is nowhere
 /// to simply type `nǐ hǎo, shìjiè`. This screen is that missing box.
 class ComposeScreen extends StatefulWidget {
-  const ComposeScreen({
-    super.key,
-    this.translator = const PhrasebookTranslator(),
-  });
+  const ComposeScreen({super.key, required this.translator});
 
-  /// Injected so a real model can replace the phrasebook without this screen
-  /// changing, and so tests can supply their own.
+  /// Supplied by the caller, and typed as the interface only, so this screen
+  /// never names a translation implementation. Swapping in a real model is a
+  /// change in `app.dart` and nowhere else.
   final Translator translator;
 
   @override
@@ -73,6 +70,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
                     _edit(_composition.withInitial(initial)),
                 onRime: (rime) => _edit(_composition.withRime(rime)),
                 onTone: (tone) => _edit(_composition.commit(tone)),
+                onBackTo: (stage) => _edit(_composition.backTo(stage)),
                 onSpace: () => _edit(_composition.space()),
                 onBackspace: () => _edit(_composition.backspace()),
                 onClear: () => _edit(_composition.cleared()),
@@ -104,7 +102,7 @@ class _Reading extends StatelessWidget {
         children: [
           if (composition.isEmpty)
             Text(
-              'Tap an initial, a rime, then a tone.',
+              'Your pinyin appears here',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

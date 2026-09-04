@@ -4,15 +4,18 @@ import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../pinyin/tone.dart';
 
-/// A pinyin keyboard: pick an initial, pick a rime, pick a tone.
+/// A pinyin keyboard that asks for one piece of a syllable at a time.
 ///
 /// Deliberately not a character IME. Ordinary Chinese keyboards treat pinyin as
-/// a way to reach Hanzi and convert it away at the first opportunity; here the
+/// a route to Hanzi and convert it away at the first opportunity; here the
 /// pinyin *is* the output, tone marks included.
 ///
-/// Choosing the tone is what commits the syllable, because every Mandarin
-/// syllable has exactly one — so it doubles as the enter key and there is no
-/// way to enter a syllable without deciding its tone.
+/// It shows one bank at a time — a starting point, then what can follow it,
+/// then the tone — with the pieces already chosen tucked to the left as a trail
+/// that can be tapped to go back. Showing every key at once meant 60-odd
+/// targets and no indication of which combinations were real; staging it means
+/// each choice is short, and every key offered leads somewhere Mandarin
+/// actually goes.
 class PinyinKeyboard extends StatelessWidget {
   const PinyinKeyboard({
     super.key,
@@ -20,15 +23,17 @@ class PinyinKeyboard extends StatelessWidget {
     required this.onInitial,
     required this.onRime,
     required this.onTone,
+    required this.onBackTo,
     required this.onSpace,
     required this.onBackspace,
     required this.onClear,
   });
 
   final Draft draft;
-  final ValueChanged<String> onInitial;
+  final ValueChanged<InitialKey> onInitial;
   final ValueChanged<String> onRime;
   final ValueChanged<Tone> onTone;
+  final ValueChanged<ComposeStage> onBackTo;
   final VoidCallback onSpace;
   final VoidCallback onBackspace;
   final VoidCallback onClear;
@@ -44,157 +49,224 @@ class PinyinKeyboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Only the key banks scroll. The tone row below stays put: it is
-            // pressed once per syllable, and on a short keyboard area it was
-            // the first thing to disappear below the fold.
+            _Trail(draft: draft, onBackTo: onBackTo),
+            const Divider(height: 1),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _Section(
-                      label: 'initial',
-                      child: _keys(
-                        context,
-                        keys: initials,
-                        selected: draft.initial,
-                        onTap: onInitial,
-                      ),
-                    ),
-                    for (final group in rimeGroups)
-                      _Section(
-                        label: group.label,
-                        child: _keys(
-                          context,
-                          keys: group.keys,
-                          selected: draft.rime,
-                          onTap: onRime,
-                          prefix: 'rime',
-                        ),
-                      ),
-                  ],
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: _bank(context),
               ),
             ),
             const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              child: _toneRow(context),
-            ),
+            _controls(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _keys(
-    BuildContext context, {
-    required List<String> keys,
-    required String selected,
-    required ValueChanged<String> onTap,
-    String prefix = 'initial',
-  }) {
-    return Wrap(
-      spacing: 5,
-      runSpacing: 5,
+  Widget _bank(BuildContext context) => switch (draft.stage) {
+    ComposeStage.initial => Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        for (final key in keys)
-          ChoiceChip(
-            key: Key('$prefix-$key'),
-            label: Text(key),
-            selected: selected == key,
-            // Pressing the selected key again clears it, so a mistake does not
-            // need a trip to backspace.
-            onSelected: (_) => onTap(selected == key ? '' : key),
-            visualDensity: VisualDensity.compact,
+        for (final initial in initialKeys)
+          _Key(
+            id: 'initial-${initial.label}',
+            label: initial.label,
+            semanticsLabel: initial.label == bareVowelLabel
+                ? 'no initial'
+                : initial.label,
+            onPressed: () => onInitial(initial),
           ),
       ],
-    );
-  }
-
-  Widget _toneRow(BuildContext context) {
-    final theme = Theme.of(context);
-    // A tone is only meaningful once there is a rime to put it on.
-    final enabled = draft.isCommittable;
-
-    return Row(
+    ),
+    ComposeStage.rime => Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        // The tone keys share whatever width the controls leave. They were
-        // laid out at their natural size with a Spacer, which pushed the
-        // controls clean off a 375pt screen.
-        for (final tone in Tone.values)
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: FilledButton(
-                key: Key('tone-${tone.number}'),
-                onPressed: enabled ? () => onTone(tone) : null,
-                style: FilledButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 44),
-                  textStyle: theme.textTheme.titleMedium,
-                ),
-                child: Text(
-                  tone == Tone.neutral ? 'a' : tone.on('a'),
-                  semanticsLabel: 'tone ${tone.number}',
-                ),
-              ),
-            ),
+        for (final rime in rimeKeysFor(draft.initial!))
+          _Key(
+            id: 'rime-${rime.label}',
+            label: rime.label,
+            onPressed: () => onRime(rime.rime),
           ),
-        IconButton(
-          key: const Key('space'),
-          onPressed: onSpace,
-          icon: const Icon(Icons.space_bar),
-          tooltip: 'New word',
-        ),
-        IconButton(
-          key: const Key('backspace'),
-          onPressed: onBackspace,
-          icon: const Icon(Icons.backspace_outlined),
-          tooltip: 'Backspace',
-        ),
-        IconButton(
-          key: const Key('clear'),
-          onPressed: onClear,
-          icon: const Icon(Icons.clear_all),
-          tooltip: 'Clear',
-        ),
       ],
+    ),
+    // The candidates, not abstract tone marks: the choice is between words the
+    // learner can hear, which is the point of a tone-first app.
+    ComposeStage.tone => Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final candidate in draft.candidates)
+          _Key(
+            id: 'tone-${candidate.tone.number}',
+            label: candidate.written,
+            semanticsLabel:
+                '${candidate.written}, tone ${candidate.tone.number}',
+            prominent: true,
+            onPressed: () => onTone(candidate.tone),
+          ),
+      ],
+    ),
+  };
+
+  Widget _controls(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+      child: Row(
+        children: [
+          IconButton(
+            key: const Key('space'),
+            onPressed: onSpace,
+            icon: const Icon(Icons.space_bar),
+            tooltip: 'New word',
+          ),
+          IconButton(
+            key: const Key('backspace'),
+            onPressed: onBackspace,
+            icon: const Icon(Icons.backspace_outlined),
+            tooltip: 'Back',
+          ),
+          const Spacer(),
+          IconButton(
+            key: const Key('clear'),
+            onPressed: onClear,
+            icon: const Icon(Icons.clear_all),
+            tooltip: 'Clear',
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.label, required this.child});
+/// The pieces already chosen, tucked to the left of the prompt for the piece
+/// being chosen now. Each is a way back to that decision.
+class _Trail extends StatelessWidget {
+  const _Trail({required this.draft, required this.onBackTo});
 
+  final Draft draft;
+  final ValueChanged<ComposeStage> onBackTo;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final initial = draft.initial;
+    final rimeLabel = draft.rimeLabel;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: Row(
+        children: [
+          if (initial != null)
+            _TrailChip(
+              id: 'trail-initial',
+              label: initial.label,
+              onPressed: () => onBackTo(ComposeStage.initial),
+            ),
+          if (rimeLabel != null)
+            _TrailChip(
+              id: 'trail-rime',
+              label: rimeLabel,
+              onPressed: () => onBackTo(ComposeStage.rime),
+            ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: initial == null ? 0 : 10),
+              child: Text(
+                switch (draft.stage) {
+                  ComposeStage.initial => 'Start a syllable',
+                  ComposeStage.rime => 'then what follows it',
+                  ComposeStage.tone => 'then its tone',
+                },
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrailChip extends StatelessWidget {
+  const _TrailChip({
+    required this.id,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String id;
   final String label;
-  final Widget child;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 46,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
-          Expanded(child: child),
-        ],
+      padding: const EdgeInsets.only(right: 6),
+      child: ActionChip(
+        key: Key(id),
+        label: Text(label),
+        onPressed: onPressed,
+        tooltip: 'Change',
+        visualDensity: VisualDensity.compact,
+        backgroundColor: theme.colorScheme.secondaryContainer,
+        side: BorderSide.none,
       ),
     );
+  }
+}
+
+/// One key. Large targets on purpose — only one bank is on screen at a time, so
+/// there is room for them, and they are easier to hit accurately.
+class _Key extends StatelessWidget {
+  const _Key({
+    required this.id,
+    required this.label,
+    required this.onPressed,
+    this.semanticsLabel,
+    this.prominent = false,
+  });
+
+  final String id;
+  final String label;
+  final VoidCallback onPressed;
+  final String? semanticsLabel;
+  final bool prominent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final child = Text(
+      label,
+      semanticsLabel: semanticsLabel,
+      style: prominent ? theme.textTheme.headlineSmall : null,
+    );
+    final style = ButtonStyle(
+      padding: WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: prominent ? 18 : 14),
+      ),
+      minimumSize: WidgetStatePropertyAll(Size(prominent ? 72 : 56, 52)),
+    );
+
+    return prominent
+        ? FilledButton(
+            key: Key(id),
+            onPressed: onPressed,
+            style: style,
+            child: child,
+          )
+        : OutlinedButton(
+            key: Key(id),
+            onPressed: onPressed,
+            style: style,
+            child: child,
+          );
   }
 }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
 
 /// Records what it was asked, so the screen's use of the seam can be checked
-/// without depending on the phrasebook's contents.
+/// without depending on any translator's contents.
 class _RecordingTranslator implements Translator {
   final List<String> asked = [];
   Translation? reply;
@@ -32,37 +33,150 @@ void main() {
   }
 
   /// Taps a key by the key the widget carries, so a label appearing in two
-  /// places (`a` is both a rime and the neutral-tone key) cannot confuse it.
+  /// places cannot confuse it.
   Future<void> tap(WidgetTester tester, String id) async {
     await tester.tap(find.byKey(Key(id)));
     await tester.pumpAndSettle();
   }
 
+  /// Types one syllable through all three stages.
+  Future<void> type(
+    WidgetTester tester,
+    String initial,
+    String rime,
+    int tone,
+  ) async {
+    await tap(tester, 'initial-$initial');
+    await tap(tester, 'rime-$rime');
+    await tap(tester, 'tone-$tone');
+  }
+
   /// The composed line, read off the keyed rich text at the top of the screen.
-  /// By key rather than by position, because several labels on this screen
-  /// contain the same letters as the pinyin being typed.
   String composed(WidgetTester tester) {
     final text = tester.widget<Text>(find.byKey(const Key('composed')));
     return text.textSpan!.toPlainText();
   }
 
-  testWidgets('prompts before anything is typed', (tester) async {
+  testWidgets('opens on the initial bank', (tester) async {
     await pump(tester);
-    expect(find.textContaining('Tap an initial'), findsOneWidget);
+
+    expect(find.text('Start a syllable'), findsOneWidget);
+    expect(find.byKey(const Key('initial-b')), findsOneWidget);
+    // Later stages are not on screen yet — that is the point of staging.
+    expect(find.byKey(const Key('rime-a')), findsNothing);
+    expect(find.byKey(const Key('tone-1')), findsNothing);
   });
 
-  testWidgets('initial, rime and tone compose a toned syllable', (
+  // The complaint that prompted the staged design: wǒ was unreachable, because
+  // it has no initial consonant and nothing on screen said w.
+  testWidgets('w is offered, and reaches wǒ', (tester) async {
+    await pump(tester);
+
+    expect(find.byKey(const Key('initial-w')), findsOneWidget);
+    await type(tester, 'w', 'o', 3);
+    expect(composed(tester), 'wǒ');
+  });
+
+  testWidgets('each stage replaces the last', (tester) async {
+    await pump(tester);
+
+    await tap(tester, 'initial-n');
+    expect(find.text('then what follows it'), findsOneWidget);
+    expect(find.byKey(const Key('initial-b')), findsNothing);
+    expect(find.byKey(const Key('rime-i')), findsOneWidget);
+
+    await tap(tester, 'rime-i');
+    expect(find.text('then its tone'), findsOneWidget);
+    expect(find.byKey(const Key('rime-i')), findsNothing);
+    expect(find.byKey(const Key('tone-3')), findsOneWidget);
+  });
+
+  // Only rimes that actually follow the chosen initial, so the keyboard cannot
+  // be used to build a syllable Mandarin does not have.
+  testWidgets('the rime bank is filtered to the chosen initial', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    await tap(tester, 'initial-j');
+    // j takes the i and ü series; ü after j is written u.
+    expect(find.byKey(const Key('rime-ing')), findsOneWidget);
+    expect(find.byKey(const Key('rime-un')), findsOneWidget);
+    // There is no jong, and no jа-series rime spelled `ong`.
+    expect(find.byKey(const Key('rime-ong')), findsNothing);
+    expect(find.byKey(const Key('rime-uang')), findsNothing);
+  });
+
+  testWidgets('the tone bank shows the candidates, not bare marks', (
     tester,
   ) async {
     await pump(tester);
 
     await tap(tester, 'initial-n');
     await tap(tester, 'rime-i');
-    // Untoned until a tone is chosen, and shown as a draft.
-    expect(composed(tester), 'ni');
 
-    await tap(tester, 'tone-3');
-    expect(composed(tester), 'nǐ');
+    // Read each key by its id: `find.text` also matches the rich text in the
+    // reading area, where the untoned draft `ni` is on screen too.
+    const expected = {1: 'nī', 2: 'ní', 3: 'nǐ', 4: 'nì', 5: 'ni'};
+    for (final entry in expected.entries) {
+      final label = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(Key('tone-${entry.key}')),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(label.data, entry.value, reason: 'tone ${entry.key}');
+    }
+  });
+
+  group('the trail', () {
+    testWidgets('shows what was chosen, as it was pressed', (tester) async {
+      await pump(tester);
+
+      await tap(tester, 'initial-w');
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(const Key('trail-initial')),
+                matching: find.byType(Text),
+              ),
+            )
+            .data,
+        'w',
+      );
+
+      await tap(tester, 'rime-o');
+      // Pressed as `o`, even though the rime is phonologically `uo`.
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(const Key('trail-rime')),
+                matching: find.byType(Text),
+              ),
+            )
+            .data,
+        'o',
+      );
+    });
+
+    testWidgets('goes back to a choice without losing earlier ones', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tap(tester, 'initial-n');
+      await tap(tester, 'rime-i');
+      await tap(tester, 'trail-rime');
+      // Back at the rime bank, still under n.
+      expect(find.text('then what follows it'), findsOneWidget);
+      expect(find.byKey(const Key('trail-initial')), findsOneWidget);
+
+      await tap(tester, 'trail-initial');
+      expect(find.text('Start a syllable'), findsOneWidget);
+      expect(find.byKey(const Key('trail-initial')), findsNothing);
+    });
   });
 
   testWidgets('space separates words, and syllables otherwise run on', (
@@ -70,71 +184,26 @@ void main() {
   ) async {
     await pump(tester);
 
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-3');
+    await type(tester, 'n', 'i', 3);
     await tap(tester, 'space');
-    await tap(tester, 'initial-h');
-    await tap(tester, 'rime-ao');
-    await tap(tester, 'tone-3');
+    await type(tester, 'h', 'ao', 3);
     expect(composed(tester), 'nǐ hǎo');
 
     // No space this time, so it joins the current word.
-    await tap(tester, 'initial-sh');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-4');
+    await type(tester, 'sh', 'i', 4);
     expect(composed(tester), 'nǐ hǎoshì');
-  });
-
-  testWidgets('tone keys are disabled until there is a rime to mark', (
-    tester,
-  ) async {
-    await pump(tester);
-
-    FilledButton toneKey() =>
-        tester.widget<FilledButton>(find.byKey(const Key('tone-1')));
-
-    expect(toneKey().onPressed, isNull);
-    await tap(tester, 'initial-n');
-    expect(toneKey().onPressed, isNull, reason: 'an initial is not a syllable');
-    await tap(tester, 'rime-i');
-    expect(toneKey().onPressed, isNotNull);
-  });
-
-  // The keys show which initial and rime are armed, so they must stop looking
-  // armed the moment the tone commits the syllable.
-  testWidgets('keys stop looking armed once the syllable is committed', (
-    tester,
-  ) async {
-    await pump(tester);
-
-    bool armed(String id) =>
-        tester.widget<ChoiceChip>(find.byKey(Key(id))).selected;
-
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    expect(armed('initial-n'), isTrue);
-    expect(armed('rime-i'), isTrue);
-
-    await tap(tester, 'tone-3');
-    expect(armed('initial-n'), isFalse);
-    expect(armed('rime-i'), isFalse);
   });
 
   testWidgets('backspace and clear undo typing', (tester) async {
     await pump(tester);
 
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-3');
+    await type(tester, 'n', 'i', 3);
     await tap(tester, 'backspace');
-    expect(find.textContaining('Tap an initial'), findsOneWidget);
+    expect(find.byKey(const Key('composed')), findsNothing);
 
-    await tap(tester, 'initial-h');
-    await tap(tester, 'rime-ao');
-    await tap(tester, 'tone-3');
+    await type(tester, 'h', 'ao', 3);
     await tap(tester, 'clear');
-    expect(find.textContaining('Tap an initial'), findsOneWidget);
+    expect(find.byKey(const Key('composed')), findsNothing);
   });
 
   testWidgets('sends the toned text to the translator and shows the reply', (
@@ -143,9 +212,7 @@ void main() {
     final translator = _RecordingTranslator()..reply = const Translation('you');
     await pump(tester, translator: translator);
 
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-3');
+    await type(tester, 'n', 'i', 3);
 
     // Tone marks must survive the trip: they are what disambiguates.
     expect(translator.asked.last, 'nǐ');
@@ -157,46 +224,32 @@ void main() {
       ..reply = const Translation('you · good', wordByWord: true);
     await pump(tester, translator: translator);
 
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-3');
+    await type(tester, 'n', 'i', 3);
 
     expect(find.text('you · good'), findsOneWidget);
     expect(find.text('word by word'), findsOneWidget);
   });
 
-  // The tone keys and the controls share one row, and at phone width the
-  // controls were being pushed off the edge entirely - leaving no way to start
-  // a second word or undo a mistake.
-  testWidgets('every key stays reachable at phone width', (tester) async {
+  // Staging exists partly to keep the banks small enough to fit a phone.
+  testWidgets('every bank fits phone width without clipping', (tester) async {
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     await pump(tester);
 
-    for (final id in ['tone-1', 'tone-5', 'space', 'backspace', 'clear']) {
-      expect(
-        tester.getRect(find.byKey(Key(id))).right,
-        lessThanOrEqualTo(375),
-        reason: '$id runs off the right edge',
-      );
+    for (final id in ['space', 'backspace', 'clear']) {
+      expect(tester.getRect(find.byKey(Key(id))).right, lessThanOrEqualTo(375));
     }
-    // A RenderFlex overflow would surface here.
+    // Walk all three stages; a RenderFlex overflow would surface here.
+    await tap(tester, 'initial-zh');
+    await tap(tester, 'rime-uang');
     expect(tester.takeException(), isNull);
-
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-3');
-    await tap(tester, 'space');
-    await tap(tester, 'initial-h');
-    await tap(tester, 'rime-ao');
-    await tap(tester, 'tone-3');
-    expect(composed(tester), 'nǐ hǎo');
+    await tap(tester, 'tone-1');
+    expect(composed(tester), 'zhuāng');
   });
 
   // A keyboard whose keys move while you use it is worse than a cramped one.
-  // The reading area above must not push the banks around as text appears.
   testWidgets('the keys do not move as text is composed', (tester) async {
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1.0;
@@ -206,23 +259,31 @@ void main() {
     await pump(tester, translator: translator);
 
     final before = tester.getRect(find.byKey(const Key('initial-b')));
-
-    await tap(tester, 'initial-n');
-    await tap(tester, 'rime-i');
-    await tap(tester, 'tone-3');
-    // The prompt has been replaced by composed text and a translation, which
-    // is the moment the layout used to jump.
+    await type(tester, 'n', 'i', 3);
     expect(find.text('you'), findsOneWidget);
 
     expect(tester.getRect(find.byKey(const Key('initial-b'))), before);
   });
 
+  testWidgets('every initial leads to a usable bank', (tester) async {
+    await pump(tester);
+
+    for (final initial in initialKeys) {
+      await tap(tester, 'initial-${initial.label}');
+      expect(
+        find.byType(OutlinedButton),
+        findsWidgets,
+        reason: 'no rimes offered under ${initial.label}',
+      );
+      expect(tester.takeException(), isNull, reason: initial.label);
+      await tap(tester, 'trail-initial');
+    }
+  });
+
   testWidgets('renders in both light and dark themes', (tester) async {
     for (final brightness in Brightness.values) {
       await pump(tester, brightness: brightness);
-      await tap(tester, 'initial-n');
-      await tap(tester, 'rime-i');
-      await tap(tester, 'tone-3');
+      await type(tester, 'n', 'i', 3);
       expect(tester.takeException(), isNull);
     }
   });

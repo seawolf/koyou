@@ -1,27 +1,41 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/composition.dart';
+import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/pinyin/tone.dart';
 
 void main() {
+  InitialKey key(String label) =>
+      initialKeys.firstWhere((initial) => initial.label == label);
+
   /// Types a syllable the way the keyboard does: initial, rime, then tone.
   Composition type(
     Composition composition,
     String initial,
     String rime,
     Tone tone,
-  ) => composition.withInitial(initial).withRime(rime).commit(tone);
+  ) => composition.withInitial(key(initial)).withRime(rime).commit(tone);
 
-  test('starts empty', () {
+  test('starts empty, at the first stage', () {
     const composition = Composition();
     expect(composition.isEmpty, isTrue);
     expect(composition.text, isEmpty);
-    expect(composition.preview, isEmpty);
+    expect(composition.stage, ComposeStage.initial);
   });
 
-  test('a syllable is committed by choosing its tone', () {
-    final composition = type(const Composition(), 'n', 'i', Tone.third);
+  test('advances a stage per choice', () {
+    var composition = const Composition().withInitial(key('n'));
+    expect(composition.stage, ComposeStage.rime);
+
+    composition = composition.withRime('i');
+    expect(composition.stage, ComposeStage.tone);
+
+    composition = composition.commit(Tone.third);
+    expect(
+      composition.stage,
+      ComposeStage.initial,
+      reason: 'ready for the next',
+    );
     expect(composition.text, 'nǐ');
-    expect(composition.isEmpty, isFalse);
   });
 
   test('syllables run together inside a word', () {
@@ -37,52 +51,128 @@ void main() {
     expect(composition.text, 'nǐ hǎo');
   });
 
+  // The reason w and y are offered as starting points at all.
+  test('w reaches wǒ, which has no initial consonant', () {
+    final composition = type(const Composition(), 'w', 'uo', Tone.third);
+    expect(composition.text, 'wǒ');
+  });
+
+  test('the bare-vowel key is a choice, not the absence of one', () {
+    final composition = const Composition().withInitial(key(bareVowelLabel));
+    expect(composition.isEmpty, isFalse);
+    expect(composition.stage, ComposeStage.rime);
+    expect(
+      type(const Composition(), bareVowelLabel, 'an', Tone.first).text,
+      'ān',
+    );
+  });
+
   group('the draft', () {
     test('previews untoned, since the tone completes it', () {
-      final composition = const Composition().withInitial('n').withRime('i');
+      final composition = const Composition()
+          .withInitial(key('n'))
+          .withRime('i');
       expect(composition.text, isEmpty);
       expect(composition.preview, 'ni');
     });
 
-    test('shows a lone initial while it waits for a rime', () {
-      final composition = const Composition().withInitial('zh');
-      expect(composition.preview, 'zh');
-      expect(composition.draft.isCommittable, isFalse);
+    test('shows the initial alone while it waits for a rime', () {
+      expect(const Composition().withInitial(key('zh')).preview, 'zh');
+      // The bare-vowel key spells nothing, so there is nothing to show yet.
+      expect(
+        const Composition().withInitial(key(bareVowelLabel)).preview,
+        isEmpty,
+      );
+    });
+
+    test('offers the five real candidates once a rime is chosen', () {
+      final draft = const Composition()
+          .withInitial(key('n'))
+          .withRime('i')
+          .draft;
+      expect(draft.candidates.map((candidate) => candidate.written), [
+        'nī',
+        'ní',
+        'nǐ',
+        'nì',
+        'ni',
+      ]);
+    });
+
+    test('labels the rime as the learner pressed it, not phonologically', () {
+      // Under w, `uo` was pressed as `o`, because the syllable is written wo.
+      final draft = const Composition()
+          .withInitial(key('w'))
+          .withRime('uo')
+          .draft;
+      expect(draft.rime, 'uo');
+      expect(draft.rimeLabel, 'o');
     });
 
     test(
       'previews against committed text, spaced only across a word break',
       () {
         var composition = type(const Composition(), 'n', 'i', Tone.third);
-        expect(composition.withInitial('h').withRime('ao').preview, 'nǐhao');
+        expect(
+          composition.withInitial(key('h')).withRime('ao').preview,
+          'nǐhao',
+        );
 
         composition = composition.space();
-        expect(composition.withInitial('h').withRime('ao').preview, 'nǐ hao');
+        expect(
+          composition.withInitial(key('h')).withRime('ao').preview,
+          'nǐ hao',
+        );
       },
     );
 
-    test('is replaced, not appended to, when a key is pressed twice', () {
+    // Rimes depend on the initial, so a rime kept across a change of initial
+    // could leave a syllable Mandarin does not have.
+    test('changing the initial drops the rime', () {
       final composition = const Composition()
-          .withInitial('n')
-          .withInitial('h')
+          .withInitial(key('j'))
+          .withRime('ü')
+          .withInitial(key('z'));
+      expect(composition.draft.rime, isNull);
+      expect(composition.stage, ComposeStage.rime);
+    });
+  });
+
+  group('going back', () {
+    test('to the rime stage keeps the initial', () {
+      final composition = const Composition()
+          .withInitial(key('n'))
           .withRime('i')
-          .withRime('ao');
-      expect(composition.preview, 'hao');
+          .backTo(ComposeStage.rime);
+      expect(composition.draft.initial?.label, 'n');
+      expect(composition.draft.rime, isNull);
+      expect(composition.stage, ComposeStage.rime);
+    });
+
+    test('to the initial stage clears the draft but keeps committed text', () {
+      var composition = type(const Composition(), 'n', 'i', Tone.third);
+      composition = composition
+          .withInitial(key('h'))
+          .withRime('ao')
+          .backTo(ComposeStage.initial);
+      expect(composition.draft.isEmpty, isTrue);
+      expect(composition.text, 'nǐ');
     });
   });
 
   group('refusals', () {
-    // Every syllable needs a rime, so a tone alone must not commit anything.
     test('a tone with no rime commits nothing', () {
       expect(const Composition().commit(Tone.first).isEmpty, isTrue);
       expect(
-        const Composition().withInitial('n').commit(Tone.first).text,
+        const Composition().withInitial(key('n')).commit(Tone.first).text,
         isEmpty,
       );
     });
 
     test('space is refused mid-syllable rather than guessing', () {
-      final composition = const Composition().withInitial('n').withRime('i');
+      final composition = const Composition()
+          .withInitial(key('n'))
+          .withRime('i');
       expect(composition.space().preview, 'ni');
       expect(composition.space().text, isEmpty);
     });
@@ -96,9 +186,9 @@ void main() {
   });
 
   group('backspace', () {
-    test('takes the rime, then the initial, then the last syllable', () {
+    test('steps back a stage, then a syllable', () {
       var composition = type(const Composition(), 'n', 'i', Tone.third);
-      composition = composition.withInitial('h').withRime('ao');
+      composition = composition.withInitial(key('h')).withRime('ao');
 
       composition = composition.backspace();
       expect(composition.preview, 'nǐh');
@@ -127,7 +217,7 @@ void main() {
 
   test('clearing resets everything', () {
     var composition = type(const Composition(), 'n', 'i', Tone.third);
-    composition = composition.space().withInitial('h');
+    composition = composition.space().withInitial(key('h'));
     expect(composition.cleared().isEmpty, isTrue);
   });
 

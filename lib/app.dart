@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/compose_screen.dart';
 import 'theme.dart';
+import 'translation/phrasebook_translator.dart';
 
 class KouyuApp extends StatelessWidget {
   const KouyuApp({super.key});
@@ -12,7 +13,9 @@ class KouyuApp extends StatelessWidget {
       title: 'Kǒuyǔ',
       theme: kLightTheme,
       darkTheme: kDarkTheme,
-      home: const ComposeScreen(),
+      // The one place a translation implementation is named. Everything below
+      // here knows only the Translator interface.
+      home: const ComposeScreen(translator: PhrasebookTranslator()),
     );
   }
 }

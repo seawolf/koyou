@@ -35,7 +35,7 @@ flutter test
 ```
 
 Add or update tests for behaviour you change. `test/` mirrors `lib/`:
-`lib/screens/home_screen.dart` → `test/screens/home_screen_test.dart`.
+`lib/screens/compose_screen.dart` → `test/screens/compose_screen_test.dart`.
 
 ## Verifying a change actually runs
 
@@ -103,6 +103,15 @@ variables at the top of that script and re-run it.
   is not a simplified one, it is an ambiguous one — never strip or normalise
   tones away, including in lookup keys and cache keys. UI chrome stays in
   English.
+- **Keep the UI and translation apart.** Nothing under `lib/screens/` or
+  `lib/widgets/` may import a translation implementation — only
+  `translation/translator.dart`. `lib/app.dart` is the one place an
+  implementation is named. The UI is under active design and translation is
+  not; neither should churn because of the other.
+- **`inventory.dart` decides what can be typed.** The keyboard's banks are
+  derived from it, so a syllable is made reachable by adding it there, never by
+  adding a key to a widget. Anything the inventory omits is unreachable by
+  design — that is what stops the keyboard offering `qong`.
 - **No `print`.** The lint set forbids it.
 
 ## Identifiers that are expensive to change

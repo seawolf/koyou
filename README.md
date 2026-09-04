@@ -13,12 +13,27 @@ characters, converting it away at the first opportunity — so tone-marked pinyi
 the thing a speaking learner actually works in, is the one thing you can't
 enter.
 
-So the input method is the app: pick an initial, pick a rime, pick a tone. The
-tone key doubles as enter, because every Mandarin syllable has exactly one — you
-cannot enter a syllable without deciding its tone, which is the habit worth
-building. Tone marks land where pinyin's rules say (`niú`, not `níu`), and the
-spelling irregularities are handled for you (`iu` alone is written `you`, `ü`
-after `j` is written `u`).
+So the input method is the app. It asks for one piece of a syllable at a time —
+a starting point, then what can follow it, then the tone — with the pieces
+already chosen tucked to the left as a trail you can tap to go back.
+
+Staging it buys three things a full keyboard can't:
+
+- **Only real syllables.** Once you've picked a starting point, the app shows
+  what legitimately follows it. Mandarin uses about 400 of the possible
+  initial-by-rime combinations, so a full grid invites you to build `qong` or
+  `zü`, which aren't words.
+- **Spelled the way you'd write it.** `wǒ` is phonologically the rime `uo` with
+  no initial at all, but nobody learning to speak thinks that way — they know
+  it starts with a w. So `w` and `y` are offered as starting points, and under
+  `w` the key says `o`, because the syllable is written `wo`.
+- **Tones as words, not marks.** The last stage shows `nī ní nǐ nì ni` — a
+  choice you can hear, rather than `ˉ ˊ ˇ ˋ ·`, a puzzle you have to decode.
+
+Choosing the tone is also what commits the syllable, because every Mandarin
+syllable has exactly one — there's deliberately no way to enter one without
+deciding its tone. Tone marks land where pinyin's rules say (`niú`, not `níu`),
+and the spelling irregularities are handled for you.
 
 > **Status: early.** The input method works and is tested. Translation is a
 > hand-written phrasebook standing in for a real model — see below.
@@ -64,7 +79,7 @@ flutter test
 | `lib/main.dart`          | Entry point; nothing but `runApp`                    |
 | `lib/app.dart`           | Root `MaterialApp` — routing and theme wiring        |
 | `lib/theme.dart`         | Brand seed colour and the light/dark themes          |
-| `lib/pinyin/`            | Pure Dart, no Flutter: tones, syllable spelling, and the editing model |
+| `lib/pinyin/`            | Pure Dart, no Flutter: the syllable inventory, tones, spelling, and the editing model |
 | `lib/translation/`       | The `Translator` seam and its phrasebook stand-in    |
 | `lib/screens/`           | One file per screen                                  |
 | `lib/widgets/`           | Reusable widgets, e.g. the keyboard                  |
@@ -77,6 +92,17 @@ rules are the part most likely to be subtly wrong, so they are testable without
 pumping a widget, and `Composition` holds every editing rule so the keyboard is
 a view over it rather than a widget full of logic.
 
+Within it, two files are worth knowing apart:
+
+- [`inventory.dart`](lib/pinyin/inventory.dart) is the source of truth for what
+  can be typed at all — which rimes each initial actually combines with, about
+  400 syllables. To make a syllable reachable, add it here; the keyboard is
+  derived and needs no edit.
+- [`keyboard_layout.dart`](lib/pinyin/keyboard_layout.dart) turns that into what
+  a learner would recognise: `w` and `y` as starting points, and rime keys
+  labelled by spelling rather than phonology. It derives those labels through
+  the same spelling rules the renderer uses, so the two can't drift apart.
+
 ## Translation
 
 `lib/translation/translator.dart` is the seam a real model plugs into.
@@ -87,9 +113,14 @@ word by word, and otherwise return nothing. It is not translation — it exists 
 the compose-and-translate path runs end to end. The UI labels a word-by-word
 gloss as such, because word-by-word Mandarin is often misleading.
 
-Replacing it means writing one `Translator` and passing it to `ComposeScreen`;
-nothing else needs to change. Note that a `Translator` receives pinyin *with*
-tone marks, and must not normalise them away — tones are what disambiguate.
+The two layers are kept apart on purpose, since the UI is where the work is at
+the moment: nothing under `lib/screens/` or `lib/widgets/` names a translation
+implementation, only the `Translator` interface. `lib/app.dart` is the single
+place one is chosen. Replacing the phrasebook means writing one `Translator` and
+editing that one line.
+
+Note that a `Translator` receives pinyin *with* tone marks, and must not
+normalise them away — tones are what disambiguate.
 
 ## The app icon
 
