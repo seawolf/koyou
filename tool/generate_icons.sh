@@ -37,11 +37,18 @@ STROKE=84       # stroke thickness
 LEAN=14         # inward lean of each vertical, top to bottom
 OVERSHOOT=24    # how far the bottom stroke passes the right-hand vertical
 
-# The flick as a brush sweep: it leaves the bottom-left corner, curves down and
-# left to a tip at (104,910), then returns up along the underside of the bottom
-# stroke. Drawn rather than derived, so it stays one constant - adjust the curve
-# by eye, then re-check it at 44px, where the tip is the first thing to break.
+# The flick as a brush sweep: it starts under the bottom-left corner, curves
+# down and left to a tip at (104,910), then returns along the underside of the
+# bottom stroke. Drawn rather than derived, so it stays one constant - adjust
+# the curve by eye, then re-check it at 44px, where the tip breaks down first.
 FLICK="M 222,656 C 214,742 178,838 104,910 C 210,840 318,750 388,664 Z"
+
+# Air between the character and the flick, so the two read as separate strokes
+# instead of the stroke weight welding them into one shape. Applied as a
+# translation, which keeps FLICK above as the shape alone. Small on purpose:
+# much more and the flick stops belonging to the character. It closes up under
+# antialiasing below ~48px, which is fine - the mark still reads there.
+FLICK_GAP=16
 
 # How much of the canvas the mark spans in the full-bleed icon.
 MARK_SPAN=700
@@ -76,7 +83,7 @@ magick -size "${CANVAS}x${CANVAS}" xc:none -fill "$WHITE" -stroke none \
   -draw "polygon $STROKE_TOP" \
   -draw "polygon $STROKE_RIGHT" \
   -draw "polygon $STROKE_BOTTOM" \
-  -draw "path '$FLICK'" \
+  -draw "translate 0,$FLICK_GAP path '$FLICK'" \
   "PNG32:$TMP/mark.png"
 
 # Measure it so every output can scale and centre the mark identically,
@@ -116,7 +123,7 @@ cat > "$OUT/kouyu_icon.svg" <<SVG
     <polygon points="$STROKE_TOP"/>
     <polygon points="$STROKE_RIGHT"/>
     <polygon points="$STROKE_BOTTOM"/>
-    <path d="$FLICK"/>
+    <path d="$FLICK" transform="translate(0,$FLICK_GAP)"/>
   </g>
 </svg>
 SVG
