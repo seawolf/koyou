@@ -1,5 +1,5 @@
-wa1	凹	-	10239	7	(used in names)
-wa1	哇	-	762	6	Wow!/sound of a child's crying/sound of vomiting
+wa1	凹	-	1058815	-	(used in names)
+wa1	哇	-	1049338	-	Wow!/sound of a child's crying/sound of vomiting
 wa1	娲	p	-	-	sister of legendary emperor Fuxi
 wa1	挖	-	2449	6	to dig/to excavate/to scoop out
 wa1	搲	-	-	-	to clutch/to grab/to capture
@@ -131,7 +131,7 @@ wai1 wai1 xie2 xie2	歪歪斜斜	-	-	-	shuddering/trembling/a trembling scrawl (
 wai1 xie2	歪斜	-	-	-	crooked/askew/oblique/slanting/out of plumb
 wai1 zui3	歪嘴	-	-	-	twisted mouth/wry mouth
 wai3	崴	-	-	-	to sprain (one's ankle)
-wai3	歪	-	5307	5	to sprain (one's ankle) (Tw)
+wai3	歪	-	1053883	-	to sprain (one's ankle) (Tw)
 wai3 jiao3	崴脚	-	-	-	to sprain one's ankle
 wai3 zi5	崴子	-	-	-	bend (in a river, road etc) (used in place names)
 wai4	外	-	489	1	outside/in addition/foreign/external
@@ -1066,7 +1066,7 @@ wang4	忘	-	1015	1	to forget/to overlook/to neglect
 wang4	旺	-	7543	7	prosperous/flourishing/(of flowers) blooming/(of fire) roaring
 wang4	望	-	3165	6	15th day of month (lunar calendar)
 wang4	望	-	3165	6	full moon/to hope/to expect/to visit/to gaze (into the distance)/to look towards/towards
-wang4	王	-	1039	4	(literary) (of a monarch) to reign over (a kingdom)
+wang4	王	-	1049615	-	(literary) (of a monarch) to reign over (a kingdom)
 wang4	迋	-	-	-	to deceive/to scare/to travel
 wang4 ba1 dan4	忘八旦	-	-	-	turtle's egg (highly offensive when directed at sb)
 wang4 ba1 dan4	忘八蛋	-	-	-	turtle's egg (highly offensive when directed at sb)
@@ -1401,9 +1401,9 @@ wei1 zhong4	危重	-	-	-	critically ill
 wei1 zhong4	威重	-	-	-	august/majestic
 wei1 zhong4 bing4 ren2	危重病人	-	-	-	critically ill patient
 wei1 zun1 ming4 jian4	威尊命贱	-	-	-	(idiom) the dignity of authority is above life; one must be willing to sacrifice one's life rather than disobey a military order
-wei2	为	-	58	2	as (in the capacity of)/to take sth as/to act as/to serve as/to behave as/to become/to be/to do/by (in the passive voice)
+wei2	为	-	168	-	as (in the capacity of)/to take sth as/to act as/to serve as/to behave as/to become/to be/to do/by (in the passive voice)
 wei2	唯	-	1556	7	only/alone/ism
-wei2	喂	-	1301	1	hello (when answering the phone)
+wei2	喂	-	1049877	-	hello (when answering the phone)
 wei2	囗	-	-	-	enclosure
 wei2	围	-	2818	3	to encircle/to surround/all around/to wear by wrapping around (scarf, shawl)
 wei2	圩	-	-	-	dike
@@ -1572,7 +1572,7 @@ wei2 quan2	维权	-	-	-	to defend (legal) rights
 wei2 quan2 ren2 shi4	维权人士	-	-	-	civil rights activist
 wei2 qun2	围裙	-	-	-	apron
 wei2 rao4	围绕	-	5297	5	to revolve around/to center on (an issue)
-wei2 ren2	为人	-	6680	7	to conduct oneself/behavior; conduct; personal character
+wei2 ren2	为人	-	1055256	-	to conduct oneself/behavior; conduct; personal character
 wei2 ren2 bu4 fu4	为仁不富	-	-	-	(idiom) benevolent people can't get rich
 wei2 ren2 shi1 biao3	为人师表	-	-	-	to serve as a model for others (idiom)/to be a worthy teacher
 wei2 sa4	维萨	p	-	-	Visa (credit card and payment network)
@@ -1662,7 +1662,7 @@ wei3	䓕	-	-	-	(arch.) type of grass
 wei3	亹	-	-	-	resolute
 wei3	伟	-	1387	-	big/large/great
 wei3	伪	-	6445	-	false/fake/forged/bogus/(prefix) pseudo-/Taiwan pr. [wei4]
-wei3	唯	-	1556	7	yes
+wei3	唯	-	1050132	-	yes
 wei3	壝	-	-	-	mound/embankment/the earthen altar to the god of the soil
 wei3	委	-	1659	-	to entrust/to cast aside/to shift (blame etc)/to accumulate/roundabout/winding/dejected/listless/committee member/council/end/actually/certainly
 wei3	媁	-	-	-	ugly/to indulge oneself
@@ -1978,7 +1978,7 @@ wei4 r5	味儿	-	10621	4	taste
 wei4 ran2	未然	-	-	-	in advance/before it happens (cf preventative measures)/forestalling
 wei4 ran2 cheng2 feng1	蔚然成风	-	-	-	to have become common practice (idiom)/to become a general trend
 wei4 rao4 dao4	胃绕道	-	-	-	gastric bypass
-wei4 ren2	为人	-	6680	7	for sb/for others' interest
+wei4 ren2	为人	-	1055256	-	for sb/for others' interest
 wei4 ren2 min2 fu2 wu4	为人民服务	-	-	-	Serve the People!, CCP political slogan
 wei4 shan1 jie2 ban3	未删节版	-	-	-	unabridged edition/uncut edition
 wei4 shen2 me5	为什么	-	299	2	why?/for what reason?
@@ -2115,12 +2115,12 @@ wen1 ge1 hua2 dao3	温哥华岛	p	-	-	Vancouver Island
 wen1 gong1	豱公	-	-	-	piggy (joking name)
 wen1 gu4 er2 zhi1 xin1	温故而知新	-	-	-	to review the old and know the new (idiom, from the Analects)/to recall the past to understand the future
 wen1 gu4 zhi1 xin1	温故知新	-	-	-	to review the old and know the new (idiom, from the Analects)/to recall the past to understand the future
-wen1 he2	温和	-	7438	5	mild/gentle/moderate
+wen1 he2	温和	-	1056014	-	mild/gentle/moderate
 wen1 he2 pai4	温和派	-	-	-	moderate faction
 wen1 he2 xing4	温和性	-	-	-	tenderness
 wen1 hou4	温厚	-	-	-	good-natured/warm and generous/gentle
 wen1 hu5	温乎	-	-	-	warm; lukewarm
-wen1 huo5	温和	-	7438	5	lukewarm
+wen1 huo5	温和	-	1056014	-	lukewarm
 wen1 jia1 bao3	温家宝	p	-	-	Wen Jiabao (1942-), Premier of PRC from 2003-2013
 wen1 jiang1 qu1	温江区	p	-	-	Wenjiang, a district of Chengdu City, Sichuan
 wen1 jing4	温静	-	-	-	quiet and gentle
@@ -3741,7 +3741,7 @@ wu4	坞	-	-	-	(bound form) low area within a surrounding barrier/(literary) smal
 wu4	婺	-	-	-	beautiful
 wu4	寤	-	-	-	to awake from sleep
 wu4	屼	-	-	-	bare hill
-wu4	恶	-	3536	7	to hate/to loathe/ashamed/to fear/to slander
+wu4	恶	-	7109	-	to hate/to loathe/ashamed/to fear/to slander
 wu4	悟	-	12096	-	to comprehend/to apprehend/to become aware
 wu4	悮	-	-	-	to impede/to delay
 wu4	戊	-	-	-	fifth of the ten Heavenly Stems/fifth in order/letter "E" or Roman "V" in list "A, B, C", or "I, II, III" etc/penta

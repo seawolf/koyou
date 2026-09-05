@@ -100,6 +100,41 @@ void main() {
     }
   });
 
+  // The HSK source gives one frequency per word and lists every reading of it
+  // underneath, so a rank credited to all of them hands the commonest word's
+  // standing to its rarest reading. 的 is rank 1 as `de5` and carried that
+  // into `di4`, offering "bull's-eye; target" to anyone typing dì.
+  test('a rank belongs to the reading that earned it', () async {
+    final byReading = {
+      'di4': '地', // was 的, "(bound form) bull's-eye; target"
+      'kuai4': '快', // was 会, "to reckon accounts"
+      'shui4': '睡', // was 说, "to persuade"
+      'la4': '辣', // was 落, "to leave out"
+      'ba4': '爸', // was 把, "handle"
+      'di1': '低', // was 的, "a taxi; a cab"
+    };
+    for (final entry in byReading.entries) {
+      final found = await dictionary.lookUp(entry.key);
+      expect(
+        found.first.simplified,
+        entry.value,
+        reason: '${entry.key} offered ${found.first.glosses.first}',
+      );
+    }
+
+    // 的 keeps rank 1 where it earned it, and loses it everywhere else.
+    final particle = (await dictionary.lookUp('de5'))
+        .firstWhere((e) => e.simplified == '的');
+    expect(particle.rank, 1);
+    expect(particle.hskLevel, 1);
+
+    final bullseye = (await dictionary.lookUp('di4'))
+        .firstWhere((e) => e.simplified == '的');
+    expect(bullseye.rank, greaterThan(1000));
+    // The band is attributed the same way, so it is not labelled HSK 1 either.
+    expect(bullseye.hskLevel, isNull);
+  });
+
   // 你 was dropped by the build entirely: its gloss is "you (informal, as
   // opposed to courteous 您[nin2])", and discarding any gloss that mentions a
   // character discarded the commonest word for "you" along with it.

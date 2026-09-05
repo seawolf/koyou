@@ -1,6 +1,6 @@
 za1	匝	-	-	-	(literary) to encircle; to go around; to surround/(literary) whole; full/(literary) classifier for a full circuit or a turn of a coil
 za1	咂	-	-	-	to sip/to smack one's lips/to taste/to savor
-za1	扎	-	3490	6	to tie/to bind/classifier for flowers, banknotes etc: bundle/Taiwan pr. [zha2]
+za1	扎	-	14432	-	to tie/to bind/classifier for flowers, banknotes etc: bundle/Taiwan pr. [zha2]
 za1	拶	-	-	-	(literary) to force; to coerce
 za1	臜	-	-	-	Taiwan pr. [zang1]
 za1 dai4	扎带	-	-	-	cable tie
@@ -105,7 +105,7 @@ za2 zhi4	杂志	-	1627	3	magazine/CL:
 za2 zhi4	杂质	-	-	-	impurity
 za2 zhi4 she4	杂志社	-	-	-	magazine publisher
 za2 zhong3	杂种	-	-	-	hybrid/mixed breed/bastard/son of a bitch
-za3	咋	-	4187	6	Taiwan pr. [ze2]
+za3	咋	-	1052763	-	Taiwan pr. [ze2]
 zai1	哉	-	-	-	(exclamatory or interrogative particle)
 zai1	栽	-	8512	7	to plant; to grow/to insert; to erect (e.g. a bus stop sign)/to impose sth on sb/to stumble; to fall down
 zai1	灾	-	8756	5	disaster; calamity
@@ -322,7 +322,7 @@ zan2 men5	咱们	-	1405	2	we or us (including both the speaker and the person(s)
 zan3	儹	-	-	-	to accumulate, to hoard, to store up
 zan3	寁	-	-	-	swift
 zan3	拶	-	-	-	to press or squeeze hard
-zan3	攒	-	11208	6	to collect/to hoard/to accumulate/to save
+zan3	攒	-	1059784	-	to collect/to hoard/to accumulate/to save
 zan3	趱	-	-	-	to hasten/to urge
 zan3 jin4	攒劲	-	-	-	(dialect) to muster strength; to exert oneself; to strive
 zan3 qian2	攒钱	-	-	-	to save up money
@@ -377,7 +377,7 @@ zan4 zhu4 shang1	赞助商	-	-	-	sponsor
 zan4 zhu4 zheng4	暂住证	-	-	-	temporary residence permit
 zan4 zi5	錾子	-	-	-	chisel
 zang1	牂	-	-	-	female sheep/place name
-zang1	脏	-	4623	2	dirty/filthy/to get (sth) dirty
+zang1	脏	-	1053199	-	dirty/filthy/to get (sth) dirty
 zang1	臧	-	-	-	good/right
 zang1	赃	-	39508	-	stolen goods; loot; spoils
 zang1 bian4	脏辫	-	-	-	dreadlocks
@@ -403,8 +403,8 @@ zang3	驵	-	-	-	powerful horse
 zang4	奘	-	-	-	(literary) strong; robust (used in personal names)/(coll.) coarse; boorish
 zang4	脏	-	4623	2	viscera/(anatomy) organ
 zang4	葬	-	11836	7	to bury (the dead)/to inter
-zang4	藏	-	1544	5	storehouse/depository/Buddhist or Taoist scripture
-zang4	藏	p	1544	5	Tibetan ethnic group/Tibet Autonomous Region
+zang4	藏	-	11504	-	storehouse/depository/Buddhist or Taoist scripture
+zang4	藏	p	11504	-	Tibetan ethnic group/Tibet Autonomous Region
 zang4 ao2	藏獒	-	-	-	Tibetan mastiff
 zang4 chuan2 fo2 jiao4	藏传佛教	p	-	-	Tibetan Buddhism
 zang4 du2	藏独	p	-	-	Tibetan Independence (movement)
@@ -663,7 +663,7 @@ zao4 zi4	造字	-	-	-	to create Chinese characters/cf Six Methods of forming Chi
 zao4 zi5	燥子	-	-	-	minced meat/Taiwan pr. [sao4 zi5]
 zao4 zuo4	造作	-	-	-	affected/artificial/to make/to manufacture
 ze2	则	-	966	5	(literary) (conjunction used to express contrast with a previous clause) but; then/(bound form) standard; norm/(bound form) principle/(literary) to imitate; to follow/classifier for written items
-ze2	咋	-	4187	6	(literary) to bite; to gnaw
+ze2	咋	-	1052763	-	(literary) to bite; to gnaw
 ze2	啧	-	-	-	(interj. of admiration or of disgust)/to click one's tongue/to attempt to (find an opportunity to) speak
 ze2	崱	-	-	-	lofty
 ze2	帻	-	-	-	turban/head-covering
@@ -759,7 +759,7 @@ zen4	谮	-	-	-	to slander
 zen4 yan2	谮言	-	-	-	to slander
 zeng1	增	-	4648	5	(bound form) to increase; to augment; to add to
 zeng1	憎	-	-	-	to detest
-zeng1	曾	-	545	4	great- (grandfather, grandchild etc)
+zeng1	曾	-	1049121	-	great- (grandfather, grandchild etc)
 zeng1	橧	-	-	-	dwelling on top of wooden stakes
 zeng1	矰	-	-	-	arrow with a streamer
 zeng1	缯	-	-	-	silk fabrics
@@ -860,8 +860,8 @@ zha1	吒	-	-	-	used for the sound "zha" in the names of certain legendary figure
 zha1	咋	-	-	-	Taiwan pr. [ze2]
 zha1	哳	-	-	-	Taiwan pr. [zha2]
 zha1	喳	-	-	-	(onom.) chirp, twitter, etc
-zha1	扎	-	3490	6	(of troops) to be stationed (at)/Taiwan pr. [zha2]
-zha1	扎	-	3490	6	to prick/to run or stick (a needle etc) into/mug or jug used for serving beer (loanword from "jar")
+zha1	扎	-	13157	-	(of troops) to be stationed (at)/Taiwan pr. [zha2]
+zha1	扎	-	13157	-	to prick/to run or stick (a needle etc) into/mug or jug used for serving beer (loanword from "jar")
 zha1	挓	-	-	-	to open out/to expand
 zha1	揸	-	-	-	to stretch fingers out
 zha1	柤	-	-	-	(hawthorn)/Chaenomeles japonica
@@ -897,7 +897,7 @@ zha1 zhu4	扎住	-	-	-	to stop/Taiwan pr. [zha3 zhu4]
 zha1 zi3	渣滓	-	-	-	residue/dregs/disreputable people
 zha1 zi5	渣子	-	40267	7	dregs/bits/dregs (of society)
 zha2	札	-	-	-	thin piece of wood used a writing tablet (in ancient China)/a kind of official document (in former times)/letter/note/plague
-zha2	炸	-	3064	5	to deep fry/(coll.) to blanch (a vegetable)/Taiwan pr. [zha4]
+zha2	炸	-	15944	-	to deep fry/(coll.) to blanch (a vegetable)/Taiwan pr. [zha4]
 zha2	蚻	-	-	-	Aphrophora martima
 zha2	轧	-	-	-	to roll (steel)
 zha2	铡	-	-	-	lever-style guillotine/to chop using this type of guillotine
@@ -1009,7 +1009,7 @@ zha4 yu3	诈语	-	-	-	falsehood/lies/fabrication
 zha4 zhi1	榨汁	-	-	-	to juice fruit or vegetables
 zha4 zhi1 ji1	榨汁机	-	-	-	juicer
 zha4 zi5	栅子	-	-	-	bamboo fence
-zhai1	侧	-	2493	6	lean on one side
+zhai1	侧	-	1051069	-	lean on one side
 zhai1	摘	-	5217	5	to take; to pick (flowers, fruit etc); to pluck; to remove; to take off (glasses, hat etc)/to select; to pick out/to borrow money at a time of urgent need
 zhai1	斋	-	-	-	to fast or abstain from meat, wine etc/vegetarian diet/study room/building/to give alms (to a monk)
 zhai1 chao1	摘抄	-	-	-	to extract/to excerpt
@@ -1078,7 +1078,7 @@ zhai4 wu4 ren2	债务人	-	-	-	debtor
 zhai4 wu4 zheng4 quan4	债务证券	-	-	-	debt security; bond security
 zhai4 wu4 zheng4 shu1	债务证书	-	-	-	debt instrument
 zhai4 zhu3	债主	-	-	-	creditor
-zhan1	占	-	1571	2	to observe/to divine
+zhan1	占	-	24286	-	to observe/to divine
 zhan1	呫	-	-	-	to drink/to sip/to taste/to lick/whisper/petty
 zhan1	旃	-	-	-	felt/silken banner
 zhan1	毡	-	-	-	felt (fabric)
@@ -1605,7 +1605,7 @@ zhang4	嶂	-	-	-	cliff/range of peaks
 zhang4	帐	-	7940	-	(bound form) curtain; tent; canopy
 zhang4	幛	-	-	-	hanging scroll
 zhang4	杖	-	16022	-	a staff/a rod/cane/walking stick/to flog with a stick (old)
-zhang4	涨	-	4020	5	to swell/to distend
+zhang4	涨	-	1052596	-	to swell/to distend
 zhang4	瘴	-	-	-	(bound form) miasma
 zhang4	瞕	-	-	-	cataract in the eye
 zhang4	粀	-	-	-	decameter (old)
@@ -1666,9 +1666,9 @@ zhang4 zi5	帐子	-	70265	7	mosquito net/CL:
 zhao1	啁	-	-	-	Taiwan pr. [zhou1]
 zhao1	招	-	1522	6	to recruit/to provoke/to beckon/to incur/to infect/contagious/a move (chess)/a maneuver/device/trick/to confess
 zhao1	昭	-	-	-	bright/clear/manifest/to show clearly
-zhao1	朝	-	1321	3	morning
+zhao1	朝	-	20719	-	morning
 zhao1	皽	-	-	-	(literary) dead skin cells on the surface of the skin/Taiwan pr. [zhan3]
-zhao1	着	-	38	1	a move in chess (Taiwan pr. [zhuo2])/trick; tactic/(dialect) okay; all right/(dialect) to put in; to add
+zhao1	着	-	1048614	-	a move in chess (Taiwan pr. [zhuo2])/trick; tactic/(dialect) okay; all right/(dialect) to put in; to add
 zhao1	钊	-	-	-	to encourage/to cut/to strain
 zhao1	駋	-	-	-	(horse)
 zhao1	𬬿	-	-	-	sickle
@@ -1803,7 +1803,7 @@ zhao1 zhao1 shi1 bai4	着着失败	-	-	-	to fail at every step of the way/Taiwan
 zhao1 zhi4	招致	-	-	-	to recruit (followers)/to scout for (talent etc)/to incur/to lead to
 zhao1 zhui4	招赘	-	-	-	to have the groom move into the bride's house after marriage
 zhao1 zu1	招租	-	-	-	(of a house or room) to be for rent
-zhao2	着	-	38	1	to touch/to come in contact with/to feel/to be affected by/to catch fire/to burn/(coll.) to fall asleep/(after a verb) hitting the mark/succeeding in
+zhao2	着	-	2904	-	to touch/to come in contact with/to feel/to be affected by/to catch fire/to burn/(coll.) to fall asleep/(after a verb) hitting the mark/succeeding in
 zhao2 bian1	着边	-	-	-	relevant/to the point/has sth to do with the matter (also used with negative)
 zhao2 dao4 r5	着道儿	-	-	-	to be fooled/to be taken in (by a ruse)
 zhao2 di4	着地	-	-	-	to land/to touch the ground/also pr. [zhuo2 di4]
@@ -1993,9 +1993,9 @@ zhao4 ye4	赵晔	p	-	-	Zhao Ye, Han dynasty historian, author of History of the 
 zhao4 yi1	罩衣	-	-	-	overalls/CL:
 zhao4 yi4	赵翼	p	-	-	Zhao Yi (1727-1814), Qing dynasty poet and historian, one of Three great poets of the Qianlong era
 zhao4 yin1	肇因	-	-	-	cause/origin
-zhao4 ying4	照应	-	23973	6	to correlate with/to correspond to
+zhao4 ying4	照应	-	1072549	-	to correlate with/to correspond to
 zhao4 ying4	照映	-	-	-	to shine/to illuminate
-zhao4 ying5	照应	-	23973	6	to look after/to take care of/to attend to
+zhao4 ying5	照应	-	1072549	-	to look after/to take care of/to attend to
 zhao4 yu4	诏狱	-	-	-	imperial prison (for prisoners detained by order of the emperor)
 zhao4 yu4	诏谕	-	-	-	imperial decree
 zhao4 yuan2 ren4	赵元任	p	-	-	Yuen Ren Chao (1892-1982), Chinese-American linguist
@@ -2014,7 +2014,7 @@ zhao4 zi3 yang2	赵紫阳	p	-	-	Zhao Ziyang (1919-2005), PRC reforming politicia
 zhao4 zi4 jie2	兆字节	-	-	-	megabyte (2^20 or approximately a million bytes)
 zhao4 zi5	罩子	-	-	-	cover; casing
 zhao4 zuo4	照做	-	-	-	to do as instructed/to comply
-zhe1	折	-	3422	4	to turn sth over/to turn upside down/to tip sth out (of a container)
+zhe1	折	-	6707	-	to turn sth over/to turn upside down/to tip sth out (of a container)
 zhe1	蜇	-	-	-	to sting
 zhe1	螫	-	-	-	(of a bee or spider etc) to sting or bite/(of an irritant) to make (one's eyes or skin) sting
 zhe1	遮	-	8541	7	to cover up (a shortcoming)/to screen off/to hide/to conceal
@@ -2042,7 +2042,7 @@ zhe1 zhe1 yan3 yan3	遮遮掩掩	-	-	-	to be secretive; to try to cover up (idio
 zhe1 zhong4	螫中	-	-	-	(of a bee, jellyfish etc) to sting (sb)
 zhe1 zhu4	遮住	-	-	-	to cover (up)/to block/to obstruct/to shade
 zhe2	乇	-	-	-	"blade of grass" component in Chinese characters
-zhe2	乙	-	7820	5	turning stroke (in Chinese characters), aka
+zhe2	乙	-	1056396	-	turning stroke (in Chinese characters), aka
 zhe2	哲	-	5028	-	wise/a sage
 zhe2	悊	-	-	-	to revere/to respect
 zhe2	折	-	3422	4	to break/to fracture/to snap/to suffer loss/to bend/to twist/to turn/to change direction/convinced/to convert into (currency)/discount/rebate/tenth (in price)/classifier for theatrical scenes/to fold/accounts book
@@ -2679,7 +2679,7 @@ zheng1	争	-	2989	3	to strive for/to vie for/to argue or debate/deficient or lac
 zheng1	征	-	6191	7	journey/trip/expedition/to go on long campaign/to attack
 zheng1	征	-	6191	7	to invite/to recruit/to levy (taxes)/to draft (troops)/phenomenon/symptom/characteristic sign (used as proof)/evidence
 zheng1	怔	-	-	-	(bound form) startled; terrified; panic-stricken
-zheng1	正	-	294	1	first month of the lunar year
+zheng1	正	-	24741	-	first month of the lunar year
 zheng1	烝	-	-	-	multitudinous/the masses/to present (to sb)/to rise/to advance/to progress
 zheng1	症	-	22958	-	abdominal tumor/bowel obstruction/(fig.) sticking point
 zheng1	睁	-	5578	5	to open (one's eyes)
@@ -2894,7 +2894,7 @@ zheng3 zhuang1	整妆	-	-	-	to touch up one's makeup
 zheng3 zhuang1	整装	-	-	-	to equip/to fit out/to get ready (for a journey)/to arrange (clothes) to be ready
 zheng3 zhuang1 dai4 fa1	整装待发	-	-	-	to get ready (for a journey)/ready and waiting
 zheng4	怔	-	-	-	(dialect) to stare blankly; to be in a daze/Taiwan pr. [leng4]
-zheng4	挣	-	4542	5	to struggle to get free/to strive to acquire/to make (money)
+zheng4	挣	-	7421	-	to struggle to get free/to strive to acquire/to make (money)
 zheng4	政	-	527	-	political/politics/government
 zheng4	正	-	294	1	straight/upright/proper/main/principal/to correct/to rectify/exactly/just (at that time)/right (in that place)/(math.) positive
 zheng4	症	-	2536	-	disease/illness
@@ -2927,12 +2927,12 @@ zheng4 ci2	证词	-	-	-	testimony
 zheng4 ci2 fa3	正词法	-	-	-	orthography (linguistics)
 zheng4 da4 guang1 ming2	正大光明	-	-	-	just and honorable
 zheng4 dan4	正旦	-	-	-	starring female role in a Chinese opera
-zheng4 dang1	正当	-	4824	6	timely/just (when needed)
+zheng4 dang1	正当	-	1053400	-	timely/just (when needed)
 zheng4 dang1 nian2	正当年	-	-	-	to be in the prime of life
 zheng4 dang1 shi2	正当时	-	-	-	the right time for sth/the right season (for planting cabbage)
 zheng4 dang1 zhong1	正当中	-	-	-	dead center; the very middle
 zheng4 dang3	政党	-	12675	6	political party/CL:
-zheng4 dang4	正当	-	4824	6	honest/reasonable/fair/sensible
+zheng4 dang4	正当	-	1053400	-	honest/reasonable/fair/sensible
 zheng4 dang4 fang2 wei4	正当防卫	-	-	-	reasonable self-defense/legitimate defense
 zheng4 dang4 li3 you2	正当理由	-	-	-	proper reason/reasonable grounds
 zheng4 dang4 xing4	正当性	-	-	-	(political) legitimacy
@@ -3242,8 +3242,8 @@ zheng4 zong1	正宗	-	12466	7	orthodox school/fig. traditional/authentic/genuine
 zheng4 zu3	正祖	p	-	-	Jeonjo (1752-1800), 22nd king of Korean Joseon dynasty
 zhi1	之	-	160	4	him/her/it
 zhi1	卮	-	-	-	goblet
-zhi1	只	-	98	1	classifier for birds and certain animals, one of a pair, some utensils, vessels etc
-zhi1	只	-	98	1	grain that has begun to ripen
+zhi1	只	-	10437	-	classifier for birds and certain animals, one of a pair, some utensils, vessels etc
+zhi1	只	-	10437	-	grain that has begun to ripen
 zhi1	吱	-	-	-	(onom.) creaking or groaning
 zhi1	搘	-	-	-	prop up
 zhi1	支	-	915	3	to support/to sustain/to erect/to raise/branch/division/to draw money/classifier for rods such as pens and guns, for army divisions and for songs or compositions
@@ -4019,7 +4019,7 @@ zhi4	致	-	3258	7	(literary) to send; to transmit; to convey/(bound form) to cau
 zhi4	蛭	-	-	-	fluke/leech/hirudinea
 zhi4	袟	-	-	-	book cover
 zhi4	觯	-	-	-	goblet
-zhi4	识	-	7967	6	to record/to write a footnote
+zhi4	识	-	1056543	-	to record/to write a footnote
 zhi4	豸	-	-	-	worm-like invertebrate/mythical animal/radical in Chinese characters (Kangxi radical 153)
 zhi4	质	-	2353	-	character/nature/quality/plain/to pawn/pledge/hostage/to question/Taiwan pr. [zhi2]
 zhi4	贽	-	-	-	gifts to superiors
@@ -5070,12 +5070,12 @@ zhong3 zu2 qing1 xi3	种族清洗	-	-	-	"ethnic cleansing"/genocide
 zhong3 zu2 zhong1 xin1 zhu3 yi4	种族中心主义	-	-	-	ethnocentrism
 zhong3 zu2 zhu3 yi4	种族主义	-	-	-	racism
 zhong3 zu2 zhu3 yi4 zhe3	种族主义者	-	-	-	racist (person)
-zhong4	中	-	71	1	to hit (a target)/to be struck by (a bullet, illness etc)/to win (a prize or lottery)
+zhong4	中	-	2025	-	to hit (a target)/to be struck by (a bullet, illness etc)/to win (a prize or lottery)
 zhong4	乑	-	-	-	to stand side by side
 zhong4	仲	-	13626	-	second month of a season/middle/intermediate/second amongst brothers
 zhong4	众	-	1260	-	(bound form) crowd; multitude/(bound form) many; numerous
 zhong4	狆	-	-	-	Pekingese
-zhong4	种	-	179	3	to plant/to grow/to cultivate
+zhong4	种	-	7377	-	to plant/to grow/to cultivate
 zhong4	茽	-	-	-	vegetation growing thickly
 zhong4	蚛	-	-	-	(literary) (of a worm or insect) to nibble/to bite/worm-eaten
 zhong4	重	-	608	1	heavy/serious/to attach importance to
@@ -5108,7 +5108,7 @@ zhong4 di4	中的	-	-	-	to hit the target/(fig.) to hit the nail on the head
 zhong4 di4	种地	-	-	-	to farm; to work the land
 zhong4 di4	重地	-	-	-	location of political, economic, military, or cultural importance (usu. not open to the general public); sensitive area
 zhong4 dian3	重典	-	-	-	important classic text/severe laws
-zhong4 dian3	重点	-	1381	2	important point; main point; focus/key (project etc)/to focus on; to put the emphasis on
+zhong4 dian3	重点	-	1049957	-	important point; main point; focus/key (project etc)/to focus on; to put the emphasis on
 zhong4 du2	中毒	-	5105	5	to be poisoned
 zhong4 du2	重读	-	-	-	stress (on a syllable)
 zhong4 du2 xing4	中毒性	-	-	-	poisonous/toxic
@@ -5799,7 +5799,7 @@ zhu2 zou3	逐走	-	-	-	to turn away/to drive away
 zhu3	丶	-	-	-	"dot" radical in Chinese characters (Kangxi radical 3), aka
 zhu3	主	-	768	7	owner/master/host/individual or party concerned/God/Lord/main/to indicate or signify/trump card (in card games)
 zhu3	嘱	-	11396	-	to enjoin/to implore/to urge
-zhu3	属	-	3739	3	to join together/to fix one's attention on/to concentrate on
+zhu3	属	-	1052315	-	to join together/to fix one's attention on/to concentrate on
 zhu3	拄	-	25510	6	to lean on/to prop on
 zhu3	斸	-	-	-	cut
 zhu3	渚	-	-	-	islet/bank
@@ -6249,12 +6249,12 @@ zhua3 ji1	爪机	-	-	-	(Internet slang) mobile phone
 zhua3 jian1 r5	爪尖儿	-	-	-	pig's trotters
 zhua3 r5	爪儿	-	-	-	paws (of small animal)/foot of a utensil/stupid person
 zhua3 zi5	爪子	-	12261	7	(animal's) claw
-zhuai1	拽	-	6459	6	to throw/to fling
-zhuai3	拽	-	6459	6	self-satisfied; cocky
+zhuai1	拽	-	1055035	-	to throw/to fling
+zhuai3	拽	-	1055035	-	self-satisfied; cocky
 zhuai3	跩	-	-	-	to waddle/to swagger/(coll.) strutting/self-satisfied
 zhuai3 jie3	拽姐	-	-	-	(slang) confident and assertive young woman; badass woman
 zhuai3 wen2	转文	-	-	-	to parade by interspersing one's speech or writing with literary allusions/Taiwan pr. [zhuan3 wen2]
-zhuai4	拽	-	6459	6	to pull/to tug at (sth)
+zhuai4	拽	-	1055035	-	to pull/to tug at (sth)
 zhuai4 bu4	拽步	-	-	-	to take long strides/to hurry (while walking)
 zhuan1	䏝	-	-	-	(dialect) gizzard
 zhuan1	专	-	1096	-	for a particular person, occasion, purpose/focused on one thing/special/expert/particular (to sth)/concentrated/specialized
@@ -6384,7 +6384,7 @@ zhuan3 dao3	转导	-	-	-	to transduce
 zhuan3 dao4	转道	-	-	-	to make a detour/to go by way of
 zhuan3 di4	转递	-	-	-	to pass on; to relay
 zhuan3 diao4	转调	-	-	-	(music) to change key/modulation/(of an employee) to be transferred to another post
-zhuan3 dong4	转动	-	8802	4	to turn sth around/to swivel
+zhuan3 dong4	转动	-	1057378	-	to turn sth around/to swivel
 zhuan3 dong4 guan4 liang4	转动惯量	-	-	-	moment of inertia (mechanics)
 zhuan3 er2	转而	-	-	-	to turn to (sth else); to switch to
 zhuan3 fa1	转发	-	-	-	to transmit/to forward (mail, SMS, packets of data)/to pass on/to republish (an article from another publication)
@@ -6455,7 +6455,7 @@ zhuan3 wei1 wei2 an1	转危为安	-	-	-	to turn peril into safety (idiom); to av
 zhuan3 wei4	转位	-	-	-	transposition/displacement/inversion/translocation/to displace/to transpose
 zhuan3 wen2	转文	-	-	-	(Internet) to repost (Tw)
 zhuan3 xi3	转徙	-	-	-	to migrate/to move house
-zhuan3 xiang4	转向	-	5484	5	to change direction/fig. to change one's stance
+zhuan3 xiang4	转向	-	1054060	-	to change direction/fig. to change one's stance
 zhuan3 xiang4 deng1	转向灯	-	-	-	vehicle turn indicator light
 zhuan3 xiang4 pan2	转向盘	-	-	-	steering wheel
 zhuan3 xiang4 xin4 hao4	转向信号	-	-	-	turn signal (auto.)/turning indicator
@@ -6505,7 +6505,7 @@ zhuan3 zhu4 zi4	转注字	-	-	-	transfer character/character with meanings influ
 zhuan3 zu1	转租	-	-	-	to sublet/to sublease
 zhuan3 zuo4	转作	-	-	-	(agriculture) to switch to growing a different crop
 zhuan4	䌸	-	-	-	to tie up
-zhuan4	传	-	1294	3	biography/historical narrative/commentaries/relay station
+zhuan4	传	-	16580	-	biography/historical narrative/commentaries/relay station
 zhuan4	僎	-	-	-	collect
 zhuan4	啭	-	-	-	to sing (of birds or insects)/to warble/to chirp/to twitter
 zhuan4	撰	-	15130	-	to compose/to compile
@@ -6513,7 +6513,7 @@ zhuan4	瑑	-	-	-	engraved lines
 zhuan4	篆	-	-	-	seal (of office)/seal script (a calligraphic style)/the small seal and great seal/writing in seal script
 zhuan4	篹	-	-	-	to compose/to compile/food/delicacies
 zhuan4	赚	-	2163	4	to earn/to make a profit
-zhuan4	转	-	508	3	to revolve/to turn/to circle about/to walk about/classifier for revolutions (per minute etc): revs, rpm/classifier for repeated actions
+zhuan4	转	-	5484	-	to revolve/to turn/to circle about/to walk about/classifier for revolutions (per minute etc): revs, rpm/classifier for repeated actions
 zhuan4	馔	-	-	-	food/delicacies
 zhuan4 bai4 wei2 sheng4	转败为胜	-	-	-	to turn defeat into victory (idiom); snatching victory from the jaws of defeat
 zhuan4 bi3 dao1	转笔刀	-	-	-	pencil sharpener
@@ -6521,7 +6521,7 @@ zhuan4 che1	转车	-	-	-	a turntable
 zhuan4 che1 tai2	转车台	-	-	-	a turntable
 zhuan4 da4 qian2	赚大钱	-	-	-	to earn a fortune
 zhuan4 de2	赚得	-	-	-	to earn
-zhuan4 dong4	转动	-	8802	4	to rotate (about an axis)/to revolve/to turn/to move in a circle/to gyrate
+zhuan4 dong4	转动	-	1057378	-	to rotate (about an axis)/to revolve/to turn/to move in a circle/to gyrate
 zhuan4 dong4 jian4	转动件	-	-	-	rotor
 zhuan4 dong4 zhou2	转动轴	-	-	-	axis of rotation (mechanics)/spindle
 zhuan4 gao3	撰稿	-	-	-	to write (an article for publication)
@@ -6563,7 +6563,7 @@ zhuan4 tou2	转头	-	-	-	nutation (plants turning to face the sun)
 zhuan4 tou5	赚头	-	-	-	profit (colloquial)
 zhuan4 wei4	转位	-	-	-	index (rotating gauge)/cam gradation
 zhuan4 wen2	撰文	-	-	-	to write an article
-zhuan4 xiang4	转向	-	5484	5	to get lost/to lose one's way
+zhuan4 xiang4	转向	-	1054060	-	to get lost/to lose one's way
 zhuan4 xie3	撰写	-	15130	7	to write/to compose
 zhuan4 yao1 he5	赚吆喝	-	-	-	(of a company) to gain recognition through promotional efforts; to spend money to win customers
 zhuan4 yao1 zi5	转腰子	-	-	-	(coll.) to pace around nervously/to speak indirectly/to beat about the bush
@@ -6672,7 +6672,7 @@ zhuang1 zuo4	装作	-	-	-	to pretend/to feign/to act a part
 zhuang3	奘	-	-	-	fat/stout
 zhuang4	壮	-	6069	7	to strengthen/strong/robust
 zhuang4	壮	p	6069	7	Zhuang ethnic group, the largest ethnic minority in China
-zhuang4	幢	-	5366	6	classifier for buildings (Taiwan pr. [chuang2])/(archaic) curtain hung over boat or carriage windows
+zhuang4	幢	-	1053942	-	classifier for buildings (Taiwan pr. [chuang2])/(archaic) curtain hung over boat or carriage windows
 zhuang4	戆	-	-	-	simple/honest
 zhuang4	撞	-	2075	4	to knock against/to bump into/to run into/to meet by accident
 zhuang4	状	-	1158	-	(bound form) form; appearance; shape/(bound form) state; condition/(bound form) to describe/(bound form) written complaint; lawsuit/(bound form) certificate
@@ -6977,7 +6977,7 @@ zhuo2	浞	-	-	-	(coll.) to drench
 zhuo2	濯	-	-	-	to wash/to cleanse of evil
 zhuo2	灼	-	26169	-	to burn; to sear; to scorch/(bound form) bright; luminous
 zhuo2	琢	-	8593	-	to cut (gems)
-zhuo2	着	-	38	1	to wear (clothes)/to contact/to use/to apply
+zhuo2	着	-	3024	-	to wear (clothes)/to contact/to use/to apply
 zhuo2	禚	-	-	-	place name
 zhuo2	篧	-	-	-	creel for trapping fish
 zhuo2	茁	-	-	-	to display vigorous, new growth/to sprout
@@ -7026,7 +7026,7 @@ zhuo2 lu4 chang3	着陆场	-	-	-	landing site
 zhuo2 lu4 dian3	着陆点	-	-	-	landing site
 zhuo2 luo4	着落	-	21158	7	whereabouts/place to settle/reliable source (of funds etc)/(of responsibility for a matter) to rest with sb/settlement/solution
 zhuo2 man3	酌满	-	-	-	to fill up (a wine glass) to the brim
-zhuo2 mo2	琢磨	-	8593	6	to carve and polish (jade)/to polish and refine a literary work
+zhuo2 mo2	琢磨	-	1057169	-	to carve and polish (jade)/to polish and refine a literary work
 zhuo2 mo4	着墨	-	-	-	to describe (in writing, applying ink)
 zhuo2 mu4 niao3	啄木鸟	-	-	-	woodpecker
 zhuo2 nao3	着恼	-	-	-	to be enraged
@@ -7230,7 +7230,7 @@ zi1 zi1 yi3 qiu2	孜孜以求	-	-	-	diligent and tireless (idiom)
 zi3	仔	-	2274	-	(bound form) (of domestic animals or fowl) young/(bound form) fine; detailed
 zi3	呰	-	-	-	to slander/to blame/to revile
 zi3	姊	-	-	-	older sister/Taiwan pr. [jie3]
-zi3	子	-	627	1	son/child/seed/egg/small thing/1st earthly branch: 11 p.m.–1 a.m., midnight, 11th solar month (7th December to 5th January), year of the rat/viscount, fourth of five orders of nobility/ancient Chinese compass point: 0° (north)/subsidiary; subordinate; (prefix) sub-
+zi3	子	-	1187	-	son/child/seed/egg/small thing/1st earthly branch: 11 p.m.–1 a.m., midnight, 11th solar month (7th December to 5th January), year of the rat/viscount, fourth of five orders of nobility/ancient Chinese compass point: 0° (north)/subsidiary; subordinate; (prefix) sub-
 zi3	梓	-	-	-	Chinese catalpa (Catalpa ovata), a tree that serves as a symbol of one's hometown and whose wood is used to make various items/(bound form) printing blocks
 zi3	滓	-	-	-	(bound form) dregs; sediment
 zi3	矷	-	-	-	(a kind of stone)
@@ -8543,7 +8543,7 @@ zu3 zi4	组字	-	-	-	word formation
 zu3 zong1	祖宗	-	19716	7	ancestor/forebear
 zu3 zu3 bei4 bei4	祖祖辈辈	-	-	-	for generations/from generation to generation
 zuan1	躜	-	-	-	to jump
-zuan1	钻	-	3642	6	to drill/to bore/to get into/to make one's way into/to enter (a hole)/to thread one's way through/to study intensively/to dig into/to curry favor for personal gain
+zuan1	钻	-	18148	-	to drill/to bore/to get into/to make one's way into/to enter (a hole)/to thread one's way through/to study intensively/to dig into/to curry favor for personal gain
 zuan1 ban3	钻版	-	-	-	to cut a woodblock (e.g. for printing)
 zuan1 dong4	钻洞	-	-	-	to bore/to burrow/to crawl through a tunnel
 zuan1 fen3	钻粉	-	-	-	residue from drilling/slag hill
@@ -8575,7 +8575,7 @@ zuan3	缵	-	-	-	(literary) to inherit
 zuan3 xiu1	纂修	-	-	-	to compile and revise/to inherit and develop
 zuan4	揝	-	-	-	to hold in the hand, to grasp/to wring
 zuan4	攥	-	-	-	(coll.) to hold/to grip/to grasp
-zuan4	赚	-	2163	4	to cheat/to swindle
+zuan4	赚	-	1050739	-	to cheat/to swindle
 zuan4	钻	-	3642	6	drill; auger/diamond
 zuan4 chuang2	钻床	-	-	-	drilling machine; drill press
 zuan4 ji1	钻机	-	-	-	drilling machine
@@ -8789,9 +8789,9 @@ zun1 zhong4	尊重	-	1926	4	to esteem/to respect/to honor/to value/eminent/serio
 zun3	僔	-	-	-	to congregate/to crowd
 zun3	噂	-	-	-	talk together
 zun3	撙	-	-	-	to reduce or cut down on/to rein in/to restrain
-zun4	俊	-	8462	7	cool/neat
+zun4	俊	-	1057038	-	cool/neat
 zun4	捘	-	-	-	push
-zuo1	作	-	483	6	(bound form) worker/(bound form) workshop/(slang) troublesome; high-maintenance (person)
+zuo1	作	-	1049059	-	(bound form) worker/(bound form) workshop/(slang) troublesome; high-maintenance (person)
 zuo1	嘬	-	-	-	(coll.) to suck
 zuo1 fang5	作坊	-	-	-	workshop (of artisan)
 zuo2	捽	-	-	-	to seize/Taiwan pr. [zu2]
@@ -8799,7 +8799,7 @@ zuo2	昨	-	557	-	yesterday
 zuo2	椊	-	-	-	to fit a handle into a socket/a plug or cork
 zuo2	琢	-	8593	-	Taiwan pr. [zhuo2]
 zuo2	筰	-	-	-	cable
-zuo2 mo5	琢磨	-	8593	6	to ponder/to mull over/to think through/Taiwan pr. [zhuo2 mo2]
+zuo2 mo5	琢磨	-	1057169	-	to ponder/to mull over/to think through/Taiwan pr. [zhuo2 mo2]
 zuo2 r5	昨儿	-	-	-	(coll.) yesterday
 zuo2 r5 ge5	昨儿个	-	-	-	(coll.) yesterday
 zuo2 ri4	昨日	-	-	-	yesterday

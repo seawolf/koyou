@@ -243,6 +243,13 @@ cross-references are removed. Characters are kept in the data even though
 nothing displays them, because they are the bridge to any translation service
 worth calling.
 
+The build refuses to write fewer than 50,000 entries. It deletes the existing
+shards before writing, and a source that fetches but does not parse would
+otherwise replace a working dictionary with a stub and report success — which
+is exactly what happened when the download path was found to be splitting
+CRLF-terminated CC-CEDICT lines on `\n`, leaving a `\r` that the entry pattern
+could never match. `--input` never hit it, because `readAsLines` handles both.
+
 ### When it loads
 
 Nothing at startup. Shards are read on the first lookup that needs one, so the
@@ -318,6 +325,48 @@ all: it surfaced 势 for `shì` and 黝 for `yǒu`.
 
 Where a word is in the HSK syllabus its band is shown, so a learner can see
 whether what they typed is core vocabulary.
+
+#### Which reading earned the rank
+
+Joining on the reading is necessary but not sufficient, because **the source
+gives one `frequency` per word and lists every reading of that word beneath
+it**. Credited to all of them, the commonest word in the language hands its
+standing to its own rarest reading: 的 is rank 1 as `de5` and carried that into
+`di4`, so typing `dì` was offered "bull's-eye; target". 94% of characters with
+more than one reading shared a single rank this way.
+
+Nothing in the data says which reading a frequency describes, so it is inferred
+from the only reading-specific evidence there is — the compounds a character
+appears in:
+
+- The reading appearing in the **commonest compound of two or more characters**
+  takes the word's rank. A single-character word may no longer credit itself,
+  which is what spread the rank in the first place.
+- Any other reading falls back to **its own** compound evidence, and only if it
+  has none is the word's rank kept and heavily demoted, so it still outranks a
+  word with no rank at all.
+- A **neutral tone on a single character** counts as its own evidence.
+  Particles are common standing alone and hardly ever appear inside a compound,
+  so 的 and 了 would otherwise lose their rank to a rare reading that does.
+
+The HSK band is attributed the same way, so "bull's-eye" is no longer labelled
+HSK 1 either.
+
+| typing | before | after |
+| ------ | ------ | ----- |
+| `dì` | 的 "bull's-eye; target" | 地 "earth" |
+| `kuài` | 会 "to reckon accounts" | 快 "rapid" |
+| `shuì` | 说 "to persuade" | 睡 "to sleep" |
+| `bà` | 把 "handle" | 爸 "father" |
+| `dī` | 的 "a taxi" | 低 "low" |
+| `là` | 落 "to leave out" | 辣 "hot (spicy)" |
+
+This moves the top candidate for 104 of 100,129 keys, every one of them a
+single syllable — which is where the ambiguity is. The residue is words whose
+two readings are *both* common: `cháng` now offers 常 rather than 长, and `chù`
+触 rather than 处. Both are defensible answers, and no constant can separate
+them from the 的 case, because the evidence that would is simply not in the
+data. Do not tune one to make a particular example look right.
 
 ### The glosses themselves
 

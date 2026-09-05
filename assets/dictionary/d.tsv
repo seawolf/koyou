@@ -2,7 +2,7 @@ da1	咑	-	-	-	da! (sound used to move animals along)
 da1	哒	-	-	-	(phonetic)/command to a horse/clatter (of horses' hoofs)
 da1	嗒	-	-	-	(onom.) used in words that describe machine gunfire, the ticking of a clock or the clatter of horse hooves etc
 da1	搭	-	2220	6	to put up/to build (scaffolding)/to hang (clothes on a pole)/to connect/to join/to arrange in pairs/to match/to add/to throw in (resources)/to take (boat, train)
-da1	答	-	2744	4	bound form having the same meaning as the free word, used in, etc
+da1	答	-	2130	-	bound form having the same meaning as the free word, used in, etc
 da1	耷	-	-	-	(literary) big ears/(bound form) to droop
 da1	褡	-	-	-	pouch/sleeveless jacket
 da1	跶	-	-	-	to stumble/to slip
@@ -60,7 +60,7 @@ da1 zuo4	搭坐	-	-	-	to travel by/to ride on
 da2	剳	-	-	-	hook/sickle
 da2	妲	p	-	-	female personal name (archaic)
 da2	怛	-	-	-	distressed/alarmed/shocked/grieved
-da2	打	-	153	1	(loanword) dozen/Taiwan pr. [da3]
+da2	打	-	1048729	-	(loanword) dozen/Taiwan pr. [da3]
 da2	沓	-	-	-	classifier for sheets of papers etc: pile, pad/Taiwan pr. [ta4]
 da2	炟	-	-	-	(used in transliterating foreign words)/(used in names)/(archaic) to explode/to catch fire
 da2	瘩	-	-	-	sore/boil/scab
@@ -633,10 +633,10 @@ da4 dong1 ya4 gong4 rong2 quan1	大东亚共荣圈	p	-	-	Great East Asia Co-Pros
 da4 dong4 gan1 ge1	大动干戈	-	-	-	lit. to go to war (idiom)/fig. to make a big fuss over sth
 da4 dong4 gan1 huo3	大动肝火	-	-	-	(idiom) to fly into a rage; to lose one's temper
 da4 dong4 mai4	大动脉	-	-	-	main artery (blood vessel)/fig. main highway/arterial road
-da4 dou1	大都	-	11743	5	for the most part/on the whole/also pr. [da4 du1]
+da4 dou1	大都	-	1060319	-	for the most part/on the whole/also pr. [da4 du1]
 da4 dou4	大豆	-	-	-	soybean
-da4 du1	大都	-	11743	5	for the most part/on the whole/metropolitan
-da4 du1	大都	p	11743	5	Dadu, capital of China during the Yuan Dynasty (1280-1368), modern day Beijing
+da4 du1	大都	-	1060319	-	for the most part/on the whole/metropolitan
+da4 du1	大都	p	1060319	-	Dadu, capital of China during the Yuan Dynasty (1280-1368), modern day Beijing
 da4 du1 hui4	大都会	-	-	-	major city/metropolis/metropolitan
 da4 du1 shi4	大都市	-	-	-	metropolis/large city/megacity
 da4 du4	大度	-	-	-	magnanimous/generous (in spirit)
@@ -664,7 +664,7 @@ da4 fa3 guan1	大法官	-	-	-	grand justice/high court justice/supreme court jus
 da4 fan2	大凡	-	-	-	generally/in general
 da4 fan4 dian4	大饭店	-	-	-	grand hotel; large, upscale hotel
 da4 fan4 wei2	大范围	-	-	-	large-scale
-da4 fang1	大方	-	7757	4	expert/scholar/mother earth/a type of green tea
+da4 fang1	大方	-	1056333	-	expert/scholar/mother earth/a type of green tea
 da4 fang1 guang3 fo2 hua2 yan2 jing1	大方广佛华严经	p	-	-	Avatamsaka sutra of the Huayan school/also called Buddhavatamsaka-mahavaipulya Sutra, the Flower adornment sutra or the Garland sutra
 da4 fang1 xian4	大方县	p	-	-	Dafang, a county in Bijie City, Guizhou
 da4 fang1 zhi1 jia1	大方之家	-	-	-	learned person/expert in a certain field
@@ -672,7 +672,7 @@ da4 fang4 bei1 sheng1	大放悲声	-	-	-	to wail loudly and mournfully (idiom)
 da4 fang4 guang1 ming2	大放光明	-	-	-	to shine brightly/(fig.) to show promise/to be on the up and up
 da4 fang4 jue2 ci2	大放厥词	-	-	-	to prattle on self-importantly (idiom)
 da4 fang4 yi4 cai3	大放异彩	-	-	-	to shine (of talents, skills, accomplishment)/to demonstrate extraordinary talent or skill
-da4 fang5	大方	-	7757	4	generous/magnanimous/stylish/in good taste/easy-mannered/natural and relaxed
+da4 fang5	大方	-	1056333	-	generous/magnanimous/stylish/in good taste/easy-mannered/natural and relaxed
 da4 fei4 zhou1 zhang1	大费周章	-	-	-	to take great pains/to go to a lot of trouble
 da4 fen1	大分	p	-	-	Ōita (prefecture in Japan)
 da4 fen1 jie4 ling3	大分界岭	p	-	-	Great Dividing Range, mountain range along the east coast of Australia
@@ -682,7 +682,7 @@ da4 feng1	大风	-	-	-	gale/CL:
 da4 feng1 chui1	大风吹	-	-	-	"The Wind Blows", a game in which one player calls out a category, all players who match it must change seats, and the person left without a seat becomes "it"
 da4 feng1 qu1	大丰区	p	-	-	Dafeng, a district of Yancheng City, Jiangsu
 da4 feng4 tou2 yan4 ou1	大凤头燕鸥	-	-	-	(bird species of China) greater crested tern (Thalasseus bergii)
-da4 fu1	大夫	-	6248	3	senior official (in imperial China)
+da4 fu1	大夫	-	1054824	-	senior official (in imperial China)
 da4 fu2	大幅	-	-	-	large-format (picture, banner, photo etc)/substantially; by a wide margin
 da4 fu2	大福	-	-	-	a great blessing/daifuku, a traditional Japanese sweet consisting of a soft, chewy outer layer made of glutinous rice (mochi) and a sweet filling, commonly red bean paste
 da4 fu2 du4	大幅度	-	17856	7	substantially; by a wide margin
@@ -1274,7 +1274,7 @@ da4 yao2	大谣	-	-	-	high-profile rumormonger (esp. on a microblog)
 da4 yao2 da4 bai3	大摇大摆	-	-	-	to strut/swaggering
 da4 yao2 xian4	大姚县	p	-	-	Dayao, a county in Chuxiong Yi Autonomous Prefecture, Yunnan
 da4 yao4	大要	-	-	-	abstract/gist/main points
-da4 ye2	大爷	-	8931	4	arrogant idler/self-centered show-off
+da4 ye2	大爷	-	1057507	-	arrogant idler/self-centered show-off
 da4 ye3	大野	p	-	-	Ōno (Japanese surname and place name)
 da4 ye3 lang2	大野狼	-	-	-	big bad wolf
 da4 ye3 shi4	大冶市	p	-	-	Daye, a county-level city in Huangshi City, Hubei
@@ -1282,7 +1282,7 @@ da4 ye4	大业	-	-	-	great cause/great undertaking
 da4 ye4	大夜	-	-	-	the second half of the night; early morning/(fig.) eternal rest; death/(Buddhism) the night before the cremation of a monk
 da4 ye4 ban1	大夜班	-	-	-	graveyard shift; late night shift
 da4 ye4 xing4 fei4 yan2	大叶性肺炎	-	-	-	lobar pneumonia
-da4 ye5	大爷	-	8931	4	(coll.) father's older brother/uncle/term of respect for older man
+da4 ye5	大爷	-	1057507	-	(coll.) father's older brother/uncle/term of respect for older man
 da4 yi1	大一	-	-	-	first year of university
 da4 yi1	大衣	-	5821	2	overcoat/topcoat/cloak/CL:
 da4 yi1 tong3	大一统	-	-	-	unification (of the nation)/large scale unification
@@ -1293,11 +1293,11 @@ da4 yi2 ma1	大姨妈	-	-	-	mother's eldest sister (older than one's mother)/(co
 da4 yi2 zi5	大姨子	-	-	-	sister-in-law/wife's older sister
 da4 yi3 ba5 lang2	大尾巴狼	-	-	-	(coll.) person who puts on an act: feigning ignorance, pretending to be solicitous, acting innocent etc
 da4 yi4	大义	-	-	-	righteousness/virtuous cause/a woman's marriage/main points of a piece of writing
-da4 yi4	大意	-	13433	6	general idea/main idea
+da4 yi4	大意	-	1062009	-	general idea/main idea
 da4 yi4 lin3 ran2	大义凛然	-	-	-	devotion to righteousness that inspires reverence (idiom)
 da4 yi4 mie4 qin1	大义灭亲	-	-	-	to place righteousness before family (idiom); ready to punish one's own family if justice demands it
 da4 yi4 xian4	大邑县	p	-	-	Dayi, a county in Chengdu City, Sichuan
-da4 yi5	大意	-	13433	6	careless
+da4 yi5	大意	-	1062009	-	careless
 da4 yi5 shi1 jing1 zhou1	大意失荆州	p	-	-	lit. to lose Jingzhou due to carelessness (idiom)/fig. to suffer a major setback due to negligence
 da4 yin4	大印	-	-	-	stamp/official seal
 da4 ying1	大英	p	-	-	Daying county in Suining, Sichuan/Great Britain
@@ -1410,7 +1410,7 @@ da4 zuo4	大作	-	-	-	your work (book, musical composition etc) (honorific)/to e
 dai1	呆	-	1485	5	foolish; stupid/expressionless; blank
 dai1	呆	-	1485	5	foolish; stupid/expressionless; blank
 dai1	呔	-	-	-	(interjection) hey!/Taiwan pr. [tai5]
-dai1	待	-	1207	4	to stay; to remain
+dai1	待	-	16373	-	to stay; to remain
 dai1 ban1 shou3	呆扳手	-	-	-	open spanner/open end spanner/flat spanner
 dai1 ban3	呆板	-	-	-	stiff/inflexible/also pr. [ai2 ban3]
 dai1 ben4	呆笨	-	-	-	dimwitted
@@ -1429,7 +1429,7 @@ dai1 zhu4	呆住	-	-	-	to be dumbfounded/to be astonished
 dai1 zi5	呆子	-	-	-	fool/sucker
 dai3	傣	p	-	-	Dai ethnic group
 dai3	歹	-	8043	-	bad/wicked/evil/Kangxi radical 78
-dai3	逮	-	8420	7	(coll.) to catch; to seize; to capture
+dai3	逮	-	1056996	-	(coll.) to catch; to seize; to capture
 dai3	𠯪	-	-	-	(dialect) to eat
 dai3 du2	歹毒	-	-	-	vicious/ruthless/malevolent
 dai3 ming4	歹命	-	-	-	(Tw) to have been dealt a hard lot in life (from Taiwanese, Tai-lo pr. [pháinn-miā])
@@ -1506,7 +1506,7 @@ dai4 er3 fu1 te4	代尔夫特	p	-	-	Delft, Zuid-Holland, the Netherlands
 dai4 fang1	贷方	-	-	-	credit side (of a balance sheet)/creditor/lender
 dai4 fen1 shu4	带分数	-	-	-	mixed fraction/mixed number (i.e. with an integer part and a fraction part, e.g. four and three quarters)
 dai4 fu4	待复	-	-	-	to be advised/awaiting an answer
-dai4 fu5	大夫	-	6248	3	doctor; physician
+dai4 fu5	大夫	-	1054824	-	doctor; physician
 dai4 gan3	带感	-	-	-	(neologism) (slang) (of music, visual style, movement or experiences) powerfully engaging in a way that excites or resonates deeply; electrifying; intense; pulse-pounding
 dai4 gang3	待岗	-	-	-	to wait for a job assignment; to be laid off; to be out of a job
 dai4 gao1 le4	戴高乐	p	-	-	Charles De Gaulle (1890–1970), French general and politician, leader of the Free French during World War II and president of the Republic 1959–1969
@@ -1990,7 +1990,7 @@ dan4	啖	-	-	-	to eat/to taste/to entice (using bait)
 dan4	弹	-	2520	4	crossball/bullet/shot/shell/ball
 dan4	惮	-	18846	-	dread/fear/dislike
 dan4	憺	-	-	-	peace
-dan4	担	-	5380	7	picul (100 catties, 50 kg)/two buckets full/carrying pole and its load/classifier for loads carried on a shoulder pole
+dan4	担	-	19039	-	picul (100 catties, 50 kg)/two buckets full/carrying pole and its load/classifier for loads carried on a shoulder pole
 dan4	旦	-	1323	-	(literary) dawn; daybreak/dan, female role in Chinese opera (traditionally played by specialized male actors)
 dan4	柦	-	-	-	a kind of wooden desk without legs
 dan4	氮	-	-	-	nitrogen (chemistry)
@@ -2175,7 +2175,7 @@ dang1 liang4	当量	-	-	-	equivalent/yield
 dang1 liang4 ji4 liang4	当量剂量	-	-	-	equivalent dose
 dang1 ling4	当令	-	-	-	to be in season/seasonal
 dang1 mian4	当面	-	9152	6	to sb's face/in sb's presence
-dang1 nian2	当年	-	2959	5	in those days; back then; in those years/to be in the prime of life
+dang1 nian2	当年	-	1051535	-	in those days; back then; in those years/to be in the prime of life
 dang1 niu2 zuo4 ma3	当牛作马	-	-	-	to work like a horse and toil like an ox/fig. to slave for sb
 dang1 qian2	当前	-	5108	5	the present time/to be faced with
 dang1 qiang1 shi3	当枪使	-	-	-	to use (sb) as a tool
@@ -2186,19 +2186,19 @@ dang1 quan2 zhe3	当权者	-	-	-	ruler/those in power/the authorities
 dang1 r5	当儿	-	-	-	the very moment/just then/during (that brief interval)
 dang1 ran2	当然	-	423	3	only natural/as it should be/certainly/of course/without doubt
 dang1 ren2 bu4 rang4	当仁不让	-	-	-	to be unwilling to pass on one's responsibilities to others
-dang1 ri4	当日	-	13746	7	on that day
+dang1 ri4	当日	-	1062322	-	on that day
 dang1 shang5	当上	-	-	-	to take up duty as/to assume a position/to assume/to take on (an office)
-dang1 shi2	当时	-	505	2	then; at that time
+dang1 shi2	当时	-	1049081	-	then; at that time
 dang1 shi4	当世	-	-	-	the present age/in office/the current office holder
 dang1 shi4	当事	-	-	-	to be in charge/to be confronted (with a matter)/involved (in some matter)
 dang1 shi4 guo2	当事国	-	-	-	the countries involved
 dang1 shi4 ren2	当事人	-	3517	6	persons involved or implicated; party (to an affair)
 dang1 shi4 wu2 shuang1	当世无双	-	-	-	unequalled in his time
 dang1 shi4 zhe3	当事者	-	-	-	the person involved/the people holding power
-dang1 tian1	当天	-	3628	6	on that day
+dang1 tian1	当天	-	1052204	-	on that day
 dang1 tou2	当头	-	-	-	coming right into one's face/imminent/to put first
 dang1 tu2 xian4	当涂县	p	-	-	Dangtu, a county in Ma'anshan City, Anhui
-dang1 wan3	当晚	-	4902	7	on that evening
+dang1 wan3	当晚	-	1053478	-	on that evening
 dang1 wu4 zhi1 ji2	当务之急	-	14997	6	(idiom) top priority job; a matter of the greatest urgency
 dang1 xia4	当下	-	9363	6	immediately/at once/at that moment/at the moment
 dang1 xin1	当心	-	9615	6	to take care/to look out
@@ -2219,7 +2219,7 @@ dang1 zhong4	当众	-	13815	7	in public/in front of everybody
 dang1 zhou2	当轴	-	-	-	person in power/important official
 dang3	党	-	2047	6	party/association/club/society/CL:
 dang3	挡	-	3211	5	to resist/to obstruct/to hinder/to keep off/to block (a blow)/to get in the way of/cover/gear (e.g. in a car's transmission)
-dang3	档	-	3110	6	(Tw) gear
+dang3	档	-	1051686	-	(Tw) gear
 dang3	谠	-	-	-	honest/straightforward
 dang3 ba1 gu3	党八股	-	-	-	drab, stereotypical Communist Party writing style
 dang3 bian1	党鞭	-	-	-	(politics) whip
@@ -2273,9 +2273,9 @@ dang3 zu3	党组	-	-	-	party leadership group
 dang4	凼	-	-	-	pool/pit/ditch/cesspit
 dang4	垱	-	-	-	(dialect) earthen dyke in a river or rice paddy (for irrigation purposes)
 dang4	宕	-	-	-	dissipated/put off
-dang4	当	-	155	2	at or in the very same.../suitable/adequate/fitting/proper/to replace/to regard as/to think/to pawn/(coll.) to fail (a student)
+dang4	当	-	505	-	at or in the very same.../suitable/adequate/fitting/proper/to replace/to regard as/to think/to pawn/(coll.) to fail (a student)
 dang4	愓	-	-	-	profligate
-dang4	挡	-	3211	5	to arrange/to put in order
+dang4	挡	-	1051787	-	to arrange/to put in order
 dang4	档	-	3110	6	(bound form) shelves (for files); pigeonholes/(bound form) files/crosspiece (of a table etc)/(bound form) (of goods) grade/vendor's open-air stall/(Tw) timeslot for a show or program/classifier for shows/classifier for events, affairs etc/Taiwan pr. [dang3]
 dang4	砀	-	-	-	stone with color veins
 dang4	簜	-	-	-	(bamboo)
@@ -2303,20 +2303,20 @@ dang4 fu4 xiu1 ru3	荡妇羞辱	-	-	-	to slut-shame
 dang4 hui2 shi4	当回事	-	-	-	to take seriously (often with negative expression: "don't take it too seriously")/to treat conscientiously
 dang4 ji1	宕机	-	-	-	(of a computer, server etc) to crash
 dang4 kou3	档口	-	-	-	stall/booth
-dang4 nian2	当年	-	2959	5	that very same year
+dang4 nian2	当年	-	1051535	-	that very same year
 dang4 pu4	当铺	-	-	-	pawnshop/CL:
 dang4 qi1	档期	-	-	-	slot within a schedule/timeslot (for a TV program, a session with a photographer etc)/range of dates in which an event is to be held (film screening, exhibition etc)
 dang4 qi4 hui2 chang2	荡气回肠	-	-	-	heart-rending (drama, music, poem etc)/deeply moving
 dang4 qiu1 qian1	荡秋千	-	-	-	to swing (on a swing)
 dang4 ran2	荡然	-	-	-	vanished from the face of the earth/all gone/nothing left
 dang4 ran2 wu2 cun2	荡然无存	-	-	-	to obliterate completely/to vanish from the face of the earth
-dang4 ri4	当日	-	13746	7	that very day/the same day
+dang4 ri4	当日	-	1062322	-	that very day/the same day
 dang4 shan1 xian4	砀山县	p	-	-	Dangshan, a county in Suzhou City, Anhui
-dang4 shi2	当时	-	505	2	immediately; right then
+dang4 shi2	当时	-	1049081	-	immediately; right then
 dang4 shi4	当事	-	-	-	to consider as a matter of importance/to be of importance
-dang4 tian1	当天	-	3628	6	the same day
+dang4 tian1	当天	-	1052204	-	the same day
 dang4 tou5	当头	-	-	-	(coll.) pledge; surety
-dang4 wan3	当晚	-	4902	7	the same evening
+dang4 wan3	当晚	-	1053478	-	the same evening
 dang4 yang4	荡漾	-	24710	7	to ripple/to undulate
 dang4 ye4	当夜	-	-	-	that very night/the same night
 dang4 yue4	当月	-	-	-	the same month
@@ -2375,7 +2375,7 @@ dao1 zi5	刀子	-	-	-	knife/CL:
 dao1 zu3	刀俎	-	-	-	sacrificial knife and altar
 dao2	捯	-	-	-	(coll.) to reel in (string, yarn etc) by pulling hand over hand or by coiling/to step along/to look into/to pursue (a matter)
 dao2 chi5	捯饬	-	-	-	(coll.) to doll up/to spruce up/to zhoosh up
-dao3	倒	-	780	2	to fall; to collapse; to lie horizontally/to fail; to go bankrupt/to overthrow/to change (trains or buses)/to move around/to resell at a profit
+dao3	倒	-	5252	-	to fall; to collapse; to lie horizontally/to fail; to go bankrupt/to overthrow/to change (trains or buses)/to move around/to resell at a profit
 dao3	壔	-	-	-	column/cylinder
 dao3	导	-	1268	-	to transmit/to lead/to guide/to conduct/to direct
 dao3	岛	-	1816	5	island/CL:
@@ -2398,7 +2398,7 @@ dao3 cang1	倒仓	-	-	-	to transfer grain from a store (e.g. to sun it)/voice br
 dao3 cao2	倒槽	-	-	-	to die out (of livestock)
 dao3 cha2	倒茬	-	-	-	rotation of crops
 dao3 chang2 xi2 gu4	蹈常袭故	-	-	-	follow the same old path (idiom); stuck in a rut/always the same routine
-dao3 che1	倒车	-	16831	4	to change buses, trains etc
+dao3 che1	倒车	-	1065407	-	to change buses, trains etc
 dao3 chu1	导出	-	-	-	to derive/derived/derivation/to entail/to induce/to export (data)
 dao3 chu1 fan4 chou2	导出范畴	-	-	-	(math.) derived category
 dao3 chu1 zhi2	导出值	-	-	-	value deduced by calculation/derived value
@@ -2538,7 +2538,7 @@ dao4 cha2	道碴	-	-	-	(railway) ballast
 dao4 cha4	道岔	-	-	-	railroad switch
 dao4 chang3	到场	-	-	-	to show up/present (at the scene)
 dao4 chang3	道场	-	-	-	Taoist or Buddhist rite
-dao4 che1	倒车	-	16831	4	to reverse (a vehicle)/to drive backwards
+dao4 che1	倒车	-	1065407	-	to reverse (a vehicle)/to drive backwards
 dao4 che1 dang3	倒车挡	-	-	-	reverse gear
 dao4 cheng2 xian4	稻城县	p	-	-	Daocheng, a county in Garzê Tibetan Autonomous Prefecture, Sichuan
 dao4 chi2 tai4 e1	倒持泰阿	p	-	-	(lit.) to present the handle of a sword to another (idiom)/(fig.) to relinquish power to another; to place oneself at another's mercy
@@ -2661,8 +2661,8 @@ dao4 shi4	道士	-	-	-	Daoist priest
 dao4 shi5	倒是	-	4297	5	contrary to what one might expect/actually/contrariwise/why don't you
 dao4 shou3	到手	-	-	-	to take possession of/to get hold of
 dao4 shou3 ruan3	到手软	-	-	-	(do a manual task) until one's hands go limp with exhaustion
-dao4 shu3	倒数	-	6083	7	to count backwards (from 10 down to 0)/to count down/from the bottom (lines on a page)/from the back (rows of seats)
-dao4 shu4	倒数	-	6083	7	inverse number/reciprocal (math.)
+dao4 shu3	倒数	-	1054659	-	to count backwards (from 10 down to 0)/to count down/from the bottom (lines on a page)/from the back (rows of seats)
+dao4 shu4	倒数	-	1054659	-	inverse number/reciprocal (math.)
 dao4 shua1	盗刷	-	-	-	to fraudulently draw on (sb's credit card account)
 dao4 sou3	盗薮	-	-	-	bandits' den
 dao4 sui4	稻穗	-	-	-	rice ear
@@ -2725,7 +2725,7 @@ dao4 zuo4 r5	倒座儿	-	-	-	the north-facing room opposite the master's in a si
 de1	嘚	-	-	-	(onom.) for the sound of horsehoofs
 de1 bo5	嘚啵	-	-	-	(coll.) to run off at the mouth/to jabber on
 de2	㝵	-	-	-	to obtain
-de2	得	-	58	2	to obtain/to get/to gain/to catch (a disease)/proper/suitable/proud/contented/to allow/to permit/ready/finished
+de2	得	-	308	-	to obtain/to get/to gain/to catch (a disease)/proper/suitable/proud/contented/to allow/to permit/ready/finished
 de2	德	-	1174	7	virtue/goodness/morality/ethics/kindness/favor/character/kind
 de2	德	p	1174	7	Germany/German
 de2	淂	-	-	-	(river)
@@ -2801,7 +2801,7 @@ de2 lai2 su4	得来速	-	-	-	drive-thru (loanword)
 de2 le4 ba1 ke4	德勒巴克	p	-	-	Drøbak (city in Akershus, Norway)
 de2 le4 si1 deng1	德勒斯登	p	-	-	(Tw) Dresden, capital of Saxony, Germany
 de2 le4 zi1	德勒兹	p	-	-	Gilles Deleuze (1925-1995), French philosopher
-de2 le5	得了	-	3720	5	all right!/that's enough!
+de2 le5	得了	-	1052296	-	all right!/that's enough!
 de2 lei2 er3	德雷尔	p	-	-	Dreyer (name)/June Teufel Dreyer, China expert at Univ. of Miami and Foreign Policy Research Institute
 de2 lei2 fu2 si1	德雷福斯	p	-	-	Dreyfus (name)/Alfred Dreyfus (1859-1935), French artillery officer of Alsatian and Jewish background, infamously imprisoned 1894 in miscarriage of justice
 de2 lei2 fu2 si1 an4 jian4	德雷福斯案件	p	-	-	Dreyfus affair 1894-1906, notorious political scandal in France case involving antisemitism and miscarriage of justice
@@ -2811,7 +2811,7 @@ de2 li3	德里	p	-	-	Delhi/New Delhi, capital of India
 de2 li3 da2	德里达	p	-	-	Jacques Derrida (1930-2004), philosopher
 de2 li4	得利	-	-	-	to benefit (from sth)
 de2 li4	得力	-	14265	6	able/capable/competent/efficient
-de2 liao3	得了	-	3720	5	(emphatically, in rhetorical questions) possible
+de2 liao3	得了	-	1052296	-	(emphatically, in rhetorical questions) possible
 de2 ling4	得令	-	-	-	to follow your orders/roger!/yessir!
 de2 ling4 ha1 shi4	德令哈市	p	-	-	Delingha, a county-level city in Haixi Mongol and Tibetan Autonomous Prefecture, Qinghai
 de2 long3 wang4 shu3	得陇望蜀	p	-	-	lit. covet Sichuan once Gansu has been seized/fig. endless greed/insatiable desire
@@ -2892,8 +2892,8 @@ de2 zhou1 pu1 ke4	德州扑克	p	-	-	Texas hold 'em (poker variant)
 de2 zhou1 shi4	德州市	p	-	-	Dezhou, prefecture-level city in Shandong Province
 de2 zhou1 yi2 qi4	德州仪器	p	-	-	Texas Instruments
 de2 zhu3	得主	-	-	-	recipient (of an award)/winner (in a competition)
-de2 zui4	得罪	-	9103	6	to commit an offense/to violate the law/excuse me! (formal)
-de2 zui5	得罪	-	9103	6	to offend sb/to make a faux pas/a faux pas
+de2 zui4	得罪	-	1057679	-	to commit an offense/to violate the law/excuse me! (formal)
+de2 zui5	得罪	-	1057679	-	to offend sb/to make a faux pas/a faux pas
 de4 se5	得瑟	-	-	-	(dialect) cocky; smug/to show off
 de5	地	-	132	1	-ly/structural particle: used before a verb or adjective, linking it to preceding modifying adverbial adjunct
 de5	得	-	58	2	structural particle: used after a verb (or adjective as main verb), linking it to following phrase indicating effect, degree, possibility etc
@@ -2902,7 +2902,7 @@ de5 hen3	得很	-	-	-	(after an adjective) very
 de5 hua4	的话	-	2226	2	if (coming after a conditional clause)
 de5 ke3 yi3	得可以	-	-	-	(coll.) (stative verb suffix) very; awfully
 de5 qi3	得起	-	-	-	(verb complement indicating ability to afford or bear the cost or consequences of doing sth)
-dei3	得	-	58	2	to have to/must/ought to/to need to
+dei3	得	-	8384	-	to have to/must/ought to/to need to
 dei3 kan4	得看	-	-	-	(it) depends on ...
 dei3 kui1	得亏	-	-	-	luckily/fortunately
 dei3 yao4	得要	-	-	-	to need/must
@@ -3082,7 +3082,7 @@ deng4 kou3 xian4	磴口县	p	-	-	Dengkou, a county in Bayannur City, Inner Mongo
 deng4 li4 jun1	邓丽君	p	-	-	Teresa Teng (1953-1995), Taiwanese pop idol
 deng4 liang4 hong2	邓亮洪	-	-	-	Tang Liang Hong (opposition candidate in Jan 1996 Singapore elections)
 deng4 ling2	瞪羚	-	-	-	gazelle
-deng4 qing1	澄清	-	8124	6	to settle (of liquid)/to become clear (by precipitation of impurities)/precipitate (chemistry)/to put in order/to quell disturbances
+deng4 qing1	澄清	-	1056700	-	to settle (of liquid)/to become clear (by precipitation of impurities)/precipitate (chemistry)/to put in order/to quell disturbances
 deng4 shi4 chang1	邓世昌	p	-	-	Deng Shichang (1849-1894), Qing dynasty naval specialist, founded naval dockyards and two naval colleges, died heroically in action against the Japanese
 deng4 tong1	邓通	p	-	-	Deng Tong (2nd c. BC), one of the wealthiest Former Han Dynasty officials
 deng4 tuo4	邓拓	p	-	-	Deng Tuo (1912-1966), sociologist and journalist, died under persecution at the start of the Cultural Revolution/wrote under the pen name Ma Nancun
@@ -3102,7 +3102,7 @@ di1	嘀	-	-	-	(onom.) sound of dripping water, a ticking clock etc
 di1	堤	-	9859	7	dike/Taiwan pr. [ti2]
 di1	氐	p	-	-	name of an ancient tribe
 di1	滴	-	2035	5	to drip/to let drip; to apply (eye drops etc)/(bound form) a drop (of liquid)/classifier for drops of liquid
-di1	的	-	1	1	a taxi; a cab
+di1	的	-	1048577	-	a taxi; a cab
 di1	羝	-	-	-	billy goat/ram
 di1	鍉	-	-	-	spoon/key
 di1	镝	-	-	-	dysprosium (chemistry)
@@ -3264,7 +3264,7 @@ di2	敌	-	1731	-	(bound form) enemy/(bound form) to be a match for; to rival/(bo
 di2	涤	-	34376	-	to wash/to cleanse
 di2	狄	-	-	-	low ranking public official (old)
 di2	狄	p	-	-	generic name for northern ethnic minorities during the Qin and Han Dynasties (221 BC-220 AD)
-di2	的	-	1	1	really and truly
+di2	的	-	1392	-	really and truly
 di2	笛	-	23092	-	flute
 di2	篴	-	-	-	flute
 di2	籴	-	-	-	to buy up (grain)
@@ -3453,7 +3453,7 @@ di3 zui4	抵罪	-	-	-	to be punished for a crime
 di3 zuo4	底座	-	-	-	base/pedestal/foundation
 di4	䗖	-	-	-	used in 𬟽[di4 dong1]
 di4	哋	-	-	-	(Cant.) plural for pronouns
-di4	地	-	132	1	earth/ground/field/place/land/CL:
+di4	地	-	254	-	earth/ground/field/place/land/CL:
 di4	娣	-	-	-	wife of a younger brother
 di4	帝	-	2412	-	(bound form) emperor; sovereign; supreme deity
 di4	弟	-	6568	1	younger brother/junior male/I (modest word in letter)
@@ -3464,7 +3464,7 @@ di4	渧	-	-	-	to drop, as liquids/a drop
 di4	玓	-	-	-	pearly
 di4	珶	-	-	-	white jade worn on belt
 di4	甋	-	-	-	a jar without ears
-di4	的	-	1	1	(bound form) bull's-eye; target
+di4	的	-	1260	-	(bound form) bull's-eye; target
 di4	睇	-	-	-	(literary) to cast a sidelong glance/(dialect) to see; to look at
 di4	碲	-	-	-	tellurium (chemistry)
 di4	禘	-	-	-	imperial ancestral sacrifice
@@ -3500,8 +3500,8 @@ di4 ci2 bao4	地磁暴	-	-	-	geomagnetic storm
 di4 ci2 chang3	地磁场	-	-	-	the earth's magnetic field
 di4 da4 wu4 bo2	地大物博	-	-	-	vast territory with abundant resources (idiom)
 di4 dai4	地带	-	6317	5	zone/CL:
-di4 dao4	地道	-	5958	5	tunnel/causeway
-di4 dao5	地道	-	5958	5	authentic/genuine/proper
+di4 dao4	地道	-	1054534	-	tunnel/causeway
+di4 dao5	地道	-	1054534	-	authentic/genuine/proper
 di4 di3	地底	-	-	-	subterranean/underground
 di4 di4 dao4 dao4	地地道道	-	-	-	thoroughgoing/authentic/100%/to the core
 di4 di4 ka1 ka1 hu2	的的喀喀湖	p	-	-	Lake Titicaca
@@ -3534,7 +3534,7 @@ di4 er4 xing2 tang2 niao4 bing4	第二型糖尿病	-	-	-	Type 2 diabetes
 di4 er4 xing4	第二性	p	-	-	The Second Sex (book by Simone de Beauvoir)
 di4 er4 zhi2 ye4	第二职业	-	-	-	second job
 di4 fan3	地返	-	-	-	floor monitor; foldback speaker; wedge monitor
-di4 fang1	地方	-	254	1	region/regional (away from the central administration)/local
+di4 fang1	地方	-	1048830	-	region/regional (away from the central administration)/local
 di4 fang1 fa3 yuan4	地方法院	-	-	-	county court/district court
 di4 fang1 guan1	地方官	-	-	-	local official
 di4 fang1 xi4	地方戏	-	-	-	local Chinese opera, such as Shaoxing opera, Sichuan opera, Henan opera etc
@@ -3543,7 +3543,7 @@ di4 fang1 xing4	地方性	-	-	-	local
 di4 fang1 xing4 ban1 zhen3 shang1 han2	地方性斑疹伤寒	-	-	-	murine typhus fever
 di4 fang1 zhu3 yi4	地方主义	-	-	-	regionalism/favoring one's local region
 di4 fang1 zi4 zhi4	地方自治	-	-	-	local autonomy/home rule
-di4 fang5	地方	-	254	1	place; location; area; space; territory/aspect; part/CL:
+di4 fang5	地方	-	1048830	-	place; location; area; space; territory/aspect; part/CL:
 di4 fu2 ni2	蒂芙尼	p	-	-	Tiffany & Co. (US luxury jewelry retailer)
 di4 fu3	地府	-	-	-	hell/the nether world/Hades
 di4 fu4	弟妇	-	-	-	younger brother's wife/sister-in-law
@@ -4476,7 +4476,7 @@ diao1 yu2 shao1	鲷鱼烧	-	-	-	taiyaki, Japanese-style waffle made with a fish-
 diao1 zhuo2	雕琢	-	-	-	to sculpt/to carve (jade)/ornate artwork/overly elaborate prose
 diao1 zuan1	刁钻	-	-	-	crafty/tricky
 diao3	屌	-	-	-	penis/(slang) cool or extraordinary/(Cantonese) to fuck
-diao3	鸟	-	1593	2	penis
+diao3	鸟	-	1050169	-	penis
 diao3 bao4	屌爆	-	-	-	(slang) awesome
 diao3 mao2	屌毛	-	-	-	(vulgar) male pubic hair/(vulgar) asshole; jerk; dickhead
 diao3 ren2	鸟人	-	-	-	(vulgar) damned wretch/fucker/also pr. [niao3 ren2]
@@ -4922,7 +4922,7 @@ ding4	定	-	586	4	to fix; to set; to make definite/to subscribe to (a newspaper 
 ding4	碇	-	-	-	anchor
 ding4	腚	-	-	-	buttocks/butt
 ding4	订	-	2991	3	to agree/to conclude/to draw up/to subscribe to (a newspaper etc)/to order
-ding4	钉	-	5126	7	to join things together by fixing them in place at one or more points/to nail/to pin/to staple/to sew on
+ding4	钉	-	1053702	-	to join things together by fixing them in place at one or more points/to nail/to pin/to staple/to sew on
 ding4	铤	-	-	-	ingot
 ding4	锭	-	-	-	(weaving) spindle/ingot/pressed cake of medicine etc/classifier for: gold and silver ingots, ink sticks
 ding4	饤	-	-	-	display food for show only/sacrifice
@@ -5286,7 +5286,7 @@ dong1 wei4	东魏	p	-	-	Eastern Wei of the Northern dynasties (534-550), formed 
 dong1 wu1 zhu1 mu4 qin4 qi2	东乌珠穆沁旗	p	-	-	East Ujimqin banner or Züün Üzemchin khoshuu in Xilingol League, Inner Mongolia
 dong1 wu2	东吴	p	-	-	Eastern Wu (222-280)/the southern state of Wu during the Three Kingdoms period, founded by Sun Quan
 dong1 wu2 da4 xue2	东吴大学	p	-	-	Soochow University (Suzhou, PRC from 1900-1952)/Soochow University (Taipei, Taiwan since 1954)
-dong1 xi1	东西	-	226	1	east and west
+dong1 xi1	东西	-	1048802	-	east and west
 dong1 xi1 ban4 qiu2	东西半球	-	-	-	East and West hemispheres
 dong1 xi1 de2	东西德	p	-	-	East and West Germany/refers to the German Democratic Republic (East Germany) and the Federal Republic of Germany (West Germany)
 dong1 xi1 fang1	东西方	-	-	-	east and west/east to west
@@ -5295,7 +5295,7 @@ dong1 xi1 hu2 qu1	东西湖区	p	-	-	Dongxihu, a district of Wuhan City, Hubei
 dong1 xi1 kuan1	东西宽	-	-	-	east-west distance
 dong1 xi1 nan2 bei3	东西南北	-	-	-	east west south north
 dong1 xi1 zhou1	东西周	p	-	-	Western Zhou (1045-771 BC) and Eastern Zhou (770-256 BC)
-dong1 xi5	东西	-	226	1	thing/stuff/person/CL:
+dong1 xi5	东西	-	1048802	-	thing/stuff/person/CL:
 dong1 xia4	冬夏	-	-	-	winter and summer
 dong1 xian2	冬闲	-	-	-	slack winter season (farming)
 dong1 xiang1	东乡	p	-	-	Dongxiang ethnic group
@@ -5565,7 +5565,7 @@ dou1 shou4	兜售	-	19665	7	to hawk; to peddle
 dou1 tou2	兜头	-	-	-	full in the face
 dou3	唞	-	-	-	to take a rest (Cantonese)
 dou3	抖	-	6478	7	to tremble/to shake out/to reveal/to make it in the world
-dou3	斗	-	2960	7	dry measure for grain equal to ten or one-tenth of a/decaliter/peck/cup or dipper shaped object
+dou3	斗	-	47526	-	dry measure for grain equal to ten or one-tenth of a/decaliter/peck/cup or dipper shaped object
 dou3	枓	-	-	-	(architecture) square wooden bearing block used to support a bracket in a dougong bracket system
 dou3	陡	-	20491	7	steep; precipitous/(of a change) abrupt; sudden
 dou3 bi4	陡壁	-	-	-	steep cliff/precipice/vertical slope
@@ -5609,7 +5609,7 @@ dou4	斗	-	2960	7	to fight/to struggle/to condemn/to censure/to contend/to put t
 dou4	痘	-	-	-	pimple/pustule
 dou4	窦	-	-	-	(literary) hole; aperture/(anatomy) cavity; sinus
 dou4	脰	-	-	-	(literary) neck
-dou4	读	-	1013	1	comma/phrase marked by pause
+dou4	读	-	1049589	-	comma/phrase marked by pause
 dou4	豆	-	5611	-	legume; pulse; bean; pea
 dou4	豆	-	5611	-	legume; pulse; bean; pea/(old) stemmed cup or bowl
 dou4	逗	-	4825	5	to tease (playfully); to entice/(coll.) to joke/(coll.) funny; amusing/to stay; to sojourn/brief pause at the end of a phrase
@@ -5727,7 +5727,7 @@ dou4 zui3	逗嘴	-	-	-	to banter
 du1	厾	-	-	-	to tap lightly
 du1	嘟	-	-	-	(onom.) toot; honk; beep (sound of a horn etc)/(coll.) to pout
 du1	督	-	3386	-	(bound form) to supervise
-du1	都	-	25	1	capital city/metropolis
+du1	都	-	4120	-	capital city/metropolis
 du1	阇	-	-	-	defensive platform over gate/barbican
 du1 an1 yao2 zu2 zi4 zhi4 xian4	都安瑶族自治县	p	-	-	Du'an Yao Autonomous County, in Hechi City, Guangxi
 du1 ban4	督办	-	-	-	to oversee/to supervise/superintendent
@@ -6368,7 +6368,7 @@ duan4 zi5	段子	-	-	-	item of storytelling or performed dialogue (folk arts)/sk
 duan4 zi5	缎子	-	-	-	satin
 duan4 zi5 shou3	段子手	-	-	-	sb who crafts and delivers witty, humorous or satirical short stories, jokes or punchlines; a wit; a humorist
 dui1	堆	-	2915	5	to pile up/to heap up/a mass/pile/heap/stack/large amount
-dui1	追	-	1265	3	to sculpt/to carve/musical instrument (old)
+dui1	追	-	1049841	-	to sculpt/to carve/musical instrument (old)
 dui1 an4 ying2 ji1	堆案盈几	-	-	-	lit. piles of work and papers (idiom); fig. accumulated backlog of work
 dui1 die2	堆叠	-	-	-	to pile up/to put layer upon layer/(Tw) (computing) stack
 dui1 dui1 mao4	堆堆帽	-	-	-	slouchy beanie
@@ -6825,9 +6825,9 @@ duo1 rou4	多肉	-	-	-	fleshy; meaty/succulents
 duo1 rou4 zhi2 wu4	多肉植物	-	-	-	succulent (plant)
 duo1 ru2 niu2 mao2	多如牛毛	-	-	-	(lit.) as numerous as the hairs of an ox (idiom)/(fig.) innumerable; countless
 duo1 shan1	多山	-	-	-	mountainous
-duo1 shao3	多少	-	526	1	number; amount/somewhat
+duo1 shao3	多少	-	1049102	-	number; amount/somewhat
 duo1 shao3 you3 xie1	多少有些	-	-	-	somewhat/more or less
-duo1 shao5	多少	-	526	1	how much?; how many?/(phone number, student ID etc) what number?
+duo1 shao5	多少	-	1049102	-	how much?; how many?/(phone number, student ID etc) what number?
 duo1 shen2 jiao4	多神教	-	-	-	polytheistic religion; polytheism
 duo1 shen2 lun4	多神论	-	-	-	polytheism
 duo1 shen2 lun4 zhe3	多神论者	-	-	-	polytheist
@@ -6924,7 +6924,7 @@ duo1 zu2 lei4	多足类	-	-	-	centipedes and millipedes
 duo1 zui3	多嘴	-	-	-	talkative/to speak out of turn/to blab/to shoot one's mouth off/rumors fly
 duo1 zui3 duo1 she2	多嘴多舌	-	-	-	to gossip and meddle/to shoot one's mouth off/talkative
 duo2	夺	-	3462	6	to seize/to take away forcibly/to wrest control of/to compete or strive for/to force one's way through/to leave out/to lose
-duo2	度	-	925	2	to estimate/Taiwan pr. [duo4]
+duo2	度	-	1049501	-	to estimate/Taiwan pr. [duo4]
 duo2	敪	-	-	-	to weigh/to cut/to come without being invited
 duo2	踱	-	-	-	to pace; to stroll/Taiwan pr. [duo4]
 duo2	铎	-	-	-	large ancient bell
@@ -6976,7 +6976,7 @@ duo4	惰	-	13267	-	lazy
 duo4	柮	-	-	-	wood scraps
 duo4	舵	-	28050	-	helm/rudder
 duo4	跺	-	-	-	to stamp one's feet
-duo4	驮	-	28188	7	load carried by a pack animal
+duo4	驮	-	1076764	-	load carried by a pack animal
 duo4 ba3	舵把	-	-	-	tiller of a boat
 duo4 jiao1	剁椒	-	-	-	pickled chopped chilies (usually used as a condiment)
 duo4 jiao3	跺脚	-	-	-	to stamp one's feet

@@ -381,7 +381,7 @@ gan1 zi5	竿子	-	-	-	bamboo pole/CL:
 gan3	感	-	939	4	to feel/to move/to touch/to affect/feeling/emotion/(suffix) sense of ~
 gan3	擀	-	-	-	to roll (dough etc)
 gan3	敢	-	902	3	to dare/daring/(polite) may I venture
-gan3	杆	-	2562	6	stick/pole/lever/classifier for long objects such as guns
+gan3	杆	-	17014	-	stick/pole/lever/classifier for long objects such as guns
 gan3	澉	-	-	-	place name/wash
 gan3	秆	-	-	-	stalks of grain
 gan3	赶	-	2113	3	to overtake; to catch up with/to hurry; to rush/to try to catch (the bus etc)/to drive (cattle etc) forward; to drive (sb) away/to avail oneself of (an opportunity)/until; by (a certain time)
@@ -517,7 +517,7 @@ gan3 zou3	赶走	-	-	-	to drive out/to turn back
 gan3 zuo4 gan3 dang1	敢做敢当	-	-	-	daring to act and courageous enough to take responsibility for it/a true man has the courage to accept the consequences of his actions/the buck stops here
 gan3 zuo4 gan3 wei2	敢作敢为	-	-	-	(idiom) to stop at nothing; to dare to do anything
 gan4	倝	-	-	-	dawn (archaic)
-gan4	干	-	463	1	tree trunk/main part of sth/to manage/to work/to do/capable/cadre/to kill (slang)/to fuck (vulgar)/(coll.) pissed off/annoyed
+gan4	干	-	2714	-	tree trunk/main part of sth/to manage/to work/to do/capable/cadre/to kill (slang)/to fuck (vulgar)/(coll.) pissed off/annoyed
 gan4	旰	-	-	-	sunset/evening
 gan4	榦	-	-	-	tree trunk
 gan4	檊	-	-	-	Chinese mulberry/sandalwood
@@ -560,7 +560,7 @@ gang1	冈	-	79223	-	ridge/mound
 gang1	刚	-	436	2	(literary) hard; firm; strong/exactly; precisely/barely; only just/just; only a short while ago
 gang1	堈	-	-	-	earthen jug, crock, cistern
 gang1	堽	-	-	-	mound
-gang1	扛	-	7902	6	to raise aloft with both hands/(of two or more people) to carry sth together
+gang1	扛	-	1056478	-	to raise aloft with both hands/(of two or more people) to carry sth together
 gang1	杠	-	-	-	flagpole/footbridge
 gang1	笐	-	-	-	bamboos placed across wooden frames on which grain may be stored in damp climates
 gang1	纲	-	18973	-	head rope of a fishing net/guiding principle/key link/class (taxonomy)/outline/program
@@ -1139,10 +1139,10 @@ gao1 zhi2	高职	-	-	-	vocational higher education institution/senior academic o
 gao1 zhi2 yuan4 xiao4	高职院校	-	-	-	professional school/higher vocational school
 gao1 zhi4 bing4 xing4	高致病性	-	-	-	highly pathenogenic
 gao1 zhi4 liang4	高质量	-	-	-	high quality
-gao1 zhong1	高中	-	2025	2	senior high school
+gao1 zhong1	高中	-	1050601	-	senior high school
 gao1 zhong1 sheng1	高中生	-	-	-	senior high school student
 gao1 zhong1 xue2 sheng1	高中学生	-	-	-	student of a senior high school
-gao1 zhong4	高中	-	2025	2	to pass brilliantly (used in congratulatory fashion)
+gao1 zhong4	高中	-	1050601	-	to pass brilliantly (used in congratulatory fashion)
 gao1 zhou1 shi4	高州市	p	-	-	Gaozhou, a county-level city in Maoming City, Guangdong
 gao1 zi1	高赀	-	-	-	high cost
 gao1 zi5	篙子	-	-	-	pole for punting boats/pole for drying clothes in the sun
@@ -1222,8 +1222,8 @@ gao4 shi4 pai2	告示牌	-	-	-	notice/placard/signboard
 gao4 shi5	告示	-	18615	7	announcement
 gao4 song4	告诵	-	-	-	to tell/to inform
 gao4 song5	告送	-	-	-	(dialect) to tell/to inform
-gao4 su4	告诉	-	252	1	to press charges; to file a complaint
-gao4 su5	告诉	-	252	1	to tell; to inform; to let know
+gao4 su4	告诉	-	1048828	-	to press charges; to file a complaint
+gao4 su5	告诉	-	1048828	-	to tell; to inform; to let know
 gao4 tui4	告退	-	-	-	to petition for retirement (old)/to ask for leave to withdraw/to ask to be excused
 gao4 wei4	告慰	-	-	-	to comfort; to console
 gao4 yi1 duan4 luo4	告一段落	-	-	-	to come to the end of a phase (idiom)
@@ -1392,7 +1392,7 @@ ge1 zi5	鸽子	-	9334	5	pigeon/dove/various birds of the family Columbidae
 ge2	嗝	-	-	-	hiccup/belch
 ge2	塥	-	-	-	dry clay lump
 ge2	挌	-	-	-	fight
-ge2	搁	-	13072	6	to bear; to stand; to endure/Taiwan pr. [ge1]
+ge2	搁	-	1061648	-	to bear; to stand; to endure/Taiwan pr. [ge1]
 ge2	搿	-	-	-	to hug
 ge2	格	-	1674	7	square; lattice; grid; frame/compartment; partition; slot (within a larger unit)/(bound form) standard; norm; specification/(bound form) character; disposition; moral quality; style; aesthetic tone/(bound form) rhetorical form; stylistic pattern/(bound form) (linguistics) grammatical case/(literary) to correct; to rectify/(literary) to arrive at; to reach/(literary) to obstruct; to hinder/(literary) to investigate exhaustively/classifier for compartments, slots or cells within a larger unit
 ge2	膈	-	-	-	(anatomy) diaphragm
@@ -1562,7 +1562,7 @@ ge2 zi5 hua1 ni2	格子花呢	-	-	-	tartan; plaid
 ge2 zi5 jian1	格子间	-	-	-	cubicle
 ge2 zi5 mian2 bu4	格子棉布	-	-	-	gingham
 ge2 zi5 ni2	格子呢	-	-	-	checked woolen fabric; plaid
-ge3	合	-	1643	3	100 ml/one-tenth of a peck/measure for dry grain equal to one-tenth of sheng or liter, or one-hundredth dou
+ge3	合	-	1050219	-	100 ml/one-tenth of a peck/measure for dry grain equal to one-tenth of sheng or liter, or one-hundredth dou
 ge3	哿	-	-	-	excellent/happy/well-being
 ge3	嘅	-	-	-	possessive particle (Cantonese)/Mandarin equivalent:
 ge3	擖	-	-	-	scrape
@@ -1706,8 +1706,8 @@ gen1 mu4 lu4	根目录	-	-	-	(computing) root directory
 gen1 pai1	跟拍	-	-	-	to document on film the course of events/to follow sb with a camera
 gen1 pi4 chong2	跟屁虫	-	-	-	lit. bum beetle/sb who tags along/shadow/sycophant
 gen1 pi4 gu5	跟屁股	-	-	-	to tag along behind/to follow sb closely
-gen1 qian2	跟前	-	13531	5	the front (of)/(in) front/(in) sb's presence/just before (a date)
-gen1 qian5	跟前	-	13531	5	(of children, parents etc) at one's side; living with one
+gen1 qian2	跟前	-	1062107	-	the front (of)/(in) front/(in) sb's presence/just before (a date)
+gen1 qian5	跟前	-	1062107	-	(of children, parents etc) at one's side; living with one
 gen1 ren2	跟人	-	-	-	to marry (of woman)
 gen1 shang4	跟上	-	21572	7	to catch up with/to keep pace with
 gen1 shen1 di4 gu4	根深蒂固	-	25542	6	deep-rooted (problem etc)
@@ -1746,7 +1746,7 @@ gen4 gu3 tong1 jin1	亘古通今	-	-	-	from ancient times up to now/throughout h
 gen4 gu3 wei4 you3	亘古未有	-	-	-	unprecedented/never seen since ancient times
 geng1	㹴	-	-	-	terrier/also pr. [geng3]
 geng1	庚	-	-	-	age/seventh of the ten Heavenly Stems/seventh in order/letter "G" or Roman "VII" in list "A, B, C", or "I, II, III" etc/ancient Chinese compass point: 255°/hepta
-geng1	更	-	127	2	to change or replace/to experience/one of the five two-hour periods into which the night was formerly divided/watch (e.g. of a sentry or guard)
+geng1	更	-	5383	-	to change or replace/to experience/one of the five two-hour periods into which the night was formerly divided/watch (e.g. of a sentry or guard)
 geng1	浭	p	-	-	name of a river in Hebei
 geng1	緪	-	-	-	a rope
 geng1	羹	-	-	-	thick soup
@@ -1919,9 +1919,9 @@ gong1 dan1	工单	-	-	-	work order; job ticket/(IT, customer service) service ti
 gong1 dan4	公担	-	-	-	quintal (100 kg)
 gong1 dan4	公石	-	-	-	hectoliter/quintal
 gong1 dang3	工党	-	-	-	worker's party/labor party
-gong1 dao4	公道	-	10998	6	justice/fairness/public highway
+gong1 dao4	公道	-	1059574	-	justice/fairness/public highway
 gong1 dao4 zi4 ran2 cheng2	功到自然成	-	-	-	effort will undoubtedly lead to success (idiom)
-gong1 dao5	公道	-	10998	6	fair/equitable
+gong1 dao5	公道	-	1059574	-	fair/equitable
 gong1 de2	公德	-	-	-	public ethics/social morality
 gong1 de2	功德	-	-	-	achievements and virtue
 gong1 de2 wu2 liang4	功德无量	-	-	-	no end of virtuous achievements (idiom); boundless beneficence
@@ -1962,10 +1962,10 @@ gong1 fen1	工分	-	-	-	work point (measure of work completed in a rural commune
 gong1 fen1 mu3	公分母	-	-	-	(math.) common denominator
 gong1 fen4	公愤	-	-	-	public anger/popular indignation
 gong1 feng1	工蜂	-	-	-	worker bee
-gong1 fu1	工夫	-	10723	3	(old) laborer
+gong1 fu1	工夫	-	1059299	-	(old) laborer
 gong1 fu3	公府	-	-	-	government post in Han dynasty
 gong1 fu5	功夫	-	3675	3	skill/art/kung fu/labor/effort
-gong1 fu5	工夫	-	10723	3	period of time (may be months, or mere seconds)/spare time/skill/labor/effort
+gong1 fu5	工夫	-	1059299	-	period of time (may be months, or mere seconds)/spare time/skill/labor/effort
 gong1 fu5 bing4 du2	功夫病毒	-	-	-	kung flu
 gong1 fu5 cha2	功夫茶	-	-	-	very concentrated type of tea drunk in Chaozhou, Fujian and Taiwan
 gong1 fu5 liu2 gan3	功夫流感	-	-	-	Chinese translation of "kung flu", a term used by US President Trump in 2020 to refer to COVID-19 as a "Chinese" disease
@@ -2486,7 +2486,7 @@ gong3 xiu4 hong2	汞溴红	-	-	-	merbromin/mercurochrome
 gong3 yi4 shi4	巩义市	p	-	-	Gongyi, a county-level city in Zhengzhou City, Henan
 gong3 zhu4	拱柱	-	-	-	pillar of a vault
 gong3 zhuang4	拱状	-	-	-	arch/vault/arched
-gong4	供	-	2274	7	to lay (sacrificial offerings)/(bound form) offerings/to confess (Taiwan pr. [gong1])/confession; statement (Taiwan pr. [gong1])
+gong4	供	-	23678	-	to lay (sacrificial offerings)/(bound form) offerings/to confess (Taiwan pr. [gong1])/confession; statement (Taiwan pr. [gong1])
 gong4	共	-	1227	4	common/general/to share/together/total/altogether
 gong4	贡	-	2991	-	to offer tribute/tribute/gifts
 gong4 bu4	贡布	p	-	-	Kampot, town in Cambodia, capital of Kampot Province
@@ -3354,7 +3354,7 @@ gu4 ruo4 jin1 tang1	固若金汤	-	-	-	(lit.) secure as a city protected by a wa
 gu4 sha1	故杀	-	-	-	premeditated murder
 gu4 shi3 xian4	固始县	p	-	-	Gushi, a county in Xinyang City, Henan
 gu4 shi4	故世	-	-	-	to die/to pass away
-gu4 shi5	故事	-	772	2	narrative; story; tale
+gu4 shi5	故事	-	1049348	-	narrative; story; tale
 gu4 shi5 pian4	故事片	-	-	-	fictional film/feature film
 gu4 shi5 xian4	故事线	-	-	-	storyline; plotline
 gu4 shou3	固守	-	-	-	to strongly defend one's position/to be entrenched/to cling to
@@ -3927,8 +3927,8 @@ guan3 zhong1 kui1 bao4	管中窥豹	-	-	-	lit. to see a leopard through a narrow
 guan3 zhong4	管仲	p	-	-	Guan Zhong (-645 BC), famous politician of Qi of Spring and Autumn period/known as Guangzi
 guan3 zhu4	管住	-	-	-	to take control of; to manage; to curb
 guan3 zhu4 zui3 mai4 kai1 tui3	管住嘴迈开腿	-	-	-	lit. shut your mouth, move your legs (motto for losing weight)
-guan3 zi3	管子	p	13105	5	Guanzi or Guan Zhong (-645 BC), famous politician of Qi of Spring and Autumn period/Guanzi, classical book containing writings of Guan Zhong and his school
-guan3 zi5	管子	-	13105	5	tube/pipe/drinking straw/CL:
+guan3 zi3	管子	p	1061681	-	Guanzi or Guan Zhong (-645 BC), famous politician of Qi of Spring and Autumn period/Guanzi, classical book containing writings of Guan Zhong and his school
+guan3 zi5	管子	-	1061681	-	tube/pipe/drinking straw/CL:
 guan3 zi5	馆子	-	-	-	restaurant/theater (old)
 guan3 zi5 gong1	管子工	-	-	-	plumber/pipe-fitter
 guan3 zi5 qian2	管子钳	-	-	-	pipe wrench/monkey wrench
@@ -4308,7 +4308,7 @@ gui1	规	-	1151	-	compass/a rule/regulation/to admonish/to plan/to scheme
 gui1	邽	p	-	-	ancient place name
 gui1	闺	-	19654	-	small arched door/boudoir; lady's chamber/(fig.) women
 gui1	鲑	-	-	-	trout/salmon
-gui1	龟	-	8289	7	tortoise; turtle/(coll.) cuckold
+gui1	龟	-	1056865	-	tortoise; turtle/(coll.) cuckold
 gui1 an4	归案	-	-	-	to bring to justice/to file away (a document)
 gui1 ban3	龟板	-	-	-	tortoise plastron/turtle shell
 gui1 bang4	硅棒	-	-	-	silicon rod
@@ -5157,7 +5157,7 @@ guo3 zi5 jiang4	果子酱	-	-	-	marmalade/jellied fruit
 guo3 zi5 li2	果子狸	-	-	-	masked palm civet (Paguma larvata)
 guo3 zi5 lu4	果子露	-	-	-	fruit drink
 guo3 zu2 bu4 qian2	裹足不前	-	-	-	to stand still without advancing (idiom); to hesitate and hold back
-guo4	过	-	60	1	to cross/to go over/to pass (time)/to celebrate (a holiday)/to live/to get along/excessively/too-
+guo4	过	-	216	-	to cross/to go over/to pass (time)/to celebrate (a holiday)/to live/to get along/excessively/too-
 guo4 ban4	过半	-	22772	7	over fifty percent/more than half
 guo4 bang4	过磅	-	-	-	to weigh (on a scale)
 guo4 bu5 qu4	过不去	-	9461	7	to make life difficult for/to embarrass/unable to make it through
@@ -5214,7 +5214,7 @@ guo4 jing4 qian1 zheng4	过境签证	-	-	-	transit visa
 guo4 kan1	过刊	-	-	-	back issue
 guo4 ke4	过客	-	-	-	passing traveler/transient guest/sojourner
 guo4 kong3	过孔	-	-	-	(electronics) via (a type of hole in a circuit board)
-guo4 lai2	过来	-	692	2	to come over/to manage/to handle/to be able to take care of
+guo4 lai2	过来	-	1049268	-	to come over/to manage/to handle/to be able to take care of
 guo4 lai2 ren2	过来人	-	-	-	an experienced person/sb who has "been around (the block)"/sb who has personally experienced it
 guo4 lao2	过劳	-	-	-	overwork
 guo4 lao2 fei2	过劳肥	-	-	-	overweight from overwork (the supposition that white collar workers become fat as a consequence of factors associated with being under pressure at work, including irregular diet, lack of exercise and inadequate rest)
@@ -5243,9 +5243,9 @@ guo4 qi1	过期	-	9636	5	to be overdue/to exceed the time limit/to expire (as in
 guo4 qi4	过气	-	-	-	past one's prime/has-been
 guo4 qiao2 dai4 kuan3	过桥贷款	-	-	-	bridge loan
 guo4 qiao2 mi3 xian4	过桥米线	-	-	-	rice noodle soup from Yunnan province
-guo4 qu4	过去	-	353	2	(in the) past; former; previous/to go over; to pass by
+guo4 qu4	过去	-	1048929	-	(in the) past; former; previous/to go over; to pass by
 guo4 qu4 shi2	过去时	-	-	-	past tense (grammar)
-guo4 qu5	过去	-	353	2	(verb suffix)
+guo4 qu5	过去	-	1048929	-	(verb suffix)
 guo4 qu5 fen1 ci2	过去分词	-	-	-	past participle (in European grammar)
 guo4 qu5 shi4	过去式	-	-	-	past tense
 guo4 re4	过热	-	-	-	too hot/(fig.) (economics) overheated/(physics) to superheat

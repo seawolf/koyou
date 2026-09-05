@@ -144,18 +144,32 @@ Future<void> main(List<String> arguments) async {
         );
   }
 
+  final total = shards.values.fold<int>(0, (sum, rows) => sum + rows.length);
+
+  // Refuse to publish an implausibly small build. Everything below this line
+  // deletes the existing shards first, so a source that fetches but does not
+  // parse — a changed export format, an error page served with a 200, the CRLF
+  // bug above — would otherwise replace a working dictionary with a stub and
+  // report success. A real build is around 115,000 entries.
+  const leastCredible = 50000;
+  if (total < leastCredible) {
+    throw StateError(
+      'Only $total entries survived the build, which is far below the '
+      '$leastCredible expected. Refusing to overwrite $outputDirectory. '
+      'Check the source format before rerunning.',
+    );
+  }
+
   final directory = Directory(outputDirectory);
   if (directory.existsSync()) directory.deleteSync(recursive: true);
   directory.createSync(recursive: true);
 
-  var total = 0;
   var bytes = 0;
   final letters = shards.keys.toList()..sort();
   for (final letter in letters) {
     final rows = shards[letter]!..sort();
     final file = File('$outputDirectory/$letter.tsv');
     file.writeAsStringSync('${rows.join('\n')}\n');
-    total += rows.length;
     bytes += file.lengthSync();
   }
 
@@ -200,7 +214,13 @@ String? _argument(List<String> arguments, String name) {
       : null;
 }
 
-Future<List<String>> _download() async => (await _fetch(source)).split('\n');
+/// CC-CEDICT ships CRLF line endings, so this splits on line terminators
+/// rather than on '\n'. Splitting on '\n' alone leaves a '\r' on the end of
+/// every line, which the `/$` anchor in [entryPattern] will not match — the
+/// download path then parses nothing while the `--input` path, which uses
+/// `readAsLines`, works fine.
+Future<List<String>> _download() async =>
+    const LineSplitter().convert(await _fetch(source));
 
 /// A gloss with its references to other entries taken out.
 String _withoutReferences(String gloss) {
@@ -238,28 +258,68 @@ bool _usable(String gloss) =>
 
 /// Frequency ranks and HSK levels, looked up by word and reading.
 class _Hsk {
-  _Hsk(this.wordRank, this.characterRank, this.wordLevel);
+  _Hsk({
+    required this.wordRank,
+    required this.compoundRank,
+    required this.dominantReading,
+    required this.readings,
+    required this.wordLevel,
+  });
 
   /// Rank for an exact word in an exact reading.
+  ///
+  /// Per *word*, despite the key: the source gives one `frequency` and lists
+  /// every reading of the word beneath it, so this map on its own cannot say
+  /// which reading earned the number. [rankOf] is what decides that.
   final Map<String, int> wordRank;
 
-  /// Rank for a single character in a reading, taken from the commonest HSK
-  /// word that contains it with that reading.
+  /// Rank for a single character in a reading, from the commonest HSK word of
+  /// two or more characters containing it with that reading.
   ///
   /// 谢 is not an HSK word on its own, but 谢谢 is and is common, so the
   /// character earns its rank from the company it keeps. The reading has to
   /// match: 解 is common as `jie3` and rare as `xie4`, and crediting the
-  /// second with the first's rank is how "acrobatic display" outranked
-  /// "to thank".
-  final Map<String, int> characterRank;
+  /// second with the first's rank is how "acrobatic display" outranked "to
+  /// thank". Single-character words are excluded on purpose — letting 的
+  /// credit itself is what spread its rank over every reading it has.
+  final Map<String, int> compoundRank;
+
+  /// The one reading of a word that its frequency is taken to describe.
+  final Map<String, String> dominantReading;
+
+  /// Every reading the source lists for a word.
+  final Map<String, Set<String>> readings;
 
   final Map<String, int> wordLevel;
 
-  int? rankOf(String simplified, String key) =>
-      wordRank['$simplified|$key'] ??
-      (simplified.length == 1 ? characterRank['$simplified|$key'] : null);
+  /// How far a reading is pushed down when the word's rank cannot be pinned to
+  /// it. Big enough to lose to any real rank, small enough to still beat a
+  /// word carrying no rank at all.
+  static const _unattributable = 1 << 20;
 
-  int? levelOf(String simplified, String key) => wordLevel['$simplified|$key'];
+  /// Whether [key] is the reading a word's frequency actually describes.
+  ///
+  /// True for a word with only one reading, where there is nothing to confuse.
+  bool _earnedIt(String simplified, String key) =>
+      (readings[simplified]?.length ?? 0) <= 1 ||
+      dominantReading[simplified] == key;
+
+  int? rankOf(String simplified, String key) {
+    final word = wordRank['$simplified|$key'];
+    final evidence = simplified.length == 1
+        ? compoundRank['$simplified|$key']
+        : null;
+    if (_earnedIt(simplified, key)) return word ?? evidence;
+    // A reading the rank cannot be pinned to: take what its own compounds say
+    // if they say anything, and otherwise keep the rank but well demoted.
+    return evidence ?? (word == null ? null : word + _unattributable);
+  }
+
+  /// The HSK band, but only for the reading that earned it — 的 is HSK 1 as
+  /// `de5`, and labelling "bull's-eye" HSK 1 would be the same mistake as
+  /// ranking it first.
+  int? levelOf(String simplified, String key) =>
+      _earnedIt(simplified, key) ? wordLevel['$simplified|$key'] : null;
 }
 
 /// CC-CEDICT writes ü as `u:`; the HSK data writes it as ü. Without this the
@@ -274,8 +334,14 @@ Future<_Hsk> _loadHsk(String? input) async {
   final entries = jsonDecode(text) as List<dynamic>;
 
   final wordRank = <String, int>{};
-  final characterRank = <String, int>{};
+  final compoundRank = <String, int>{};
   final wordLevel = <String, int>{};
+  final readings = <String, Set<String>>{};
+
+  void keepLowest(Map<String, int> into, String key, int value) {
+    final existing = into[key];
+    if (existing == null || value < existing) into[key] = value;
+  }
 
   for (final entry in entries.cast<Map<String, dynamic>>()) {
     final rank = entry['frequency'];
@@ -299,22 +365,57 @@ Future<_Hsk> _loadHsk(String? input) async {
       if (numeric == null) continue;
       final reading = _normaliseReading(numeric);
 
-      void keepLowest(Map<String, int> into, String key, int value) {
-        final existing = into[key];
-        if (existing == null || value < existing) into[key] = value;
-      }
-
+      readings.putIfAbsent(word, () => <String>{}).add(reading);
       keepLowest(wordRank, '$word|$reading', rank);
       if (level > 0) keepLowest(wordLevel, '$word|$reading', level);
 
       final syllables = reading.split(' ');
       if (syllables.length != word.length) continue;
+      // Only a word of two or more characters may credit a character with a
+      // rank in a reading. Where the word is one character the reading is the
+      // very thing in doubt, and letting it vouch for itself is the bug this
+      // avoids.
+      if (word.length < 2) continue;
       for (var index = 0; index < syllables.length; index++) {
-        keepLowest(characterRank, '${word[index]}|${syllables[index]}', rank);
+        keepLowest(compoundRank, '${word[index]}|${syllables[index]}', rank);
       }
     }
   }
-  return _Hsk(wordRank, characterRank, wordLevel);
+
+  // Which reading a word's frequency describes. Compounds are the only
+  // reading-specific evidence the source offers, so the reading that turns up
+  // in the commonest compound takes it.
+  //
+  // A neutral tone on a single character counts as its own evidence: particles
+  // are common standing alone and hardly ever appear inside a compound, so 的
+  // and 了 would otherwise hand their rank to a rare reading that happens to
+  // be in one.
+  final dominantReading = <String, String>{};
+  for (final entry in readings.entries) {
+    final word = entry.key;
+    String? best;
+    var bestRank = 1 << 30;
+    for (final reading in entry.value) {
+      var score = compoundRank['$word|$reading'];
+      if (word.length == 1 && reading.endsWith('5')) {
+        final alone = wordRank['$word|$reading'];
+        if (alone != null && (score == null || alone < score)) score = alone;
+      }
+      if (score != null && score < bestRank) {
+        bestRank = score;
+        best = reading;
+      }
+    }
+    if (best != null) dominantReading[word] = best;
+  }
+
+  return _Hsk(
+    wordRank: wordRank,
+    compoundRank: compoundRank,
+    dominantReading: dominantReading,
+    readings: readings,
+    wordLevel: wordLevel,
+  );
 }
 
 Future<String> _fetch(String url) async {
