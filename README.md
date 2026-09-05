@@ -336,18 +336,26 @@ standing to its own rarest reading: 的 is rank 1 as `de5` and carried that into
 more than one reading shared a single rank this way.
 
 Nothing in the data says which reading a frequency describes, so it is inferred
-from the only reading-specific evidence there is — the compounds a character
-appears in:
+from two independent signals. A reading keeps the rank if **either** supports
+it — they fail on different words, and admitting one reading too many costs far
+less than stripping the right one:
 
-- The reading appearing in the **commonest compound of two or more characters**
-  takes the word's rank. A single-character word may no longer credit itself,
-  which is what spread the rank in the first place.
-- Any other reading falls back to **its own** compound evidence, and only if it
-  has none is the word's rank kept and heavily demoted, so it still outranks a
-  word with no rank at all.
-- A **neutral tone on a single character** counts as its own evidence.
-  Particles are common standing alone and hardly ever appear inside a compound,
-  so 的 and 了 would otherwise lose their rank to a rare reading that does.
+- **The commonest HSK compound of two or more characters.** A single-character
+  word may no longer credit itself, which is what spread the rank in the first
+  place.
+- **How many CC-CEDICT entries use the character in that reading.** Breadth
+  rather than frequency, and it catches what the first signal cannot see: 喝 is
+  common as `hē` but appears in compounds mostly as `hè`, so on the HSK signal
+  alone "to drink" lost its rank to "to shout".
+
+Neither signal can see a word that is common standing alone and absent from
+compounds, which is every grammatical particle, so a **neutral tone on a single
+character** vouches for itself — otherwise 的 and 了 hand their rank to a rare
+reading that does appear in one.
+
+A reading supported by neither falls back to its own compound evidence, and only
+where it has none is the word's rank kept and heavily demoted, so it still
+outranks a word carrying no rank at all.
 
 The HSK band is attributed the same way, so "bull's-eye" is no longer labelled
 HSK 1 either.
@@ -361,12 +369,15 @@ HSK 1 either.
 | `dī` | 的 "a taxi" | 低 "low" |
 | `là` | 落 "to leave out" | 辣 "hot (spicy)" |
 
-This moves the top candidate for 104 of 100,129 keys, every one of them a
-single syllable — which is where the ambiguity is. The residue is words whose
-two readings are *both* common: `cháng` now offers 常 rather than 长, and `chù`
-触 rather than 处. Both are defensible answers, and no constant can separate
-them from the 的 case, because the evidence that would is simply not in the
-data. Do not tune one to make a particular example look right.
+This moves the top candidate for 79 of 100,129 keys, every one a single
+syllable — which is where the ambiguity is. Characters sharing one rank across
+every reading fall from 94% to 14%.
+
+Each signal alone leaves regressions the other repairs, which is the whole
+argument for taking both: on the HSK signal alone `hē` offered "to shout" and
+`dū` offered 督, and on the CC-CEDICT signal alone `dōu` and `hái` lose their
+adverb readings. Measure any change to this against
+`test/translation/bundled_dictionary_test.dart`, which pins both kinds.
 
 ### The glosses themselves
 

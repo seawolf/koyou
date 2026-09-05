@@ -115,6 +115,11 @@ Two traps in that tool, both of which cost a common word once:
   off the readings that did not earn it. 的 is the commonest word in the
   language as `de5` and carried rank 1 into `di4` as well, offering "bull's-eye;
   target" to anyone typing `dì`. `docs/local-model.md` is what turned it up.
+  Which reading earned it is inferred from two signals — the commonest HSK
+  compound, and how many CC-CEDICT entries use the character in that reading —
+  and a reading keeps the rank if either supports it. Both are needed: alone,
+  the first loses 喝 "to drink" to "to shout", and the second loses the adverb
+  readings of 都 and 还. Do not simplify it to one.
 
 ## Conventions
 

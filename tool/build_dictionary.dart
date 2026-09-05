@@ -89,6 +89,15 @@ Future<void> main(List<String> arguments) async {
   var recoveredGlosses = 0;
   var ranked = 0;
 
+  // Parsed once, emitted once the readings have been settled: how often a
+  // character is used in a reading is itself evidence of which reading it is
+  // really used in, and that cannot be counted until every entry is read.
+  final usable =
+      <
+        ({String key, String simplified, String proper, List<String> glosses})
+      >[];
+  final cedictUses = <String, int>{};
+
   for (final line in lines) {
     if (line.startsWith('#') || line.trim().isEmpty) continue;
     final match = entryPattern.firstMatch(line);
@@ -127,23 +136,43 @@ Future<void> main(List<String> arguments) async {
     // unranked: `shi4` should not offer a newspaper before a verb.
     final proper = pinyin != pinyin.toLowerCase() ? 'p' : '-';
     final simplified = match.group(2)!;
-    final rank = hsk.rankOf(simplified, key);
+    usable.add((
+      key: key,
+      simplified: simplified,
+      proper: proper,
+      glosses: glosses,
+    ));
+
+    // Only words of two or more syllables count, for the same reason the HSK
+    // side excludes them: a single character cannot be evidence of its own
+    // reading.
+    final syllables = key.split(' ');
+    if (syllables.length < 2 || syllables.length != simplified.length) continue;
+    for (var index = 0; index < syllables.length; index++) {
+      final at = '${simplified[index]}|${syllables[index]}';
+      cedictUses[at] = (cedictUses[at] ?? 0) + 1;
+    }
+  }
+
+  hsk.resolveDominance(cedictUses);
+
+  for (final entry in usable) {
+    final rank = hsk.rankOf(entry.simplified, entry.key);
     if (rank != null) ranked++;
 
     shards
-        .putIfAbsent(key[0], () => <String>[])
+        .putIfAbsent(entry.key[0], () => <String>[])
         .add(
           [
-            key,
-            simplified,
-            proper,
+            entry.key,
+            entry.simplified,
+            entry.proper,
             rank?.toString() ?? '-',
-            hsk.levelOf(simplified, key)?.toString() ?? '-',
-            glosses.join('/'),
+            hsk.levelOf(entry.simplified, entry.key)?.toString() ?? '-',
+            entry.glosses.join('/'),
           ].join('\t'),
         );
   }
-
   final total = shards.values.fold<int>(0, (sum, rows) => sum + rows.length);
 
   // Refuse to publish an implausibly small build. Everything below this line
@@ -261,7 +290,6 @@ class _Hsk {
   _Hsk({
     required this.wordRank,
     required this.compoundRank,
-    required this.dominantReading,
     required this.readings,
     required this.wordLevel,
   });
@@ -284,8 +312,9 @@ class _Hsk {
   /// credit itself is what spread its rank over every reading it has.
   final Map<String, int> compoundRank;
 
-  /// The one reading of a word that its frequency is taken to describe.
-  final Map<String, String> dominantReading;
+  /// The readings of a word its frequency may describe, filled in by
+  /// [resolveDominance] once the whole of CC-CEDICT has been counted.
+  final Map<String, Set<String>> dominantReadings = {};
 
   /// Every reading the source lists for a word.
   final Map<String, Set<String>> readings;
@@ -302,7 +331,60 @@ class _Hsk {
   /// True for a word with only one reading, where there is nothing to confuse.
   bool _earnedIt(String simplified, String key) =>
       (readings[simplified]?.length ?? 0) <= 1 ||
-      dominantReading[simplified] == key;
+      (dominantReadings[simplified]?.contains(key) ?? false);
+
+  /// Works out which readings a word's frequency may describe, from two
+  /// independent signals. A reading counts if *either* supports it: they fail
+  /// on different words, and admitting one reading too many costs far less
+  /// than stripping the right one.
+  ///
+  /// - **The commonest HSK compound.** Sound for words that live inside other
+  ///   words, and blind to those that do not.
+  /// - **How many CC-CEDICT entries use the character in that reading**, in
+  ///   [cedictUses]. Breadth rather than frequency, which catches the words
+  ///   the first signal misses: 喝 is common as `he1` but almost only appears
+  ///   in compounds as `he4`, so on the HSK signal alone "to drink" lost its
+  ///   rank to "to shout".
+  ///
+  /// Neither can see a word that is common standing alone and absent from
+  /// compounds, which is every grammatical particle, so a neutral tone on a
+  /// single character vouches for itself.
+  void resolveDominance(Map<String, int> cedictUses) {
+    for (final entry in readings.entries) {
+      final word = entry.key;
+      final found = <String>{};
+
+      String? best;
+      var bestRank = 1 << 30;
+      for (final reading in entry.value) {
+        var score = compoundRank['$word|$reading'];
+        if (word.length == 1 && reading.endsWith('5')) {
+          final alone = wordRank['$word|$reading'];
+          if (alone != null && (score == null || alone < score)) score = alone;
+        }
+        if (score != null && score < bestRank) {
+          bestRank = score;
+          best = reading;
+        }
+      }
+      if (best != null) found.add(best);
+
+      if (word.length == 1) {
+        String? widest;
+        var mostUses = 0;
+        for (final reading in entry.value) {
+          final uses = cedictUses['$word|$reading'] ?? 0;
+          if (uses > mostUses) {
+            mostUses = uses;
+            widest = reading;
+          }
+        }
+        if (widest != null) found.add(widest);
+      }
+
+      if (found.isNotEmpty) dominantReadings[word] = found;
+    }
+  }
 
   int? rankOf(String simplified, String key) {
     final word = wordRank['$simplified|$key'];
@@ -382,37 +464,9 @@ Future<_Hsk> _loadHsk(String? input) async {
     }
   }
 
-  // Which reading a word's frequency describes. Compounds are the only
-  // reading-specific evidence the source offers, so the reading that turns up
-  // in the commonest compound takes it.
-  //
-  // A neutral tone on a single character counts as its own evidence: particles
-  // are common standing alone and hardly ever appear inside a compound, so 的
-  // and 了 would otherwise hand their rank to a rare reading that happens to
-  // be in one.
-  final dominantReading = <String, String>{};
-  for (final entry in readings.entries) {
-    final word = entry.key;
-    String? best;
-    var bestRank = 1 << 30;
-    for (final reading in entry.value) {
-      var score = compoundRank['$word|$reading'];
-      if (word.length == 1 && reading.endsWith('5')) {
-        final alone = wordRank['$word|$reading'];
-        if (alone != null && (score == null || alone < score)) score = alone;
-      }
-      if (score != null && score < bestRank) {
-        bestRank = score;
-        best = reading;
-      }
-    }
-    if (best != null) dominantReading[word] = best;
-  }
-
   return _Hsk(
     wordRank: wordRank,
     compoundRank: compoundRank,
-    dominantReading: dominantReading,
     readings: readings,
     wordLevel: wordLevel,
   );

@@ -112,6 +112,12 @@ void main() {
       'la4': '辣', // was 落, "to leave out"
       'ba4': '爸', // was 把, "handle"
       'di1': '低', // was 的, "a taxi; a cab"
+      // Common alone but rare inside compounds, so the HSK signal alone gave
+      // 喝 to hè "to shout" and 都 to the capital city.
+      'he1': '喝',
+      'du1': '都',
+      'chang2': '长',
+      'zhi1': '只',
     };
     for (final entry in byReading.entries) {
       final found = await dictionary.lookUp(entry.key);
