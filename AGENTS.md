@@ -121,6 +121,35 @@ Two traps in that tool, both of which cost a common word once:
   the first loses 喝 "to drink" to "to shout", and the second loses the adverb
   readings of 都 and 还. Do not simplify it to one.
 
+## Running the model tests
+
+Two suites are tagged off by default, because both need something the machine
+may not have. Neither is part of `flutter test`:
+
+```bash
+# the Ollama harness — a laptop check against a real model
+ollama serve & ollama pull qwen3.5:0.8b
+flutter test --tags ollama
+
+# the real shipping path: llama.cpp plus the real weights
+KOUYU_LLAMA_LIB=/path/to/libllama.dylib \
+KOUYU_LLAMA_MODEL=/path/to/Qwen3.5-0.8B-Q4_K_M.gguf \
+flutter test --tags llama
+```
+
+Two traps in there, both of which cost an afternoon:
+
+- **`flutter_test` replaces `HttpClient` with a mock that answers 400 to
+  everything**, so a test cannot reach the network by accident. Any test that
+  means to must set `HttpOverrides.global = null` first. Without it the Ollama
+  test decided Ollama was absent and skipped itself while Ollama was running —
+  a green suite that had checked nothing.
+- **A hand-built `libllama` must match the revision `llama_cpp_dart` pins**,
+  named in its README (currently tag `b10182`). Build HEAD instead and the
+  struct layout of `llama_model_params` differs, so the FFI call crashes the
+  isolate instead of failing cleanly. Android never hits this: the package
+  bundles a `libllama.so` built at the pin.
+
 ## Conventions
 
 - **Theme, not literals.** Colours and text styles come from

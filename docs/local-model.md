@@ -129,8 +129,8 @@ pinyin. It has to translate Chinese, and phones already do that.
 | ------- | ------- | --------- | ----- |
 | **ML Kit Translation** | Play-managed pack | Android, iOS | `google_mlkit_translation`; the same models as Google Translate offline |
 | **Apple Translation** | shared system model | iOS 18+ | free, on-device, shared across apps; SwiftUI-only API, so needs a platform channel |
-| **llama.cpp + Qwen3.5-0.8B** | ~0.55GB | Android, iOS, desktop | what was measured here; full control of the prompt |
-| Ollama | — | dev only | already written, in the tests |
+| **llama.cpp + Qwen3.5-0.8B** | 533MB | Android, iOS, desktop | **built** — `on_device_backend_native.dart` |
+| Ollama | — | dev only | the harness, in the tests |
 
 The platform APIs are the cheap ones and should be tried first: no bundle cost,
 no first-run download to manage, and the models are shared system-wide. Neither
@@ -153,12 +153,41 @@ and no branch to maintain — and the dictionary is a genuinely useful product o
 its own. Web is also the fastest place to check anything visual. Dropping a
 target later is easy; the loop is worth more than the tidiness.
 
-### The seams already exist
+### What is built
 
-`CompositeTranslator` takes another `Translator` at the end of the chain, and
-the screen's 250ms "looking it up…" delay already covers multi-second latency.
-`ModelTranslator` is written and tested but not yet wired into `app.dart`,
-because there is no backend that exists on a phone yet.
+`llama_cpp_dart` (MIT) is the plugin: it bundles a matching `libllama.so` for
+`arm64-v8a` as a native asset, so the APK carries llama.cpp with no Gradle
+edits, and it runs generation in its own isolate so the keyboard never stalls.
+`flutter_llama` was rejected — it is under the NativeMind **NONC** licence,
+which is non-commercial, and pub.dev reports that as "unknown".
+
+`ModelTranslator` sits **between** the phrasebook and the dictionary, not at
+the end of the chain. The first answer wins and the dictionary always has one —
+a word-by-word gloss — so anything behind it would never be reached.
+
+Measured on this Mac against the real library and the real weights, every one
+correct and about 180ms each:
+
+| Chinese | English |
+| ------- | ------- |
+| 我卖书 / 我买书 | I sell books / I bought a book |
+| 他吻我 / 他问我 | He kissed me / He asked me |
+| 你叫什么名字 | What is your name? |
+| 这个多少钱 | How much does that cost? |
+| 请慢一点说 | Please speak more slowly. |
+
+Two things had to be worked out to get there, and both are in the code:
+
+- **Qwen3.5 is a hybrid reasoning model and its own chat template turns
+  thinking on.** Every token of the budget went inside `<think>` and the reply
+  was literally `<think>`. The prompt therefore writes Qwen's markup by hand
+  with an already-closed empty think block, which makes it answer instead. This
+  is what `think: false` was doing for the Ollama harness.
+- **The native library has to match the llama.cpp revision the package pins**
+  (tag `b10182`). Built against HEAD instead, the layout of
+  `llama_model_params` differs and the FFI call crashes the isolate rather than
+  failing cleanly. Android is immune, since the bundled `libllama.so` is built
+  at the pin; only a desktop build has to be told.
 
 ### What the development machine can actually do
 

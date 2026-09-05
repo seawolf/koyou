@@ -13,6 +13,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  llama_cpp_dart: ^0.9.0-dev.12
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
