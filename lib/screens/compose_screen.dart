@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../pinyin/composition.dart';
@@ -26,10 +28,12 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Composition _composition = const Composition();
   Translation? _translation;
 
-  /// Which initial-bank arrangement is in use. Switchable from the app bar so
-  /// the two can be compared by feel, which is the only way to choose between
-  /// them — see the note in `keyboard_layout.dart`.
-  KeyArrangement _arrangement = KeyArrangement.articulatory;
+  /// Which initial-bank arrangement is in use, switchable from the app bar.
+  ///
+  /// QWERTY by default: it is what most hands already know, and its three rows
+  /// fit a landscape phone, where articulation order's seven shorter rows have
+  /// to scroll.
+  KeyArrangement _arrangement = KeyArrangement.qwerty;
 
   void _edit(Composition next) {
     setState(() => _composition = next);
@@ -80,37 +84,77 @@ class _ComposeScreenState extends State<ComposeScreen> {
         ],
       ),
       body: LayoutBuilder(
-        builder: (context, constraints) => Column(
-          children: [
-            // A fixed height, deliberately not sized to its content. Letting
-            // the reading area grow with the text moved the whole keyboard up
-            // the moment the first syllable landed, so keys shifted under the
-            // user's finger mid-word. Long text scrolls inside instead.
-            SizedBox(
-              height: (constraints.maxHeight * 0.3).clamp(140.0, 260.0),
-              child: _Reading(
-                composition: _composition,
-                translation: _translation,
+        builder: (context, constraints) {
+          final landscape = constraints.maxWidth > constraints.maxHeight;
+          final reading = _Reading(
+            composition: _composition,
+            translation: _translation,
+          );
+          // The keyboard's height now follows the stage on show rather than a
+          // fixed fraction, which is safe because it is anchored to the far
+          // edge: text appearing in the reading area cannot move it, since the
+          // reading area takes what is left rather than the other way round.
+          final keyboard = PinyinKeyboard(
+            fillHeight: landscape,
+            arrangement: _arrangement,
+            draft: _composition.draft,
+            onInitial: (initial) => _edit(_composition.withInitial(initial)),
+            onRime: (rime) => _edit(_composition.withRime(rime)),
+            onTone: (tone) => _edit(_composition.commit(tone)),
+            onBackTo: (stage) => _edit(_composition.backTo(stage)),
+            onSpace: () => _edit(_composition.space()),
+            onBackspace: () => _edit(_composition.backspace()),
+          );
+
+          if (landscape) {
+            return Row(
+              children: [
+                Expanded(child: reading),
+                SizedBox(width: _panelWidth(constraints), child: keyboard),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              Expanded(child: reading),
+              // Capped so a tall bank cannot squeeze the reading area away; it
+              // scrolls beyond this.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: constraints.maxHeight * 0.75,
+                ),
+                child: keyboard,
               ),
-            ),
-            Expanded(
-              child: PinyinKeyboard(
-                arrangement: _arrangement,
-                draft: _composition.draft,
-                onInitial: (initial) =>
-                    _edit(_composition.withInitial(initial)),
-                onRime: (rime) => _edit(_composition.withRime(rime)),
-                onTone: (tone) => _edit(_composition.commit(tone)),
-                onBackTo: (stage) => _edit(_composition.backTo(stage)),
-                onSpace: () => _edit(_composition.space()),
-                onBackspace: () => _edit(_composition.backspace()),
-              ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
+}
+
+/// How wide the landscape side panel needs to be.
+///
+/// A quarter of the screen is the aim, but the widest bank sets a floor: a ten
+/// column row squeezed into 25% of a landscape phone gives 13pt keys, which is
+/// not a keyboard. So it takes the wider of the two, capped so the panel can
+/// never take more than half the screen.
+double _panelWidth(BoxConstraints constraints) {
+  const minimumKeyWidth = 28.0;
+  const gap = 6.0;
+  const padding = 24.0;
+
+  // The widest row of any arrangement, not just the one on show, so switching
+  // arrangement never resizes the panel and shifts everything in it.
+  final columns = [
+    for (final arrangement in KeyArrangement.values)
+      for (final row in initialRows(arrangement)) row.length,
+  ].reduce(math.max);
+  final needed = columns * minimumKeyWidth + (columns - 1) * gap + padding;
+
+  return math
+      .max(constraints.maxWidth * 0.25, needed)
+      .clamp(0.0, constraints.maxWidth * 0.5);
 }
 
 /// What has been typed, and what it means.

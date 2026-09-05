@@ -97,14 +97,18 @@ const Map<KeyArrangement, List<List<String>>> _rowLabels = {
     // Everything that starts without an initial consonant.
     ['y', 'w', 'a', 'o', 'e'],
   ],
-  // A true QWERTY, 10/9/7, every single letter at its own home position. Only
-  // u, i and v are unused by pinyin, and there are exactly three digraphs to
-  // put in them: ch takes v, beside the c it extends; zh and sh take u and i,
-  // where they at least sit beside each other.
+  // QWERTY order, with each digraph immediately after the letter it extends.
+  //
+  // Ordered rather than positioned: inserting the digraphs inline pushes
+  // everything after them out of its true column, so `d` is no longer under
+  // QWERTY's `d`. That is the deliberate trade — a digraph sitting where a hand
+  // reaches for its base letter is worth more on a 26-key thumb layout than
+  // exact columns, which only pay off for ten-finger touch typing. `u`, `i` and
+  // `v` simply drop out; pinyin never starts a syllable with them.
   KeyArrangement.qwerty: [
-    ['q', 'w', 'e', 'r', 't', 'y', 'zh', 'sh', 'o', 'p'],
-    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-    ['z', 'x', 'c', 'ch', 'b', 'n', 'm'],
+    ['q', 'w', 'e', 'r', 't', 'y', 'o', 'p'],
+    ['a', 's', 'sh', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+    ['z', 'zh', 'x', 'c', 'ch', 'b', 'n', 'm'],
   ],
 };
 

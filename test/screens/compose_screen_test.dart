@@ -4,6 +4,7 @@ import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
+import 'package:kouyu/widgets/pinyin_keyboard.dart';
 
 /// Records what it was asked, so the screen's use of the seam can be checked
 /// without depending on any translator's contents.
@@ -113,7 +114,6 @@ void main() {
     tester,
   ) async {
     await pump(tester);
-    await tap(tester, 'arrangement');
 
     // Home row, first key — where a hand reaching for `a` actually lands.
     final a = tester.getRect(find.byKey(const Key('initial-a')));
@@ -297,16 +297,16 @@ void main() {
     testWidgets('the app bar switches between them', (tester) async {
       await pump(tester);
 
-      // Grouped by articulation to begin with: zh sits with ch sh r.
+      // QWERTY to begin with.
       expect(find.byKey(const Key('initial-zh')), findsOneWidget);
-      final grouped = tester.getRect(find.byKey(const Key('initial-b')));
-
-      await tap(tester, 'arrangement');
       final qwerty = tester.getRect(find.byKey(const Key('initial-b')));
-      expect(qwerty, isNot(grouped), reason: 'b did not move');
 
       await tap(tester, 'arrangement');
-      expect(tester.getRect(find.byKey(const Key('initial-b'))), grouped);
+      final grouped = tester.getRect(find.byKey(const Key('initial-b')));
+      expect(grouped, isNot(qwerty), reason: 'b did not move');
+
+      await tap(tester, 'arrangement');
+      expect(tester.getRect(find.byKey(const Key('initial-b'))), qwerty);
     });
 
     // Both banks must be fully usable without scrolling: a key you have to
@@ -346,7 +346,6 @@ void main() {
     // is exactly the confusion this app should not be creating.
     testWidgets('digraph keys stay on one line at phone width', (tester) async {
       await pump(tester);
-      await tap(tester, 'arrangement');
 
       double labelHeight(String label) => tester
           .getRect(
@@ -379,6 +378,180 @@ void main() {
       await tap(tester, 'rime-i');
       await tap(tester, 'tone-3');
       expect(composed(tester), 'nǐ');
+    });
+  });
+
+  group('layout', () {
+    Rect keyboard(WidgetTester tester) =>
+        tester.getRect(find.byType(PinyinKeyboard));
+
+    // The keyboard is anchored to the bottom edge and only as tall as the stage
+    // on show, so everything left over goes to what has been typed.
+    testWidgets('portrait pins the keyboard to the bottom, height per stage', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final heights = <double>[];
+      for (final step in [null, 'initial-n', 'rime-i']) {
+        if (step != null) await tap(tester, step);
+        expect(
+          keyboard(tester).bottom,
+          moreOrLessEquals(812, epsilon: 1),
+          reason: 'came away from the bottom edge at ${step ?? "the start"}',
+        );
+        expect(keyboard(tester).width, moreOrLessEquals(375, epsilon: 1));
+        heights.add(keyboard(tester).height);
+      }
+
+      // Fluid, not fixed: the three stages need different amounts of room.
+      expect(heights.toSet().length, greaterThan(1), reason: '$heights');
+      // And none of them may swallow the screen.
+      for (final height in heights) {
+        expect(height, lessThanOrEqualTo(812 * 0.75 + 1));
+      }
+    });
+
+    testWidgets('landscape puts a full-height panel down the right', (
+      tester,
+    ) async {
+      await pump(tester, size: const Size(812, 375));
+
+      final panel = keyboard(tester);
+      expect(panel.right, moreOrLessEquals(812, epsilon: 1));
+      expect(panel.bottom, moreOrLessEquals(375, epsilon: 1));
+      // Full height, below the app bar.
+      expect(panel.top, lessThan(60));
+      // A panel, not the whole screen.
+      expect(panel.left, greaterThan(812 * 0.3));
+      expect(panel.width, lessThanOrEqualTo(812 * 0.5 + 1));
+
+      // The controls travel with it rather than staying on the main area.
+      expect(
+        tester.getRect(find.byKey(const Key('space'))).left,
+        greaterThanOrEqualTo(panel.left),
+      );
+    });
+
+    // Only the default arrangement is held to this. Articulation order's seven
+    // short rows need about 400pt of height, and a landscape phone leaves 319
+    // under the app bar, so it scrolls there — the price of grouping by sound
+    // rather than by keyboard shape.
+    testWidgets('every key stays reachable in landscape', (tester) async {
+      await pump(tester, size: const Size(812, 375));
+
+      for (final row in initialRows(KeyArrangement.qwerty)) {
+        for (final initial in row) {
+          final rect = tester.getRect(
+            find.byKey(Key('initial-${initial.label}')),
+          );
+          expect(rect.right, lessThanOrEqualTo(812), reason: initial.label);
+          expect(rect.bottom, lessThanOrEqualTo(375), reason: initial.label);
+          expect(rect.width, greaterThanOrEqualTo(26), reason: initial.label);
+        }
+      }
+    });
+  });
+
+  // The plus is the mnemonic: reaching for "the falling one" means reaching
+  // down, rather than counting to the fourth item in a row.
+  group('the tone grid', () {
+    Rect toneKey(WidgetTester tester, int tone) =>
+        tester.getRect(find.byKey(Key('tone-$tone')));
+
+    /// Reaches the tone stage. Takes the rime because landscape's rime bank
+    /// scrolls, and a tap on a key below the fold silently misses.
+    Future<void> openToneStage(WidgetTester tester, {String rime = 'i'}) async {
+      await tap(tester, 'initial-n');
+      await tap(tester, 'rime-$rime');
+    }
+
+    testWidgets('lays the five tones out in the shape of their pitch', (
+      tester,
+    ) async {
+      await pump(tester);
+      await openToneStage(tester);
+
+      final dipping = toneKey(tester, 3).center;
+
+      expect(
+        toneKey(tester, 2).center.dy,
+        lessThan(dipping.dy),
+        reason: 'the rising tone is not above',
+      );
+      expect(
+        toneKey(tester, 4).center.dy,
+        greaterThan(dipping.dy),
+        reason: 'the falling tone is not below',
+      );
+      expect(
+        toneKey(tester, 1).center.dx,
+        lessThan(dipping.dx),
+        reason: 'the level tone is not to the left',
+      );
+      expect(
+        toneKey(tester, 5).center.dx,
+        greaterThan(dipping.dx),
+        reason: 'the neutral tone is not to the right',
+      );
+
+      // Rising and falling share the middle column; level and neutral share
+      // the middle row. Otherwise it is a scatter, not a plus.
+      for (final tone in [2, 4]) {
+        expect(toneKey(tester, tone).center.dx, moreOrLessEquals(dipping.dx));
+      }
+      for (final tone in [1, 5]) {
+        expect(toneKey(tester, tone).center.dy, moreOrLessEquals(dipping.dy));
+      }
+    });
+
+    testWidgets('sits centred in the keyboard', (tester) async {
+      await pump(tester);
+      await openToneStage(tester);
+
+      final panel = tester.getRect(find.byType(PinyinKeyboard));
+      expect(
+        toneKey(tester, 3).center.dx,
+        moreOrLessEquals(panel.center.dx, epsilon: 1),
+      );
+    });
+
+    // The falling tone was falling off the bottom of the landscape panel: the
+    // grid was inside a scroll view, so it sized its cells from the width alone
+    // and asked for more height than a landscape phone has.
+    testWidgets('fits the landscape panel, all five of it', (tester) async {
+      await pump(tester, size: const Size(812, 375));
+      await openToneStage(tester, rime: 'a');
+
+      final panel = tester.getRect(find.byType(PinyinKeyboard));
+      for (var tone = 1; tone <= 5; tone++) {
+        final rect = toneKey(tester, tone);
+        expect(
+          rect.bottom,
+          lessThanOrEqualTo(panel.bottom),
+          reason: 'tone $tone runs below the panel',
+        );
+        expect(rect.top, greaterThanOrEqualTo(panel.top), reason: 'tone $tone');
+        expect(
+          rect.left,
+          greaterThanOrEqualTo(panel.left),
+          reason: 'tone $tone',
+        );
+        expect(
+          rect.right,
+          lessThanOrEqualTo(panel.right),
+          reason: 'tone $tone',
+        );
+        // Still a usable target after shrinking to fit.
+        expect(rect.width, greaterThanOrEqualTo(44), reason: 'tone $tone');
+      }
+    });
+
+    testWidgets('still commits the right tone', (tester) async {
+      await pump(tester);
+      await openToneStage(tester);
+      await tap(tester, 'tone-4');
+      expect(composed(tester), 'nì');
     });
   });
 

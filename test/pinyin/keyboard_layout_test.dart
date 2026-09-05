@@ -257,50 +257,54 @@ void main() {
       }
     });
 
-    // The whole claim of the QWERTY arrangement: every letter is where a hand
-    // already expects it. Checked position by position against a real keyboard.
-    test('qwerty puts every single letter at its own home position', () {
-      const qwerty = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
-      // The only three letters pinyin never starts a syllable with — and
-      // exactly as many as there are digraphs needing a home.
-      const unusedByPinyin = {'u', 'i', 'v'};
-
-      final rows = initialRows(KeyArrangement.qwerty);
-      expect(rows.length, qwerty.length);
-
-      for (var row = 0; row < rows.length; row++) {
-        final letters = qwerty[row].split('');
-        expect(
-          rows[row].length,
-          letters.length,
-          reason: 'row $row is not keyboard width',
-        );
-        for (var column = 0; column < letters.length; column++) {
-          final label = rows[row][column].label;
-          if (unusedByPinyin.contains(letters[column])) {
-            expect(
-              label.length,
-              2,
-              reason: '${letters[column]} should hold a digraph, got $label',
-            );
-          } else {
-            expect(label, letters[column], reason: '${letters[column]} moved');
-          }
-        }
-      }
-    });
-
-    test('qwerty keeps the digraphs somewhere defensible', () {
+    // Each digraph sits immediately after the letter it extends, which is the
+    // point of this arrangement.
+    test('qwerty puts each digraph right after its base letter', () {
       final flat = [
         for (final row in initialRows(KeyArrangement.qwerty))
           for (final key in row) key.label,
       ];
-      int at(String label) => flat.indexOf(label);
+      for (final pair in [('zh', 'z'), ('sh', 's'), ('ch', 'c')]) {
+        expect(
+          flat.indexOf(pair.$1) - flat.indexOf(pair.$2),
+          1,
+          reason: '${pair.$1} does not follow ${pair.$2}',
+        );
+      }
+    });
 
-      // ch takes v, immediately after the c it extends.
-      expect(at('ch') - at('c'), 1);
-      // zh and sh take u and i, so they at least sit together.
-      expect((at('zh') - at('sh')).abs(), 1);
+    // Columns shift because the digraphs are inline, but the reading order of
+    // each row is still its QWERTY row, minus the letters pinyin never uses.
+    test('qwerty keeps each row in keyboard order', () {
+      const withoutDigraphs = ['qwertyop', 'asdfghjkl', 'zxcbnm'];
+      final rows = initialRows(KeyArrangement.qwerty);
+      expect(rows.length, withoutDigraphs.length);
+
+      for (var row = 0; row < rows.length; row++) {
+        final letters = [
+          for (final key in rows[row])
+            if (key.label.length == 1) key.label,
+        ].join();
+        expect(
+          letters,
+          withoutDigraphs[row],
+          reason: 'row $row is out of order',
+        );
+      }
+    });
+
+    test('qwerty drops only the letters pinyin never starts with', () {
+      final present = {
+        for (final row in initialRows(KeyArrangement.qwerty))
+          for (final key in row)
+            if (key.label.length == 1) key.label,
+      };
+      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+      expect(alphabet.split('').where((letter) => !present.contains(letter)), [
+        'i',
+        'u',
+        'v',
+      ]);
     });
 
     test('articulation order keeps the confusable sets together', () {

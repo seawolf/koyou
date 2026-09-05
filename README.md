@@ -29,6 +29,10 @@ Staging it buys three things a full keyboard can't:
   `w` the key says `o`, because the syllable is written `wo`.
 - **Tones as words, not marks.** The last stage shows `nī ní nǐ nì ni` — a
   choice you can hear, rather than `ˉ ˊ ˇ ˋ ·`, a puzzle you have to decode.
+  They are laid out as a plus, each in the direction its pitch moves: rising
+  above, falling below, the dipping third tone in the middle, the level first
+  to the left, the unstressed neutral to the right. Reaching for "the falling
+  one" means reaching down, rather than counting to the fourth of five.
 - **Grouped by vowel.** The rimes come in a line per starting vowel —
   `a ai ao an ang`, then `ou ong`, then `e ei en eng` — so the bank is scanned
   rather than searched.
@@ -44,15 +48,44 @@ which is how pinyin is taught: `b p m f`, `d t n l`, `g k h`, `j q x`,
 an app about pronunciation. Seven rows of three or four, so the keys are wide
 (64pt on a 375pt phone) but the bank is tall and most of each row is empty.
 
-**QWERTY order** puts every initial at its own home position — a real 10/9/7
-keyboard, not an approximation of one. The fit is exact: `u`, `i` and `v` are
-the only letters pinyin never starts a syllable with, and there are exactly
-three digraphs needing a home. `ch` takes `v`, right beside the `c` it extends;
-`zh` and `sh` take `u` and `i`, where they at least sit together. Three rows of
-about 30pt keys, which is what iOS's own top row gives.
+**QWERTY order** — the default — puts each initial in its familiar place, with
+every digraph immediately after the letter it extends: `s sh`, `z zh`, `c ch`.
+`u`, `i` and `v` drop out, since pinyin never starts a syllable with them, so
+the rows come out 8/10/8.
+
+It is QWERTY-*ordered* rather than QWERTY-*positioned*: inserting the digraphs
+inline pushes everything after them out of its true column, so `d` no longer
+sits under QWERTY's `d`. That is a deliberate trade — a digraph where a hand
+reaches for its base letter is worth more on a 26-key thumb layout than exact
+columns, which only pay off for ten-finger touch typing. Reading order within
+each row is still QWERTY's.
 
 Only the initial bank varies. The rime bank cannot follow: its keys are `iang`,
 `ueng`, `üe` — units with no position on a Latin keyboard.
+
+Articulation order needs seven shorter rows, which is about 400pt of height. A
+landscape phone leaves 319 below the app bar, so it scrolls there; QWERTY's
+three rows fit. That is part of why QWERTY is the default.
+
+### How the screen divides
+
+**Portrait**: the keyboard is full width, anchored to the bottom edge, and only
+as tall as the stage on show needs — the initial bank is three rows, the tone
+grid is a plus. Everything left over goes to what has been typed.
+
+Sizing it to content is safe *because* it is anchored to the far edge. When the
+reading area was the one sized to content, text appearing in it shoved the whole
+keyboard up by 44pt mid-word; now the reading area takes what is left, so typing
+cannot move a key.
+
+**Landscape**: a full-height panel down the right, controls included, with the
+reading area beside it.
+
+A quarter of the width was the aim, but a ten-column row in 25% of a landscape
+phone gives 13pt keys, which is not a keyboard. The panel takes the wider of
+25% and what the widest bank actually needs — about 44% on a 812pt screen —
+capped at half. It is sized from the widest arrangement rather than the one on
+show, so switching arrangement never shifts everything in the panel.
 
 ### Starting a syllable that has no consonant
 

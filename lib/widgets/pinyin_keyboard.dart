@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
+import '../pinyin/syllable.dart';
 import '../pinyin/tone.dart';
 
 /// A pinyin keyboard that asks for one piece of a syllable at a time.
@@ -27,7 +30,15 @@ class PinyinKeyboard extends StatelessWidget {
     required this.onSpace,
     required this.onBackspace,
     this.arrangement = KeyArrangement.articulatory,
+    this.fillHeight = false,
   });
+
+  /// Whether to fill the height given, or shrink to fit the bank on show.
+  ///
+  /// Portrait shrinks: the keyboard sits on the bottom edge and is only as tall
+  /// as the current stage needs, leaving everything else to what has been
+  /// typed. Landscape fills, because there it is a full-height side panel.
+  final bool fillHeight;
 
   /// How the initial bank is laid out. Only affects that one bank — the rime
   /// keys are multi-letter and have no keyboard positions to borrow.
@@ -51,21 +62,36 @@ class PinyinKeyboard extends StatelessWidget {
         top: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
           children: [
             _Trail(draft: draft, onBackTo: onBackTo),
             const Divider(height: 1),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                child: _bank(context),
-              ),
-            ),
+            // Flexible rather than Expanded when shrinking: the bank takes the
+            // height it needs and no more, but still scrolls if given less.
+            if (fillHeight)
+              Expanded(child: _bankArea(context))
+            else
+              Flexible(child: _bankArea(context)),
             const Divider(height: 1),
             _controls(context),
           ],
         ),
       ),
     );
+  }
+
+  /// The bank, scrolling only where scrolling makes sense.
+  ///
+  /// The tone grid is deliberately excluded: a scroll view offers its child
+  /// unbounded height, so the grid sized its cells from the width alone and ran
+  /// off the bottom of a landscape panel, taking the falling tone with it. It
+  /// needs to see the height it actually has.
+  Widget _bankArea(BuildContext context) {
+    const padding = EdgeInsets.all(12);
+    if (draft.stage == ComposeStage.tone) {
+      return Padding(padding: padding, child: _bank(context));
+    }
+    return SingleChildScrollView(padding: padding, child: _bank(context));
   }
 
   Widget _bank(BuildContext context) => switch (draft.stage) {
@@ -106,20 +132,9 @@ class PinyinKeyboard extends StatelessWidget {
     ),
     // The candidates, not abstract tone marks: the choice is between words the
     // learner can hear, which is the point of a tone-first app.
-    ComposeStage.tone => Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final candidate in draft.candidates)
-          _Key(
-            id: 'tone-${candidate.tone.number}',
-            label: candidate.written,
-            semanticsLabel:
-                '${candidate.written}, tone ${candidate.tone.number}',
-            prominent: true,
-            onPressed: () => onTone(candidate.tone),
-          ),
-      ],
+    ComposeStage.tone => _ToneGrid(
+      candidates: draft.candidates,
+      onTone: onTone,
     ),
   };
 
@@ -384,5 +399,83 @@ class _Control extends StatelessWidget {
         child: Icon(icon, semanticLabel: label),
       ),
     );
+  }
+}
+
+/// The five tones laid out as a plus, each in the direction its pitch moves.
+///
+/// Rising above, falling below, the dipping third tone in the middle, the level
+/// first tone to the left and the unstressed neutral to the right. The shape is
+/// the mnemonic: a learner reaching for "the falling one" reaches down, which is
+/// more use than picking the fourth item from a row of five.
+class _ToneGrid extends StatelessWidget {
+  const _ToneGrid({required this.candidates, required this.onTone});
+
+  final List<Syllable> candidates;
+  final ValueChanged<Tone> onTone;
+
+  static const double _gap = 8;
+
+  /// Row and column for each tone, in a three-by-three grid.
+  static const Map<Tone, (int, int)> _positions = {
+    Tone.second: (0, 1),
+    Tone.first: (1, 0),
+    Tone.third: (1, 1),
+    Tone.neutral: (1, 2),
+    Tone.fourth: (2, 1),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Square cells, sized so the plus fits the narrower of the two axes.
+        final byWidth = (constraints.maxWidth - _gap * 2) / 3;
+        final byHeight = constraints.maxHeight.isFinite
+            ? (constraints.maxHeight - _gap * 2) / 3
+            : byWidth;
+        final cell = math.min(byWidth, byHeight).clamp(48.0, 104.0);
+
+        // Centred across the panel, but only as tall as the plus: the rows
+        // centre themselves horizontally rather than the whole grid being
+        // centred, which would make it claim the full height it was offered.
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: _gap,
+          children: [
+            for (var row = 0; row < 3; row++)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: _gap,
+                children: [
+                  for (var column = 0; column < 3; column++)
+                    SizedBox(
+                      width: cell,
+                      height: cell,
+                      child: _cell(row, column),
+                    ),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget? _cell(int row, int column) {
+    for (final entry in _positions.entries) {
+      if (entry.value != (row, column)) continue;
+      final candidate = candidates.firstWhere(
+        (syllable) => syllable.tone == entry.key,
+      );
+      return _Key(
+        id: 'tone-${candidate.tone.number}',
+        label: candidate.written,
+        semanticsLabel: '${candidate.written}, tone ${candidate.tone.number}',
+        prominent: true,
+        onPressed: () => onTone(candidate.tone),
+      );
+    }
+    return null;
   }
 }
