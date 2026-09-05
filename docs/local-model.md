@@ -6,14 +6,18 @@ shipped yet, and no model integration exists in the code.
 
 ## The short version
 
-**The dictionary stays.** A model on its own cannot read tone-marked pinyin
-reliably — it flattens tones, which is the one thing this app exists to teach.
-Given the dictionary's tone-exact candidates it does much better. So the model
-goes *behind* the dictionary and is grounded by it, not in front of it.
+**The dictionary stays, and does the hard half.** It resolves tone-marked
+pinyin to characters — deterministic, tone-exact, and now correctly ranked. The
+model only translates Chinese to English, which is what it is actually good at.
 
-The open question is size. 0.8B is below the floor, 2B is stable but misses
-first-lesson question forms, and the 27B that gets everything right is not
-shippable.
+On that split, **a 0.8B model is enough**: 17 of 19 learner sentences correct,
+byte-identical across repeated runs, in under a tenth of a second. On-device is
+viable on current hardware, and by a wider margin than expected.
+
+This reverses an earlier conclusion in this same document. The first round had
+0.8B unusable and 2B weak, but both were being asked the wrong question — and
+the dictionary underneath them was handing out 前 for "money". Neither was a
+limit of the model.
 
 ## The models
 
@@ -66,45 +70,47 @@ Long instructions crowd out small models.
 
 ### Size, on realistic learner sentences
 
-Fifteen ordinary phrases through the bridge:
+Nineteen ordinary phrases, three architectures, measured after the ranking fix:
 
-| | 0.8B | 2B | 27B |
-| --- | --- | --- | --- |
-| accuracy | unusable | ~10/15 | 15/15 |
-| identical across 3 runs | no | **12/12** | — |
-| median latency | 0.15s | 0.25s | 3.5s |
+| architecture | 0.8B | 2B | 27B |
+| ------------ | ---- | -- | --- |
+| bare pinyin | unusable | fails tones | 9/10 |
+| pinyin + gloss candidates | unstable | ~10/15 | 15/15 |
+| **dictionary → characters → model** | **17/19** | **17/19** | — |
+| identical across 3 runs | **19/19** | **19/19** | — |
+| median latency (M4 Pro) | **0.09s** | 0.16s | 3.5s |
 
-0.8B is not slow, it is unstable: `nǐ hǎo shìjiè` gave "Hello world" under one
-prompt and **"You are good"** under another, and it twice echoed the prompt
-back instead of answering. 2B fixed that completely — byte-identical output
-across repeated runs — but fails on question forms, which is the worst place
-for a speaking app to fail:
+0.8B and 2B score the same, and **both remaining failures are the same
+dictionary error, not a model error**: `qián` resolves to 前 (rank 127) rather
+than 钱 (218), so "how much money" becomes "how much did this come from". The
+model translates faithfully what it is given.
 
-| typed | 2B | 27B |
-| ----- | -- | --- |
-| `nǐ jiào shénme míngzi` | "You asked what name." | "What is your name?" |
-| `zhè ge duōshǎo qián` | "This much money is needed." | "How much does this cost?" |
-| `nǐ jīnnián duō dà` | "You think this year is big." | "How old are you this year?" |
-| `qǐng màn yīdiǎn shuō` | "Please ask for a small amount of time." | "Please speak a little more slowly." |
+0.8B's instability — `nǐ hǎo shìjiè` flipping between "Hello world" and "You are
+good" — is gone. It was a symptom of the harder task, not of the size.
 
-The pattern is that 2B reads the candidate list word by word and misses the
-construction. Which suggests the gloss list itself is part of the problem.
+### Why characters first wins
 
-### Characters first, and why it is not yet an answer
+Characters are what the model was trained on. Glosses are not, and a small model
+reads a per-word gloss list literally — which is why 2B rendered
+`nǐ jiào shénme míngzi` as "You asked what name" rather than "What is your
+name?". Given 你叫什么名字 it answers correctly at 0.8B.
 
-Letting the dictionary resolve to characters and translating those fixed
-exactly those grammar failures — "Please speak more slowly", "Let's go
-together" — because characters are what the model was trained on. It brought
-two new problems:
+Two failure modes had to be designed out, and both were mine rather than the
+model's:
 
-- **The model answers the question instead of translating it.** 你叫什么名字 →
-  "My name is Qwen3.5." A prompt problem, and probably fixable.
-- **The dictionary picks the wrong character.** `qián` resolved to 前 (before)
-  rather than 钱 (money). Not fixable by prompting — see the ranking trap in
-  [AGENTS.md](../AGENTS.md), which this test is what uncovered.
+- **It answered the questions instead of translating them** — 你叫什么名字 came
+  back as "My name is Qwen3.5." Fixed by telling it the input is always text to
+  translate and never a conversation to join, with a translated question as the
+  worked example.
+- **It parroted whatever the prompt explained.** Offering alternative readings,
+  and describing them in the system prompt, produced "I am British. I could
+  instead be a maid". Removing the explanation was not enough — the models copy
+  any candidate list they are shown.
 
-Characters-first is the most promising shape, but it cannot be evaluated until
-the ranking is right, because it depends entirely on the dictionary's top pick.
+Offering a close runner-up inline (`他没有前|钱`) was tried to fix the 钱 case
+and made things worse: both models then translated *both* options, giving "I
+bought a book and lost it" for 我买书|输. **Hand the model one reading and let
+it translate.** Any change here needs measuring, not reasoning about.
 
 ## What integration would cost
 
@@ -130,23 +136,27 @@ native plugin makes it a hard stop.
 
 ## Suggested tiers
 
-The dictionary is tier zero and always on, because it is what makes the tones
-survive:
+The dictionary is tier zero and always on: it is what makes the tones survive,
+what resolves the characters, and the only tier that works on the web.
 
-| tier | adds | size | offline / web |
-| ---- | ---- | ---- | ------------- |
+| tier | adds | weights | offline / web |
+| ---- | ---- | ------- | ------------- |
 | Dictionary only | — | 7.5MB | yes, everywhere |
-| Mid (proposed default) | Qwen3.5-2B | ~1.3GB | native only |
-| Full | Qwen3.5-4B | ~2.7GB | 8GB devices |
+| **Light (proposed default)** | Qwen3.5-0.8B | ~0.55GB | native only |
+| Full | Qwen3.5-2B | ~1.3GB | native only |
 
-There is deliberately no 0.8B tier. A 0.55GB model that answers "You are good"
-to `nǐ hǎo` is worse than the 7.5MB asset it would sit in front of.
+0.8B is now the proposed default rather than something to leave out. It matches
+2B on this set at a third of the weights and twice the speed, which on a phone
+is the difference between a feature that fits and one that does not. 4B is not
+worth pursuing until 0.8B is shown to fail at something.
 
 ## Open questions
 
-- Does 4B close the question-form gap 2B misses? Untested, and it decides
-  whether this is a mid-range feature or a high-end one.
-- Does characters-first beat the gloss bridge once the ranking is fixed?
-- How much does a real Q4_K_M build lose against the higher-precision tags
-  tested here?
-- What does any of this cost on an actual phone, as opposed to an M4 Pro?
+- **`qián` → 前.** Both remaining failures, and purely dictionary-side. Neither
+  extra pinyin nor inline alternatives fixed it; a phrase-level entry would,
+  but 多少钱 is not one in CC-CEDICT.
+- How much does a real Q4_K_M build lose? These numbers come from Ollama's
+  default tags, which are higher precision than the weights an app would ship.
+- What does it cost on an actual phone rather than an M4 Pro?
+- Nineteen sentences is a small set, chosen by me. It should grow before any of
+  this is taken as settled.

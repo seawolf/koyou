@@ -412,17 +412,17 @@ which want the characters the dictionary now resolves:
 - **A translation service.** Needs a network, an API key that cannot live in a
   client, and therefore a proxy — real infrastructure for a learner who is
   often offline.
-- **An on-device model.** The appealing one, and now measured rather than
-  guessed at — see [docs/local-model.md](docs/local-model.md). The guess above
-  was right: fed bare pinyin, even a 27B model loses half of a set of tone
-  minimal pairs, rendering `tā wěn wǒ` ("he kissed me") as "held my hand".
-  Fluent nonsense, confidently. Handing the model the dictionary's tone-exact
-  candidates fixes it, which is why the dictionary stays in front rather than
-  being replaced. What is not settled is size: 0.8B is unusable, 2B is stable
-  but misses first-lesson question forms, and the 27B that gets everything
-  right does not fit a phone. The platform models — Apple's Foundation Models,
-  Gemini Nano — are free of bundle cost, but availability varies and the pinyin
-  problem is the same one.
+- **An on-device model.** Measured rather than guessed at — see
+  [docs/local-model.md](docs/local-model.md). Fed bare pinyin even a 27B model
+  loses half of a set of tone minimal pairs, rendering `tā wěn wǒ` ("he kissed
+  me") as "held my hand": fluent nonsense, confidently. But that is the wrong
+  question to ask it. Let the dictionary resolve the pinyin to characters, which
+  it does deterministically and tone-exactly, and the model has only to
+  translate Chinese — at which point **0.8B is enough**, scoring 17 of 19
+  learner sentences, identically across repeated runs, in under a tenth of a
+  second. The dictionary is not replaced by a model; it is what makes one work
+  at a size that fits a phone. The platform models — Apple's Foundation Models,
+  Gemini Nano — are free of bundle cost, and the same split applies to them.
 
 ## The app icon
 
