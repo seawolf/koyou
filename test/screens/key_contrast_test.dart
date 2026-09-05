@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
+import 'package:kouyu/widgets/blinking_cursor.dart';
 
 class _SilentTranslator implements Translator {
   @override
@@ -20,6 +21,9 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
+  // The caret's repeating animation would stop pumpAndSettle returning.
+  setUp(() => BlinkingCursor.debugStatic = true);
+
   /// The colour the label is actually painted in, resolved rather than as
   /// written: the bug this guards against was a style whose colour was
   /// inherited from the text theme and silently beat the button's own.

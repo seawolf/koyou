@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../translation/translator.dart';
+import '../widgets/blinking_cursor.dart';
 import '../widgets/pinyin_keyboard.dart';
 
 /// Compose Mandarin as pinyin with tone marks, and see what it means.
@@ -198,6 +199,16 @@ class _Reading extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.55,
                       ),
+                    ),
+                  ),
+                  // The space a pending word break stands for, which the text
+                  // itself does not carry.
+                  if (composition.hasPendingWordBreak)
+                    const TextSpan(text: ' '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: BlinkingCursor(
+                      height: theme.textTheme.displaySmall?.fontSize ?? 36,
                     ),
                   ),
                 ],

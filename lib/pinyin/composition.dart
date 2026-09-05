@@ -105,6 +105,15 @@ class Composition {
   /// [text] with the draft appended, for display while typing.
   String get preview => '$text$draftSuffix';
 
+  /// Whether a word break is waiting for its first syllable.
+  ///
+  /// True just after space. Nothing in [text] or [preview] shows it, because a
+  /// trailing space renders as nothing — which is why pressing space and then
+  /// starting the next syllable looks identical to forgetting to press it, and
+  /// `wǒài` is not `wǒ ài`. The reading area draws the gap explicitly instead.
+  bool get hasPendingWordBreak =>
+      text.isNotEmpty && words.last.isEmpty && draftSuffix.isEmpty;
+
   /// Chooses the starting point, and drops any rime already picked — the rimes
   /// on offer depend on the initial, so keeping one could leave a syllable that
   /// does not exist.

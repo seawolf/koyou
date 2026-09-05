@@ -36,6 +36,10 @@ Staging it buys three things a full keyboard can't:
 - **Grouped by vowel.** The rimes come in a line per starting vowel —
   `a ai ao an ang`, then `ou ong`, then `e ei en eng` — so the bank is scanned
   rather than searched.
+- **A caret marks where you are.** A trailing space renders as nothing, so
+  pressing space and then starting the next syllable looks identical to
+  forgetting to press it — and `wǒài` is not `wǒ ài`. A blinking caret sits at
+  the end of the text with the pending space drawn in front of it.
 
 ### Two arrangements of the initial bank
 

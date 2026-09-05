@@ -306,9 +306,9 @@ class _Key extends StatelessWidget {
       // Barely any horizontal padding: _Rows sets the width, and padding here
       // was eating almost all of it.
       padding: WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: prominent ? 14 : 4),
+        EdgeInsets.symmetric(horizontal: prominent ? 6 : 4),
       ),
-      minimumSize: WidgetStatePropertyAll(Size(prominent ? 72 : 44, 52)),
+      minimumSize: WidgetStatePropertyAll(Size(prominent ? 56 : 44, 52)),
     );
 
     return prominent
@@ -414,7 +414,12 @@ class _ToneGrid extends StatelessWidget {
   final List<Syllable> candidates;
   final ValueChanged<Tone> onTone;
 
-  static const double _gap = 8;
+  static const double _gap = 6;
+
+  /// Kept close to the other keys. These were allowed up to 104pt, which next
+  /// to a 52pt letter key read as a different kind of control altogether; a
+  /// little larger is enough to mark them as the ones that commit.
+  static const double _maxCell = 64;
 
   /// Row and column for each tone, in a three-by-three grid.
   static const Map<Tone, (int, int)> _positions = {
@@ -434,7 +439,7 @@ class _ToneGrid extends StatelessWidget {
         final byHeight = constraints.maxHeight.isFinite
             ? (constraints.maxHeight - _gap * 2) / 3
             : byWidth;
-        final cell = math.min(byWidth, byHeight).clamp(48.0, 104.0);
+        final cell = math.min(byWidth, byHeight).clamp(44.0, _maxCell);
 
         // Centred across the panel, but only as tall as the plus: the rows
         // centre themselves horizontally rather than the whole grid being

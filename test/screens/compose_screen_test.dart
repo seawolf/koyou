@@ -4,6 +4,7 @@ import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
+import 'package:kouyu/widgets/blinking_cursor.dart';
 import 'package:kouyu/widgets/pinyin_keyboard.dart';
 
 /// Records what it was asked, so the screen's use of the seam can be checked
@@ -20,6 +21,10 @@ class _RecordingTranslator implements Translator {
 }
 
 void main() {
+  // A repeating animation means pumpAndSettle never returns, so the caret is
+  // held still for every test except the one that checks it blinks.
+  setUp(() => BlinkingCursor.debugStatic = true);
+
   /// Pumps at phone size, which is what the keyboard is designed against. The
   /// default 800x600 test window is shorter than any phone and pushes the last
   /// row of the initial bank out of reach.
@@ -62,7 +67,9 @@ void main() {
   /// The composed line, read off the keyed rich text at the top of the screen.
   String composed(WidgetTester tester) {
     final text = tester.widget<Text>(find.byKey(const Key('composed')));
-    return text.textSpan!.toPlainText();
+    // Placeholders excluded: the caret is a WidgetSpan and would otherwise
+    // show up as U+FFFC in the middle of the pinyin.
+    return text.textSpan!.toPlainText(includePlaceholders: false);
   }
 
   testWidgets('opens on the initial bank', (tester) async {
@@ -505,6 +512,28 @@ void main() {
       }
     });
 
+    // These keys were allowed up to 104pt against a 52pt letter key, which read
+    // as a different kind of control rather than a bigger one.
+    testWidgets('stays close in size to the other keys', (tester) async {
+      await pump(tester);
+      final letter = tester.getRect(find.byKey(const Key('initial-n')));
+
+      await openToneStage(tester);
+      final tone = toneKey(tester, 3);
+
+      expect(
+        tone.height,
+        greaterThanOrEqualTo(letter.height),
+        reason: 'the committing keys should not be the smallest ones',
+      );
+      expect(
+        tone.height,
+        lessThanOrEqualTo(letter.height * 1.4),
+        reason: 'tone ${tone.height} against letter ${letter.height}',
+      );
+      expect(tone.width, lessThanOrEqualTo(letter.height * 1.4));
+    });
+
     testWidgets('sits centred in the keyboard', (tester) async {
       await pump(tester);
       await openToneStage(tester);
@@ -552,6 +581,76 @@ void main() {
       await openToneStage(tester);
       await tap(tester, 'tone-4');
       expect(composed(tester), 'nì');
+    });
+  });
+
+  // Pressing space and then starting the next syllable looked exactly like
+  // forgetting to press space, because a trailing space renders as nothing.
+  group('the caret', () {
+    testWidgets('marks the end of what has been typed', (tester) async {
+      await pump(tester);
+      // Nothing typed yet, so the prompt has the space instead.
+      expect(find.byType(BlinkingCursor), findsNothing);
+
+      await type(tester, 'w', 'o', 3);
+      expect(find.byType(BlinkingCursor), findsOneWidget);
+    });
+
+    testWidgets('shows the space once a word break is pending', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      expect(composed(tester), 'wǒ');
+
+      await tap(tester, 'space');
+      expect(
+        composed(tester),
+        'wǒ ',
+        reason: 'the pending break is not drawn, so wǒài looks like wǒ ài',
+      );
+
+      // And it is not drawn twice once the next syllable starts.
+      await tap(tester, 'initial-a');
+      await tap(tester, 'rime-ai');
+      expect(composed(tester), 'wǒ ai');
+    });
+
+    testWidgets('backspacing the break takes the space with it', (
+      tester,
+    ) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      expect(composed(tester), 'wǒ ');
+
+      await tap(tester, 'backspace');
+      expect(composed(tester), 'wǒ');
+    });
+
+    testWidgets('blinks', (tester) async {
+      // The one test that lets it run, so pumpAndSettle is off limits here.
+      BlinkingCursor.debugStatic = false;
+      await pump(tester);
+      for (final id in ['initial-n', 'rime-i', 'tone-3']) {
+        await tester.tap(find.byKey(Key(id)));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+
+      double opacity() => tester
+          .widget<Opacity>(
+            find
+                .descendant(
+                  of: find.byType(BlinkingCursor),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          )
+          .opacity;
+
+      final shown = opacity();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(opacity(), isNot(shown), reason: 'the caret never went off');
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(opacity(), shown, reason: 'the caret never came back');
     });
   });
 
