@@ -111,7 +111,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
               KeyArrangement.qwerty => 'Switch to articulation order',
             },
           ),
-          // CC-CEDICT is CC BY-SA 4.0, which asks for attribution. This is it.
+          // CC-CEDICT asks for attribution under CC BY-SA 4.0. This is it.
           IconButton(
             key: const Key('credits'),
             onPressed: () => showAboutDialog(
@@ -123,7 +123,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
                   'free Chinese-English dictionary published by MDBG.\n\n'
                   'Used under the Creative Commons Attribution-ShareAlike 4.0 '
                   'International licence.\n'
-                  'https://creativecommons.org/licenses/by-sa/4.0/',
+                  'https://creativecommons.org/licenses/by-sa/4.0/\n\n'
+                  'Word frequency and HSK levels from '
+                  'complete-hsk-vocabulary, copyright Yanis Zafirópulos, used '
+                  'under the MIT licence.',
                 ),
               ],
             ),
@@ -309,6 +312,17 @@ class _Reading extends StatelessWidget {
                 ].join(' · '),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            if (translation.hskLevel != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'HSK ${translation.hskLevel}',
+                  key: const Key('hsk-level'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
           ],

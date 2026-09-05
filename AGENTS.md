@@ -91,11 +91,24 @@ All of the above come from `tool/generate_icons.sh`. Change the geometry
 variables at the top of that script and re-run it.
 
 - `assets/dictionary/*.tsv` and `assets/dictionary/LICENCE` come from
-  `tool/build_dictionary.dart`, which transforms the CC-CEDICT export. Change
-  the filtering there and re-run it; never edit a shard.
+  `tool/build_dictionary.dart`, which joins the CC-CEDICT export with HSK
+  frequency data. Change the filtering there and re-run it; never edit a shard.
 
-CC-CEDICT is CC BY-SA 4.0. The generated shards carry the same licence and the
-app credits it under the ⓘ button. Keep that credit if you touch the app bar.
+CC-CEDICT is CC BY-SA 4.0 and the HSK data is MIT. The generated shards carry
+both notices and the app credits them under the ⓘ button. Keep that credit if
+you touch the app bar.
+
+Two traps in that tool, both of which cost a common word once:
+
+- **Do not drop a gloss because it mentions a character.** 你 is glossed "you
+  (informal, as opposed to courteous 您[nin2])", and discarding such glosses
+  discarded the commonest word for "you". Remove the bracketed aside, keep the
+  gloss.
+- **Join HSK ranks on the word *and its reading*.** 解 is common as `jiě` and
+  rare as `xiè`; ranking the rare reading by the common one put "acrobatic
+  display" ahead of "to thank" for `xiè`. And CC-CEDICT writes ü as `u:` where
+  the HSK data writes `ü`, so the join needs normalising or it silently misses
+  every ü word.
 
 ## Conventions
 

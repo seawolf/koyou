@@ -45,6 +45,7 @@ class Translation {
     this.text, {
     this.wordByWord = false,
     this.uncertain = false,
+    this.hskLevel,
   });
 
   final String text;
@@ -62,6 +63,13 @@ class Translation {
   /// Pretending to have picked the right one would be worse than saying so.
   final bool uncertain;
 
+  /// The HSK band of the word being offered, 1 being the most elementary, or
+  /// null when the word is outside the syllabus or the answer spans several.
+  ///
+  /// Worth showing: it tells a learner whether what they typed is core
+  /// vocabulary or something they have wandered into.
+  final int? hskLevel;
+
   @override
   String toString() => text;
 
@@ -70,10 +78,11 @@ class Translation {
       other is Translation &&
       other.text == text &&
       other.wordByWord == wordByWord &&
-      other.uncertain == uncertain;
+      other.uncertain == uncertain &&
+      other.hskLevel == hskLevel;
 
   @override
-  int get hashCode => Object.hash(text, wordByWord, uncertain);
+  int get hashCode => Object.hash(text, wordByWord, uncertain, hskLevel);
 }
 
 /// Turns composed pinyin into English.

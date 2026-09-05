@@ -24,7 +24,13 @@ class DictionaryTranslator implements Translator {
 
     final whole = await dictionary.lookUp(request.key);
     if (whole.isNotEmpty) {
-      return Translation(_describe(whole), uncertain: whole.length > 1);
+      return Translation(
+        _describe(whole),
+        uncertain: _isAmbiguous(whole),
+        // Taken from the word offered first, not from whichever entry happens
+        // to carry a band.
+        hskLevel: whole.first.hskLevel,
+      );
     }
 
     final keys = request.wordKeys;
@@ -36,7 +42,7 @@ class DictionaryTranslator implements Translator {
       final entries = await dictionary.lookUp(key);
       if (entries.isEmpty) return null;
       glosses.add(_describe(entries));
-      uncertain |= entries.length > 1;
+      uncertain |= _isAmbiguous(entries);
     }
     return Translation(
       glosses.join(' · '),
@@ -49,6 +55,23 @@ class DictionaryTranslator implements Translator {
   ///
   /// Only the first gloss per candidate: an ambiguous syllable can match forty
   /// words, and a wall of every sense of each is less use than a short list.
-  String _describe(List<DictionaryEntry> entries) =>
-      entries.take(candidates).map((entry) => entry.glosses.first).join(' / ');
+  ///
+  /// One entry per word, too. CC-CEDICT sometimes splits a word's senses across
+  /// entries — `ni3` has two for 你 — and "you / you / doubtful" reads as three
+  /// answers when it is two.
+  /// Whether these are several different words, rather than one word whose
+  /// senses CC-CEDICT split across separate entries.
+  bool _isAmbiguous(List<DictionaryEntry> entries) =>
+      entries.map((entry) => entry.simplified).toSet().length > 1;
+
+  String _describe(List<DictionaryEntry> entries) {
+    final seen = <String>{};
+    final glosses = <String>[];
+    for (final entry in entries) {
+      if (!seen.add(entry.simplified)) continue;
+      glosses.add(entry.glosses.first);
+      if (glosses.length == candidates) break;
+    }
+    return glosses.join(' / ');
+  }
 }

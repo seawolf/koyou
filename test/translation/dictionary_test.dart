@@ -19,19 +19,23 @@ Dictionary fakeDictionary(Map<String, List<String>> shards) => Dictionary(
 );
 
 void main() {
+  // key, word, proper noun, frequency rank, HSK band, glosses.
   final dictionary = fakeDictionary({
     'n': [
-      'ni3\t你\t-\tyou',
-      'ni3\t拟\t-\tto plan to/to draft',
-      'ni3 hao3\t你好\t-\thello; hi',
-      'nu:3\t女\t-\tfemale/woman/daughter',
+      'ni3\t拟\t-\t10399\t7\tto plan to/to draft',
+      'ni3\t你\t-\t5\t1\tyou',
+      'ni3\t你\t-\t5\t1\tyou, a second entry for the same word',
+      'ni3\t柅\t-\t-\t-\t(tree)',
+      'ni3 hao3\t你好\t-\t131\t1\thello; hi',
+      'nu:3\t女\t-\t256\t1\tfemale/woman/daughter',
     ],
-    'h': ['hao3\t好\t-\tgood/appropriate'],
+    'h': ['hao3\t好\t-\t20\t1\tgood/appropriate'],
     's': [
-      'shi4 jie4\t世界\t-\tworld',
-      'shi4\t是\t-\tto be',
-      'shi4\t世\t-\tlife/age',
-      'shi4\t視界報\tp\ta newspaper',
+      'shi4 jie4\t世界\t-\t238\t3\tworld',
+      'shi4\t世\t-\t238\t-\tlife/age',
+      'shi4\t是\t-\t4\t1\tto be',
+      'shi4\t視界報\tp\t-\t-\ta newspaper',
+      'shi4\t仕\t-\t-\t-\tto serve as an official',
     ],
   });
 
@@ -49,9 +53,25 @@ void main() {
       expect(entries.single.glosses.first, 'female');
     });
 
-    test('returns every homophone, names last', () async {
+    // The whole point of the frequency data: CC-CEDICT lists forty words for
+    // `shi4` in no useful order, and 是 is the fourth commonest word in
+    // Mandarin. Without a rank the lookup offered "life".
+    test('puts the commonest word first', () async {
       final entries = await dictionary.lookUp('shi4');
-      expect(entries.length, 3);
+      expect(entries.first.simplified, '是');
+      expect(entries.first.rank, 4);
+      expect(entries.first.hskLevel, 1);
+    });
+
+    test('puts unranked words after ranked ones', () async {
+      final entries = await dictionary.lookUp('shi4');
+      final firstUnranked = entries.indexWhere((entry) => entry.rank == null);
+      final lastRanked = entries.lastIndexWhere((entry) => entry.rank != null);
+      expect(lastRanked, lessThan(firstUnranked));
+    });
+
+    test('breaks ties among the unranked by demoting names', () async {
+      final entries = await dictionary.lookUp('shi4');
       expect(
         entries.last.properNoun,
         isTrue,
@@ -86,7 +106,7 @@ void main() {
       final counted = Dictionary(
         loadShard: (letter) async {
           reads++;
-          return 'ni3\t你\t-\tyou';
+          return 'ni3\t你\t-\t5\t1\tyou';
         },
       );
       expect(reads, 0, reason: 'constructing it hit the assets');
@@ -100,7 +120,7 @@ void main() {
       final counted = Dictionary(
         loadShard: (letter) async {
           reads++;
-          return 'ni3\t你\t-\tyou';
+          return 'ni3\t你\t-\t5\t1\tyou';
         },
       );
       await counted.lookUp('ni3');
@@ -118,14 +138,16 @@ void main() {
       final oneWord = TranslationRequest([
         [syllable('sh', 'i', Tone.fourth), syllable('j', 'ie', Tone.fourth)],
       ]);
-      expect(await translator.translate(oneWord), const Translation('world'));
+      final asOneWord = await translator.translate(oneWord);
+      expect(asOneWord!.text, 'world');
+      expect(asOneWord.hskLevel, 3, reason: 'the HSK band should come through');
 
       // And typed as two, which is still one dictionary entry.
       final twoWords = TranslationRequest([
         [syllable('sh', 'i', Tone.fourth)],
         [syllable('j', 'ie', Tone.fourth)],
       ]);
-      expect(await translator.translate(twoWords), const Translation('world'));
+      expect((await translator.translate(twoWords))!.text, 'world');
     });
 
     test(
@@ -151,9 +173,20 @@ void main() {
         ]);
         final result = await translator.translate(request);
         expect(result!.uncertain, isTrue);
-        expect(result.text, 'to be / life / a newspaper');
+        // Commonest first, and only as many as are worth reading.
+        expect(result.text, 'to be / life / to serve as an official');
       },
     );
+
+    // CC-CEDICT splits some words' senses over several entries, and 你 is one.
+    // "you / you / to plan to" reads as three answers when it is two.
+    test('offers each word once, however many entries it has', () async {
+      final request = TranslationRequest([
+        [syllable('n', 'i', Tone.third)],
+      ]);
+      final result = await translator.translate(request);
+      expect(result!.text, 'you / to plan to / (tree)');
+    });
 
     test('is certain when the pinyin is unambiguous', () async {
       final request = TranslationRequest([
@@ -185,7 +218,7 @@ void main() {
         DictionaryTranslator(dictionary),
       ]);
       final result = await chain.translate(request);
-      expect(result!.text, 'you / to plan to');
+      expect(result!.text, 'you / to plan to / (tree)');
     });
 
     test('returns null when nobody has an answer', () async {

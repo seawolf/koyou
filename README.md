@@ -189,18 +189,19 @@ the thing that lets you call one.
 
 ### How ambiguous is pinyin, exactly
 
-Measured over the 109,000 entries shipped here:
+Measured over the 115,304 entries shipped here:
 
-| key | keys | resolve to one word | average words per key |
-| --- | ---- | ------------------- | --------------------- |
-| 1 syllable | 1,303 | 16.8% | 7.8 |
-| 2 syllables | 51,088 | 91.0% | 1.1 |
-| 3 or more | 42,116 | 99.4% | 1.0 |
+| key | keys | resolve to one word | words per key | has a frequency rank |
+| --- | ---- | ------------------- | ------------- | -------------------- |
+| 1 syllable | 1,314 | 16.7% | 8.0 | 86.8% |
+| 2 syllables | 52,324 | 90.8% | 1.1 | 16.5% |
+| 3 or more | 46,491 | 99.3% | 1.0 | 2.4% |
 
 So a dictionary is reliable for words and set phrases, and cannot be for lone
-syllables. `shì` matches forty words. The app says so rather than guessing:
-where the pinyin is ambiguous it lists candidates and labels them "several
-words sound like this".
+syllables — `shì` matches forty words. Two things make that workable: ambiguous
+answers are labelled "several words sound like this" rather than presented as
+fact, and candidates are ordered by frequency, which exists for 87% of exactly
+the one-syllable keys that need it.
 
 ### What is here
 
@@ -223,8 +224,8 @@ while `Syllable.numbered` hands over `wan3 an1` for free.
 
 ### The dictionary
 
-CC-CEDICT, 109,000 entries over 23 shards by first letter, about 6.4MB. Shards
-are parsed on demand and kept, so a lookup touches one file of at most 550KB
+CC-CEDICT, 115,304 entries over 23 shards by first letter, about 7.5MB. Shards
+are parsed on demand and kept, so a lookup touches one file of at most 650KB
 rather than holding the lot in memory.
 
 Regenerate with:
@@ -234,26 +235,109 @@ dart run tool/build_dictionary.dart
 ```
 
 The build drops what this app cannot use: 758 entries keyed on something the
-keyboard cannot type, and 15,230 whose only glosses were cross-references to
-other entries — meaningless without the characters they point at, which this
-app does not show. Characters are kept in the data even though nothing displays
-them, because they are the bridge to any translation service worth calling.
+keyboard cannot type, and 8,923 left with no usable gloss once pure
+cross-references are removed. Characters are kept in the data even though
+nothing displays them, because they are the bridge to any translation service
+worth calling.
 
-**Known weakness: candidate ordering.** CC-CEDICT carries no frequency data, so
-nothing here reliably puts 有 ahead of 黝 for `you3`. Ordering only demotes
-names and forms marked `(literary)` or `(archaic)`; a gloss-count heuristic was
-tried and measured worse. Typing `shì` lists "life / matter / to serve as an
-official" and misses 是, the commonest of them; `xiè` gives "obscene / used in
-old names / to unload" and misses 谢, "to thank". The fix is a frequency or HSK
-ordering layer, which needs one more small data source, and it is the
-highest-value thing left to do here.
+### When it loads
+
+Nothing at startup. Shards are read on the first lookup that needs one, so the
+dictionary cannot slow a cold start — there are tests on both halves of that.
+
+Measured against the real assets, from local files:
+
+| | |
+| --- | --- |
+| Largest shard cold (`s`, 650KB) | ~25ms |
+| All 22 shards | ~110ms |
+| Repeat lookup in a loaded shard | 0.4ms |
+
+Which is why there is no spinner: at 25ms it would be motion for its own sake,
+and an indeterminate one never stops animating. The screen instead says
+"looking it up…" if a lookup passes 250ms, chosen to be longer than one ever
+takes locally so it only appears in the case it is for — the web, where a shard
+is an HTTP fetch with no upper bound.
+
+Caching is handled at every level that matters, and none of it is the app's
+job. Parsed shards are kept for the session. On a device the shards are files
+inside the bundle, so there is nothing to download and only the parse remains.
+On the web the browser caches the fetch.
+
+Startup cost, incidentally, is Flutter's own: about 2.1MB of `main.dart.js` plus
+several MB of CanvasKit before the first frame, which dwarfs any shard.
+
+### Serving the web build
+
+`flutter run -d web-server` sends no `cache-control`, no `etag`, and no
+compression even when the client offers gzip, so local testing is the worst case
+by a wide margin. Configure the real host to compress and cache
+`assets/assets/dictionary/`; the shards are tab-separated text and more than
+halve:
+
+| | uncompressed | gzipped |
+| --- | --- | --- |
+| Largest shard | 650KB | ~270KB |
+| All shards | 7.5MB | ~3.2MB |
+
+### Ordering the candidates
+
+CC-CEDICT carries no frequency data, so on its own it cannot tell 是 from 世 and
+listed the forty words for `shì` in whatever order they happened to sort.
+Frequency ranks and HSK bands come from
+[complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary)
+(MIT), joined on the word *and its reading*.
+
+Both halves of that join are needed:
+
+- **Word and reading**, not the word alone: 解 is common as `jiě` and rare as
+  `xiè`, and crediting the second reading with the first's rank is how
+  "acrobatic display" came to outrank "to thank".
+- **Character within a word**: 谢 is not HSK vocabulary on its own, but 谢谢 is
+  and is common, so a character earns a rank from the commonest word containing
+  it *in the same reading*.
+
+CC-CEDICT writes ü as `u:` where the HSK data writes `ü`; without normalising,
+the join silently misses every ü word.
+
+What it fixed, each a word from a first lesson:
+
+| typing | before | after |
+| ------ | ------ | ----- |
+| `nǐ` | 拟 "doubtful" | 你 "you" |
+| `shì` | 世 "life" | 是 "to be" |
+| `yǒu` | 卣 "wine container" | 有 "to have" |
+| `xiè` | 亵 "obscene" | 谢 "to thank" |
+| `ài` | 僾 "indistinct" | 爱 "affection" |
+
+A gloss-count heuristic was tried first and measured worse than no ordering at
+all: it surfaced 势 for `shì` and 黝 for `yǒu`.
+
+Where a word is in the HSK syllabus its band is shown, so a learner can see
+whether what they typed is core vocabulary.
+
+### The glosses themselves
+
+CC-CEDICT glosses often point at other entries: 你 is glossed "you (informal, as
+opposed to courteous 您[nin2])". The first build dropped any gloss containing a
+character, on the grounds that this app does not show characters — **which threw
+away 你, the commonest word for "you", altogether.**
+
+Now a bracketed aside containing a reference is removed whole, leaving "you".
+Stripping only the characters left subjectless prose, and a gloss left dangling
+on "variant of" or "(from)" is dropped instead. That recovers about 9,400
+glosses and 6,900 entries.
 
 ### Licence
 
 CC-CEDICT is published by MDBG under
-[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The generated
-assets carry the same licence — see `assets/dictionary/LICENCE` — and the app
-credits it under the ⓘ button in the app bar.
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); the frequency
+and HSK data is MIT licensed, copyright Yanis Zafirópulos. The generated assets
+carry both notices — see `assets/dictionary/LICENCE` — and the app credits them
+under the ⓘ button in the app bar.
+
+Regenerating needs both sources. `tool/build_dictionary.dart` fetches them
+unless given `--input` and `--hsk`.
 
 ### What is not here
 

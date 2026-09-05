@@ -7,6 +7,8 @@ class DictionaryEntry {
     required this.simplified,
     required this.glosses,
     required this.properNoun,
+    this.rank,
+    this.hskLevel,
   });
 
   final String key;
@@ -24,20 +26,38 @@ class DictionaryEntry {
   /// Whether CC-CEDICT capitalised the pinyin, which marks a name.
   final bool properNoun;
 
-  /// Rough obscurity, for ordering candidates.
+  /// How common the word is: 1 is the commonest in Mandarin, and null means it
+  /// falls outside the HSK vocabulary altogether.
   ///
-  /// A weak signal, and known to be weak: CC-CEDICT carries no frequency data,
-  /// so there is nothing here that reliably puts `有` ahead of `黝` for `you3`.
-  /// It does at least push names and forms marked `(literary)`, `(archaic)` or
-  /// `(bound form)` below plain ones.
-  int get obscurity =>
+  /// This is what makes a pinyin lookup useful at all. CC-CEDICT lists forty
+  /// words for `shi4` in no meaningful order, so without a rank the answer
+  /// offered was whichever sorted first — "life", where the learner almost
+  /// certainly meant 是, "to be", the fourth commonest word in the language.
+  final int? rank;
+
+  /// HSK band, 1 being the most elementary, or null if the word is not in it.
+  final int? hskLevel;
+
+  /// Order among candidates for the same pinyin: commonest first, unranked
+  /// words after them, and among those, names and forms marked `(literary)` or
+  /// `(bound form)` last.
+  int compareForDisplay(DictionaryEntry other) {
+    final mine = rank ?? _unranked;
+    final theirs = other.rank ?? _unranked;
+    if (mine != theirs) return mine.compareTo(theirs);
+    return _tieBreak.compareTo(other._tieBreak);
+  }
+
+  static const _unranked = 1 << 30;
+
+  int get _tieBreak =>
       (properNoun ? 2 : 0) + (glosses.first.startsWith('(') ? 1 : 0);
 }
 
 /// The CC-CEDICT lookup, read from the sharded assets.
 ///
 /// Sharded by the key's first letter and parsed on demand, so a lookup touches
-/// one file of at most about 550KB rather than holding 109,000 entries in
+/// one file of at most about 650KB rather than holding 115,000 entries in
 /// memory. Loaded shards are kept, since a learner keeps returning to the same
 /// handful of letters.
 class Dictionary {
@@ -62,7 +82,7 @@ class Dictionary {
     final shard = await _shard(key[0]);
     final entries = shard[key];
     if (entries == null) return const [];
-    return entries.toList()..sort((a, b) => a.obscurity.compareTo(b.obscurity));
+    return entries.toList()..sort((a, b) => a.compareForDisplay(b));
   }
 
   Future<Map<String, List<DictionaryEntry>>> _shard(String letter) async {
@@ -86,7 +106,7 @@ class Dictionary {
     for (final line in contents.split('\n')) {
       if (line.isEmpty) continue;
       final fields = line.split('\t');
-      if (fields.length < 4) continue;
+      if (fields.length < 6) continue;
       shard
           .putIfAbsent(fields[0], () => [])
           .add(
@@ -94,7 +114,9 @@ class Dictionary {
               key: fields[0],
               simplified: fields[1],
               properNoun: fields[2] == 'p',
-              glosses: fields[3].split('/'),
+              rank: int.tryParse(fields[3]),
+              hskLevel: int.tryParse(fields[4]),
+              glosses: fields[5].split('/'),
             ),
           );
     }
