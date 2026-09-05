@@ -112,27 +112,76 @@ and made things worse: both models then translated *both* options, giving "I
 bought a book and lost it" for 我买书|输. **Hand the model one reading and let
 it translate.** Any change here needs measuring, not reasoning about.
 
-## What integration would cost
+## What ships on a phone
 
-- **Package.** `llama_cpp_dart` (MIT) covers Android, iOS, macOS, Windows and
-  Linux, and runs inference in an isolate so the UI never blocks. It ships **no
-  prebuilt binaries** — llama.cpp has to be compiled per platform.
-- **Delivery.** Google Play caps the base AAB download at 200MB, so the weights
-  cannot ship inside the app; they are a first-run download. Apple deprecated
-  On-Demand Resources in iOS 27, so the current route there is Background
-  Assets.
-- **Web gets nothing.** The package is native-only. The web build keeps the
-  dictionary, which is a good reason not to demote it to a fallback.
-- **The seams already exist.** `CompositeTranslator` takes another `Translator`
-  at the end of the chain, and the screen's 250ms "looking it up…" delay
-  already covers multi-second latency.
+Ollama is a development harness, not a shipping path — nothing on a phone runs
+an HTTP model server. It earns its place by letting the pipeline be tested
+against a real model on a laptop; `OllamaBackend` therefore lives in the test
+file, not in `lib/`.
 
-### The blocker to clear first
+What replaces it is a [`TranslationBackend`](../lib/translation/translation_backend.dart),
+whose whole job is Chinese in, English out. **That narrowing is the important
+consequence of the characters-first design**: the thing behind the seam no
+longer has to be a language model at all, because it no longer has to read
+pinyin. It has to translate Chinese, and phones already do that.
 
-None of this can be built or tested on the current development machine. There
-is no full Xcode (Command Line Tools only), and CocoaPods, the Android SDK,
-cmake and ninja are all absent. Web-only development has hidden this so far; a
-native plugin makes it a hard stop.
+| backend | weights | platforms | notes |
+| ------- | ------- | --------- | ----- |
+| **ML Kit Translation** | Play-managed pack | Android, iOS | `google_mlkit_translation`; the same models as Google Translate offline |
+| **Apple Translation** | shared system model | iOS 18+ | free, on-device, shared across apps; SwiftUI-only API, so needs a platform channel |
+| **llama.cpp + Qwen3.5-0.8B** | ~0.55GB | Android, iOS, desktop | what was measured here; full control of the prompt |
+| Ollama | — | dev only | already written, in the tests |
+
+The platform APIs are the cheap ones and should be tried first: no bundle cost,
+no first-run download to manage, and the models are shared system-wide. Neither
+is measured yet, and dedicated translation models may well beat a general 0.8B
+model on short sentences — but they give no prompt control, and the two prompt
+failures above show how much of the quality here came from prompt shape. **The
+0.8B numbers in this document are the bar a platform backend has to clear.**
+
+If a model does ship instead, the weights cannot ride along inside the app:
+Google Play caps the base AAB download at 200MB and the release APK is already
+48MB. That makes it a first-run download. Apple deprecated On-Demand Resources
+in iOS 27, so Background Assets is the route there.
+
+### Web keeps the dictionary
+
+No backend runs on the web, and that is a reason to keep the web target rather
+than drop it. `TranslationBackend.translate` returns null when there is nothing
+to offer, so the web build falls through to the dictionary with no code removed
+and no branch to maintain — and the dictionary is a genuinely useful product on
+its own. Web is also the fastest place to check anything visual. Dropping a
+target later is easy; the loop is worth more than the tidiness.
+
+### The seams already exist
+
+`CompositeTranslator` takes another `Translator` at the end of the chain, and
+the screen's 250ms "looking it up…" delay already covers multi-second latency.
+`ModelTranslator` is written and tested but not yet wired into `app.dart`,
+because there is no backend that exists on a phone yet.
+
+### What the development machine can actually do
+
+An earlier draft of this document said none of this could be built here. That
+was wrong, and only ever true of iOS.
+
+- **Android builds and runs.** `flutter build apk` works — 21s for a debug
+  build, 32s for release, and the release APK is 48MB with the dictionary in
+  it. The SDK also carries NDK 28.2 and CMake 3.22.1, which is what a native
+  llama.cpp plugin needs, so even that route is open. A device is reachable
+  over wireless adb.
+- **Web builds**, and is the fastest loop for anything visual.
+- **iOS is the only blocked target.** There is no full Xcode — Command Line
+  Tools only — and CocoaPods is absent. Both need the user's password, so
+  neither can be fixed from a session here:
+
+```bash
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+sudo gem install cocoapods
+```
+
+`sdkmanager` is also missing, but nothing above needs it; it only matters for
+managing SDK packages from the command line.
 
 ## Suggested tiers
 
