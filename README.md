@@ -189,13 +189,16 @@ the thing that lets you call one.
 
 ### How ambiguous is pinyin, exactly
 
-Measured over the 115,304 entries shipped here:
+Measured over the 115,304 entries shipped here, counting *distinct words*
+rather than entries — CC-CEDICT splits some words' senses across several
+entries, so counting rows overstates the ambiguity and understates how often
+a key resolves cleanly:
 
 | key | keys | resolve to one word | words per key | has a frequency rank |
 | --- | ---- | ------------------- | ------------- | -------------------- |
-| 1 syllable | 1,314 | 16.7% | 8.0 | 86.8% |
-| 2 syllables | 52,324 | 90.8% | 1.1 | 16.5% |
-| 3 or more | 46,491 | 99.3% | 1.0 | 2.4% |
+| 1 syllable | 1,314 | 17.4% | 7.7 | 86.8% |
+| 2 syllables | 52,324 | 91.3% | 1.1 | 16.5% |
+| 3 or more | 46,491 | 99.4% | 1.0 | 2.4% |
 
 So a dictionary is reliable for words and set phrases, and cannot be for lone
 syllables — `shì` matches forty words. Two things make that workable: ambiguous
@@ -277,8 +280,8 @@ halve:
 
 | | uncompressed | gzipped |
 | --- | --- | --- |
-| Largest shard | 650KB | ~270KB |
-| All shards | 7.5MB | ~3.2MB |
+| Largest shard | 650KB | ~265KB |
+| All shards | 7.5MB | ~3.1MB |
 
 ### Ordering the candidates
 
