@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/keyboard_layout.dart';
@@ -19,6 +21,16 @@ class _RecordingTranslator implements Translator {
     asked.add(request.written);
     keys.add(request.key);
     return reply;
+  }
+}
+
+/// A translator that answers only when told to, for testing lookup latency.
+class _SlowTranslator implements Translator {
+  Completer<Translation?>? pending;
+
+  @override
+  Future<Translation?> translate(TranslationRequest request) {
+    return (pending = Completer<Translation?>()).future;
   }
 }
 
@@ -73,6 +85,15 @@ void main() {
     // show up as U+FFFC in the middle of the pinyin.
     return text.textSpan!.toPlainText(includePlaceholders: false);
   }
+
+  // Nothing is looked up until something is typed, so a 6.5MB dictionary
+  // cannot slow the app down before the learner has asked it anything.
+  testWidgets('asks the translator nothing at startup', (tester) async {
+    final translator = _RecordingTranslator();
+    await pump(tester, translator: translator);
+
+    expect(translator.asked, isEmpty);
+  });
 
   testWidgets('opens on the initial bank', (tester) async {
     await pump(tester);
@@ -681,6 +702,87 @@ void main() {
       expect(opacity(), isNot(shown), reason: 'the caret never went off');
       await tester.pump(const Duration(milliseconds: 600));
       expect(opacity(), shown, reason: 'the caret never came back');
+    });
+  });
+
+  // Reading a dictionary shard costs 1-24ms from local assets, but over the
+  // web it is an HTTP fetch with no upper bound.
+  group('a slow lookup', () {
+    testWidgets('goes unmentioned when it is quick', (tester) async {
+      final translator = _SlowTranslator();
+      await pump(tester, translator: translator);
+
+      await tester.tap(find.byKey(const Key('initial-n')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('rime-i')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('tone-3')));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Faster than the threshold, so nothing should have flashed up.
+      expect(find.byKey(const Key('looking-up')), findsNothing);
+      translator.pending!.complete(const Translation('you'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('looking-up')), findsNothing);
+      expect(find.text('you'), findsOneWidget);
+    });
+
+    testWidgets('says so once it drags on', (tester) async {
+      final translator = _SlowTranslator();
+      await pump(tester, translator: translator);
+
+      await tester.tap(find.byKey(const Key('initial-n')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('rime-i')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('tone-3')));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byKey(const Key('looking-up')), findsOneWidget);
+      // The pinyin is still readable while it waits.
+      expect(composed(tester), 'nǐ');
+
+      translator.pending!.complete(const Translation('you'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('looking-up')), findsNothing);
+      expect(find.text('you'), findsOneWidget);
+    });
+
+    testWidgets('stops saying so if the answer is nothing', (tester) async {
+      final translator = _SlowTranslator();
+      await pump(tester, translator: translator);
+
+      await tester.tap(find.byKey(const Key('initial-n')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('rime-i')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('tone-3')));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const Key('looking-up')), findsOneWidget);
+
+      translator.pending!.complete(null);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('looking-up')), findsNothing);
+    });
+
+    testWidgets('leaves no timer running when the screen goes away', (
+      tester,
+    ) async {
+      final translator = _SlowTranslator();
+      await pump(tester, translator: translator);
+
+      await tester.tap(find.byKey(const Key('initial-n')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('rime-i')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('tone-3')));
+      await tester.pump();
+
+      // Replacing the screen mid-lookup: a pending timer would fail the test.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
+      translator.pending!.complete(const Translation('you'));
+      await tester.pumpAndSettle();
     });
   });
 

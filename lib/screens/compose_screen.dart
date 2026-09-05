@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,18 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Composition _composition = const Composition();
   Translation? _translation;
 
+  /// Whether a lookup has been running long enough to be worth mentioning.
+  bool _lookingUp = false;
+  Timer? _admitToLookingUp;
+
+  /// How long a lookup may take before the screen says it is working.
+  ///
+  /// Deliberately longer than a lookup normally takes. Reading a dictionary
+  /// shard costs 1-24ms from local assets, and flashing a message for 24ms is
+  /// worse than saying nothing. Over the web the same shard is an HTTP fetch,
+  /// which has no upper bound — that is the case this exists for.
+  static const _worthMentioning = Duration(milliseconds: 250);
+
   /// Which initial-bank arrangement is in use, switchable from the app bar.
   ///
   /// QWERTY by default: it is what most hands already know, and its three rows
@@ -41,15 +54,39 @@ class _ComposeScreenState extends State<ComposeScreen> {
     _translate(next);
   }
 
+  @override
+  void dispose() {
+    _admitToLookingUp?.cancel();
+    super.dispose();
+  }
+
   Future<void> _translate(Composition composition) async {
     final request = TranslationRequest(composition.words);
-    final result = request.isEmpty
-        ? null
-        : await widget.translator.translate(request);
+    _admitToLookingUp?.cancel();
+
+    if (request.isEmpty) {
+      setState(() {
+        _translation = null;
+        _lookingUp = false;
+      });
+      return;
+    }
+
+    _admitToLookingUp = Timer(_worthMentioning, () {
+      if (mounted && _composition.text == composition.text) {
+        setState(() => _lookingUp = true);
+      }
+    });
+
+    final result = await widget.translator.translate(request);
+    _admitToLookingUp?.cancel();
     if (!mounted) return;
     // A slower earlier lookup must not overwrite a newer one.
     if (_composition.text != composition.text) return;
-    setState(() => _translation = result);
+    setState(() {
+      _translation = result;
+      _lookingUp = false;
+    });
   }
 
   @override
@@ -110,6 +147,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
           final reading = _Reading(
             composition: _composition,
             translation: _translation,
+            lookingUp: _lookingUp,
           );
           // The keyboard's height now follows the stage on show rather than a
           // fixed fraction, which is safe because it is anchored to the far
@@ -180,10 +218,15 @@ double _panelWidth(BoxConstraints constraints) {
 
 /// What has been typed, and what it means.
 class _Reading extends StatelessWidget {
-  const _Reading({required this.composition, required this.translation});
+  const _Reading({
+    required this.composition,
+    required this.translation,
+    required this.lookingUp,
+  });
 
   final Composition composition;
   final Translation? translation;
+  final bool lookingUp;
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +278,19 @@ class _Reading extends StatelessWidget {
               ),
               style: theme.textTheme.displaySmall,
             ),
+          // Plain text, not a spinner. An indeterminate spinner never stops
+          // animating, and for something that usually takes under 25ms the
+          // motion would be the only thing anyone noticed.
+          if (lookingUp && translation == null) ...[
+            const SizedBox(height: 20),
+            Text(
+              'looking it up…',
+              key: const Key('looking-up'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           if (translation != null) ...[
             const SizedBox(height: 20),
             Text(

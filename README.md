@@ -1,4 +1,4 @@
-# Kǒuyǔ
+  # Kǒuyǔ
 
 A Flutter app for Mandarin learners who want to **speak** — tones,
 pronunciation, comprehension — rather than learn to read and write characters.
@@ -243,8 +243,10 @@ them, because they are the bridge to any translation service worth calling.
 nothing here reliably puts 有 ahead of 黝 for `you3`. Ordering only demotes
 names and forms marked `(literary)` or `(archaic)`; a gloss-count heuristic was
 tried and measured worse. Typing `shì` lists "life / matter / to serve as an
-official" and misses 是, the commonest of them. The fix is a frequency or HSK
-ordering layer, which needs one more small data source.
+official" and misses 是, the commonest of them; `xiè` gives "obscene / used in
+old names / to unload" and misses 谢, "to thank". The fix is a frequency or HSK
+ordering layer, which needs one more small data source, and it is the
+highest-value thing left to do here.
 
 ### Licence
 

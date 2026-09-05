@@ -79,6 +79,22 @@ void main() {
       expect(await broken.lookUp('ni3'), isEmpty);
     });
 
+    // Startup must not pay for the dictionary. Constructing one reads nothing;
+    // a shard is only touched when a word is actually looked up.
+    test('reads nothing until it is asked something', () async {
+      var reads = 0;
+      final counted = Dictionary(
+        loadShard: (letter) async {
+          reads++;
+          return 'ni3\t你\t-\tyou';
+        },
+      );
+      expect(reads, 0, reason: 'constructing it hit the assets');
+
+      await counted.lookUp('ni3');
+      expect(reads, 1);
+    });
+
     test('reads each shard once', () async {
       var reads = 0;
       final counted = Dictionary(
