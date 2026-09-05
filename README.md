@@ -352,13 +352,17 @@ which want the characters the dictionary now resolves:
 - **A translation service.** Needs a network, an API key that cannot live in a
   client, and therefore a proxy — real infrastructure for a learner who is
   often offline.
-- **An on-device model.** The appealing one, and currently the least reliable:
-  small models are weak at Chinese and pinyin-only Chinese is outside anything
-  they were trained on, so they will produce fluent nonsense with confidence.
-  The platform models — Apple's Foundation Models, Gemini Nano — are stronger
-  and free of bundle cost, but availability varies and the pinyin problem
-  remains. Feeding either the resolved characters instead of the pinyin is what
-  makes it tractable.
+- **An on-device model.** The appealing one, and now measured rather than
+  guessed at — see [docs/local-model.md](docs/local-model.md). The guess above
+  was right: fed bare pinyin, even a 27B model loses half of a set of tone
+  minimal pairs, rendering `tā wěn wǒ` ("he kissed me") as "held my hand".
+  Fluent nonsense, confidently. Handing the model the dictionary's tone-exact
+  candidates fixes it, which is why the dictionary stays in front rather than
+  being replaced. What is not settled is size: 0.8B is unusable, 2B is stable
+  but misses first-lesson question forms, and the 27B that gets everything
+  right does not fit a phone. The platform models — Apple's Foundation Models,
+  Gemini Nano — are free of bundle cost, but availability varies and the pinyin
+  problem is the same one.
 
 ## The app icon
 

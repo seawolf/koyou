@@ -109,6 +109,12 @@ Two traps in that tool, both of which cost a common word once:
   display" ahead of "to thank" for `xiè`. And CC-CEDICT writes ü as `u:` where
   the HSK data writes `ü`, so the join needs normalising or it silently misses
   every ü word.
+- **A word's frequency is not its reading's frequency.** The HSK data gives one
+  `frequency` per word and lists every reading under it in `forms[]`, so
+  joining on the reading is not enough on its own: the rank still has to be kept
+  off the readings that did not earn it. 的 is the commonest word in the
+  language as `de5` and carried rank 1 into `di4` as well, offering "bull's-eye;
+  target" to anyone typing `dì`. `docs/local-model.md` is what turned it up.
 
 ## Conventions
 
