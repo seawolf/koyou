@@ -11,11 +11,13 @@ import 'package:kouyu/widgets/pinyin_keyboard.dart';
 /// without depending on any translator's contents.
 class _RecordingTranslator implements Translator {
   final List<String> asked = [];
+  final List<String> keys = [];
   Translation? reply;
 
   @override
-  Future<Translation?> translate(String pinyin) async {
-    asked.add(pinyin);
+  Future<Translation?> translate(TranslationRequest request) async {
+    asked.add(request.written);
+    keys.add(request.key);
     return reply;
   }
 }
@@ -272,6 +274,34 @@ void main() {
     // Tone marks must survive the trip: they are what disambiguates.
     expect(translator.asked.last, 'nǐ');
     expect(find.text('you'), findsOneWidget);
+  });
+
+  // Three candidate meanings shown plainly read as one confident answer.
+  testWidgets('says when the pinyin matched several words', (tester) async {
+    final translator = _RecordingTranslator()
+      ..reply = const Translation(
+        'life / matter / to serve as an official',
+        uncertain: true,
+      );
+    await pump(tester, translator: translator);
+
+    await type(tester, 'sh', 'i', 4);
+    expect(
+      find.text('life / matter / to serve as an official'),
+      findsOneWidget,
+    );
+    expect(find.text('several words sound like this'), findsOneWidget);
+  });
+
+  testWidgets('sends the tone-numbered key, not just the marks', (
+    tester,
+  ) async {
+    final translator = _RecordingTranslator();
+    await pump(tester, translator: translator);
+
+    await type(tester, 'sh', 'i', 4);
+    expect(translator.asked.last, 'shì');
+    expect(translator.keys.last, 'shi4', reason: 'the dictionary key is wrong');
   });
 
   testWidgets('labels a word-by-word gloss as such', (tester) async {

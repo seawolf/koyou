@@ -90,6 +90,13 @@ add the asset.
 All of the above come from `tool/generate_icons.sh`. Change the geometry
 variables at the top of that script and re-run it.
 
+- `assets/dictionary/*.tsv` and `assets/dictionary/LICENCE` come from
+  `tool/build_dictionary.dart`, which transforms the CC-CEDICT export. Change
+  the filtering there and re-run it; never edit a shard.
+
+CC-CEDICT is CC BY-SA 4.0. The generated shards carry the same licence and the
+app credits it under the ⓘ button. Keep that credit if you touch the app bar.
+
 ## Conventions
 
 - **Theme, not literals.** Colours and text styles come from
@@ -119,6 +126,11 @@ variables at the top of that script and re-run it.
   bare `TextStyle`, and let the button colour its own text.
   `test/screens/key_contrast_test.dart` measures every kind of key against WCAG
   AA in both themes; run it after touching colours.
+- **Pinyin does not identify a word, so never present a lookup as certain
+  when it isn't.** Only 17% of one-syllable pinyin keys map to a single word,
+  against 91% for two syllables. `Translation.uncertain` exists for this and
+  the UI says "several words sound like this"; a plausible-looking single
+  answer where there are forty candidates is worse than a list.
 - **No `print`.** The lint set forbids it.
 
 ## Identifiers that are expensive to change

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'screens/compose_screen.dart';
 import 'theme.dart';
+import 'translation/dictionary.dart';
+import 'translation/dictionary_translator.dart';
 import 'translation/phrasebook_translator.dart';
+import 'translation/translator.dart';
 
 class KouyuApp extends StatelessWidget {
   const KouyuApp({super.key});
@@ -13,9 +16,18 @@ class KouyuApp extends StatelessWidget {
       title: 'Kǒuyǔ',
       theme: kLightTheme,
       darkTheme: kDarkTheme,
-      // The one place a translation implementation is named. Everything below
+      // The one place translation implementations are named. Everything below
       // here knows only the Translator interface.
-      home: const ComposeScreen(translator: PhrasebookTranslator()),
+      //
+      // Curated phrases first, because they cover whole utterances a dictionary
+      // cannot; the dictionary behind them for everything else. A network
+      // service or an on-device model would join the end of this list.
+      home: ComposeScreen(
+        translator: CompositeTranslator([
+          const PhrasebookTranslator(),
+          DictionaryTranslator(Dictionary.bundled()),
+        ]),
+      ),
     );
   }
 }

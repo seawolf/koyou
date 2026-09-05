@@ -1,62 +1,35 @@
 import 'translator.dart';
 
-/// A stand-in [Translator] backed by a hand-written phrasebook.
+/// A short hand-written list of phrases, asked before the dictionary.
 ///
-/// This is not translation and does not pretend to be. It matches whole
-/// phrases, falls back to glossing word by word, and otherwise returns null.
-/// It exists so the compose-and-translate path runs end to end while a real
-/// model is still a plan — swapping it out means writing one [Translator] and
-/// changing one argument at the call site.
+/// It exists for the gap a dictionary structurally cannot fill: whole
+/// utterances that are not themselves dictionary entries. `wǒ ài nǐ` is three
+/// ordinary words, so CC-CEDICT has no entry for it and glossing gives
+/// "I; me · to love · you" — true, and not what anyone says.
+///
+/// Kept deliberately small. It is not a translation strategy, it is a patch
+/// over specific phrases, and anything that belongs in a dictionary belongs in
+/// the dictionary.
 class PhrasebookTranslator implements Translator {
   const PhrasebookTranslator();
 
   @override
-  Future<Translation?> translate(String pinyin) async {
-    final phrase = _normalise(pinyin);
-    if (phrase.isEmpty) return null;
-
-    final whole = _phrasebook[phrase];
-    if (whole != null) return Translation(whole);
-
-    final words = phrase.split(' ');
-    if (words.length < 2) return null;
-    final glosses = [for (final word in words) _phrasebook[word]];
-    if (glosses.any((gloss) => gloss == null)) return null;
-    return Translation(glosses.join(' · '), wordByWord: true);
+  Future<Translation?> translate(TranslationRequest request) async {
+    final phrase = request.written.toLowerCase();
+    final match = _phrasebook[phrase];
+    return match == null ? null : Translation(match);
   }
-
-  String _normalise(String pinyin) =>
-      pinyin.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
 }
 
-/// Enough entries to exercise the path, no more. Every key here is reachable
-/// from the keyboard, which is the only reason to trust it as a fixture.
+/// Keyed on the pinyin as written, tone marks included, because that is what
+/// makes it readable to whoever edits it next.
 const Map<String, String> _phrasebook = {
-  'nǐ': 'you',
-  'hǎo': 'good',
-  'nǐ hǎo': 'hello',
-  'nǐ hǎo shìjiè': 'hello, world',
-  'shìjiè': 'world',
-  'wǒ': 'I; me',
-  'wǒmen': 'we; us',
-  'tā': 'he; she; it',
-  'shì': 'to be',
-  'bù': 'not',
-  'hěn': 'very',
-  'ài': 'to love',
   'wǒ ài nǐ': 'I love you',
-  'xièxie': 'thank you',
-  'zàijiàn': 'goodbye',
-  'duìbuqǐ': 'sorry',
-  'qǐng': 'please',
-  'shuǐ': 'water',
-  'chá': 'tea',
-  'dà': 'big',
-  'xiǎo': 'small',
-  'māma': 'mum',
-  'zhōngguó': 'China',
-  'zhōngwén': 'Chinese',
-  'yī': 'one',
-  'èr': 'two',
-  'sān': 'three',
+  'nǐ hǎo shìjiè': 'hello, world',
+  'nǐ hǎo ma': 'how are you?',
+  'wǒ bù zhīdào': "I don't know",
+  'nǐ jiào shénme míngzi': "what's your name?",
+  'wǒ shì yīngguórén': 'I am British',
+  'qǐng zài shuō yī cì': 'please say that again',
+  'wǒ tīng bù dǒng': "I don't understand",
 };

@@ -10,7 +10,7 @@ import 'package:kouyu/widgets/blinking_cursor.dart';
 
 class _SilentTranslator implements Translator {
   @override
-  Future<Translation?> translate(String pinyin) async => null;
+  Future<Translation?> translate(TranslationRequest request) async => null;
 }
 
 /// WCAG's contrast ratio between two opaque colours.

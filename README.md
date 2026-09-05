@@ -108,8 +108,9 @@ syllable has exactly one — there's deliberately no way to enter one without
 deciding its tone. Tone marks land where pinyin's rules say (`niú`, not `níu`),
 and the spelling irregularities are handled for you.
 
-> **Status: early.** The input method works and is tested. Translation is a
-> hand-written phrasebook standing in for a real model — see below.
+> **Status: early.** The input method works and is tested, and word meanings
+> come from CC-CEDICT. Sentence translation does not exist yet — see
+> [Translation](#translation).
 
 ## Requirements
 
@@ -118,6 +119,7 @@ and the spelling irregularities are handled for you.
   iOS, the Android SDK command-line tools for Android, Chrome for web
 - [ImageMagick](https://imagemagick.org) 7, only if you need to regenerate the
   app icon
+- A network connection, only if you need to regenerate the dictionary
 
 Run `flutter doctor` to check what your machine is missing.
 
@@ -153,7 +155,7 @@ flutter test
 | `lib/app.dart`           | Root `MaterialApp` — routing and theme wiring        |
 | `lib/theme.dart`         | Brand seed colour and the light/dark themes          |
 | `lib/pinyin/`            | Pure Dart, no Flutter: the syllable inventory, tones, spelling, and the editing model |
-| `lib/translation/`       | The `Translator` seam and its phrasebook stand-in    |
+| `lib/translation/`       | The `Translator` seam, the CC-CEDICT lookup, and a small phrasebook |
 | `lib/screens/`           | One file per screen                                  |
 | `lib/widgets/`           | Reusable widgets, e.g. the keyboard                  |
 | `test/`                  | Mirrors `lib/` (`lib/screens/x.dart` → `test/screens/x_test.dart`) |
@@ -178,22 +180,96 @@ Within it, two files are worth knowing apart:
 
 ## Translation
 
-`lib/translation/translator.dart` is the seam a real model plugs into.
+Everything that translates Chinese — dictionaries, translation services,
+language models — works on characters. Pinyin on its own does not identify a
+word, so the pipeline is not `pinyin → English` but **`pinyin → word →
+English`**, and that middle step is the hard part whichever route you take. A
+pinyin-keyed dictionary is not an alternative to a translation service; it is
+the thing that lets you call one.
 
-What ships today is [`PhrasebookTranslator`](lib/translation/phrasebook_translator.dart):
-about 25 hand-written entries that match a whole phrase, fall back to glossing
-word by word, and otherwise return nothing. It is not translation — it exists so
-the compose-and-translate path runs end to end. The UI labels a word-by-word
-gloss as such, because word-by-word Mandarin is often misleading.
+### How ambiguous is pinyin, exactly
 
-The two layers are kept apart on purpose, since the UI is where the work is at
-the moment: nothing under `lib/screens/` or `lib/widgets/` names a translation
-implementation, only the `Translator` interface. `lib/app.dart` is the single
-place one is chosen. Replacing the phrasebook means writing one `Translator` and
-editing that one line.
+Measured over the 109,000 entries shipped here:
 
-Note that a `Translator` receives pinyin *with* tone marks, and must not
-normalise them away — tones are what disambiguate.
+| key | keys | resolve to one word | average words per key |
+| --- | ---- | ------------------- | --------------------- |
+| 1 syllable | 1,303 | 16.8% | 7.8 |
+| 2 syllables | 51,088 | 91.0% | 1.1 |
+| 3 or more | 42,116 | 99.4% | 1.0 |
+
+So a dictionary is reliable for words and set phrases, and cannot be for lone
+syllables. `shì` matches forty words. The app says so rather than guessing:
+where the pinyin is ambiguous it lists candidates and labels them "several
+words sound like this".
+
+### What is here
+
+[`translator.dart`](lib/translation/translator.dart) is the seam, and
+`CompositeTranslator` asks each translator in turn:
+
+1. [`PhrasebookTranslator`](lib/translation/phrasebook_translator.dart) — a
+   short hand-written list of whole utterances. `wǒ ài nǐ` is three ordinary
+   words, so no dictionary has an entry for it and glossing gives "I; me · to
+   love · you". Deliberately tiny; anything that belongs in a dictionary goes
+   in the dictionary.
+2. [`DictionaryTranslator`](lib/translation/dictionary_translator.dart) — the
+   whole input as one entry first, since a set phrase is one word whether or
+   not it was spaced, then word by word.
+
+A `Translator` receives the **syllables**, not a string. Every backend keys on
+something derived from them, and the app already knows what it built: splitting
+written pinyin into syllables is genuinely ambiguous (`wanan` splits two ways),
+while `Syllable.numbered` hands over `wan3 an1` for free.
+
+### The dictionary
+
+CC-CEDICT, 109,000 entries over 23 shards by first letter, about 6.4MB. Shards
+are parsed on demand and kept, so a lookup touches one file of at most 550KB
+rather than holding the lot in memory.
+
+Regenerate with:
+
+```bash
+dart run tool/build_dictionary.dart
+```
+
+The build drops what this app cannot use: 758 entries keyed on something the
+keyboard cannot type, and 15,230 whose only glosses were cross-references to
+other entries — meaningless without the characters they point at, which this
+app does not show. Characters are kept in the data even though nothing displays
+them, because they are the bridge to any translation service worth calling.
+
+**Known weakness: candidate ordering.** CC-CEDICT carries no frequency data, so
+nothing here reliably puts 有 ahead of 黝 for `you3`. Ordering only demotes
+names and forms marked `(literary)` or `(archaic)`; a gloss-count heuristic was
+tried and measured worse. Typing `shì` lists "life / matter / to serve as an
+official" and misses 是, the commonest of them. The fix is a frequency or HSK
+ordering layer, which needs one more small data source.
+
+### Licence
+
+CC-CEDICT is published by MDBG under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The generated
+assets carry the same licence — see `assets/dictionary/LICENCE` — and the app
+credits it under the ⓘ button in the app bar.
+
+### What is not here
+
+Sentence translation. A dictionary resolves words and set phrases; grammar and
+anything idiomatic that is not itself an entry is beyond it. Two routes, both
+of which plug in as another `Translator` at the end of the chain and both of
+which want the characters the dictionary now resolves:
+
+- **A translation service.** Needs a network, an API key that cannot live in a
+  client, and therefore a proxy — real infrastructure for a learner who is
+  often offline.
+- **An on-device model.** The appealing one, and currently the least reliable:
+  small models are weak at Chinese and pinyin-only Chinese is outside anything
+  they were trained on, so they will produce fluent nonsense with confidence.
+  The platform models — Apple's Foundation Models, Gemini Nano — are stronger
+  and free of bundle cost, but availability varies and the pinyin problem
+  remains. Feeding either the resolved characters instead of the pinyin is what
+  makes it tractable.
 
 ## The app icon
 

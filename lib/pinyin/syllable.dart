@@ -33,6 +33,18 @@ class Syllable {
     );
   }
 
+  /// The syllable's letters, before any tone mark, as pinyin spells them.
+  String get letters => _spell(initial, rime);
+
+  /// The form dictionaries key on: the letters with ü written `u:`, then the
+  /// tone number. `nǚ` is `nu:3`, `wǒ` is `wo3`, `jùn` is `jun4`.
+  ///
+  /// Free to produce here and awkward anywhere else. Read back from written
+  /// pinyin it would mean both stripping diacritics and splitting a word into
+  /// syllables, and `wanan` splits two ways; built from the parts, the tone is
+  /// already a number and the boundaries are already known.
+  String get numbered => '${letters.replaceAll('ü', 'u:')}${tone.number}';
+
   @override
   String toString() => written;
 

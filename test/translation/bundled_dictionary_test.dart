@@ -1,0 +1,81 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/tone.dart';
+import 'package:kouyu/translation/dictionary.dart';
+import 'package:kouyu/translation/dictionary_translator.dart';
+import 'package:kouyu/translation/translator.dart';
+
+Syllable syllable(String initial, String rime, Tone tone) =>
+    Syllable(initial: initial, rime: rime, tone: tone);
+
+/// Checks the real generated assets, not a stand-in.
+///
+/// The keys are built by the syllable model and the shards by
+/// `tool/build_dictionary.dart`, so nothing else proves the two agree — a
+/// mistake in either would leave every lookup quietly empty.
+void main() {
+  // rootBundle needs the binding before it can read an asset.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  final dictionary = Dictionary.bundled();
+
+  test('resolves words built from the keyboard', () async {
+    final expected = {
+      // nǐ hǎo
+      'ni3 hao3': 'hello',
+      // shìjiè
+      'shi4 jie4': 'world',
+      // xièxie, whose second syllable is neutral
+      'xie4 xie5': 'thank',
+      // nǚ, which is keyed nu:3
+      'nu:3': 'female',
+      // zhōngguó
+      'zhong1 guo2': 'China',
+    };
+
+    for (final entry in expected.entries) {
+      final found = await dictionary.lookUp(entry.key);
+      expect(found, isNotEmpty, reason: '${entry.key} is missing');
+      expect(
+        found.first.glosses.join('/'),
+        contains(entry.value),
+        reason: '${entry.key} gave ${found.first.glosses}',
+      );
+    }
+  });
+
+  test(
+    'the keys the syllable model emits are the keys the shards use',
+    () async {
+      // shìjiè, built exactly as the keyboard builds it.
+      final request = TranslationRequest([
+        [syllable('sh', 'i', Tone.fourth), syllable('j', 'ie', Tone.fourth)],
+      ]);
+      expect(request.key, 'shi4 jie4');
+      expect(request.written, 'shìjiè');
+
+      final result = await DictionaryTranslator(dictionary).translate(request);
+      expect(result, isNotNull);
+      expect(result!.text, contains('world'));
+    },
+  );
+
+  test('every shard the keyboard can reach exists and parses', () async {
+    // Every letter a syllable can start with, per the keyboard's own layout.
+    const letters = 'abcdefghjklmnopqrstwxyz';
+    for (final letter in letters.split('')) {
+      final entries = await Dictionary.bundled().lookUp('${letter}a1');
+      // Most of these are not words; the point is that the shard loaded and
+      // parsed without throwing.
+      expect(entries, isA<List<DictionaryEntry>>(), reason: letter);
+    }
+  });
+
+  test('characters are carried but never the only thing offered', () async {
+    final entries = await dictionary.lookUp('ni3 hao3');
+    // Kept for a future translation service, which needs characters.
+    expect(entries.first.simplified, isNotEmpty);
+    // But there is always an English gloss to show instead.
+    expect(entries.first.glosses.first, isNotEmpty);
+  });
+}

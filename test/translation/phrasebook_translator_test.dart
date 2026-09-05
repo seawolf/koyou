@@ -1,58 +1,48 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/phrasebook_translator.dart';
 import 'package:kouyu/translation/translator.dart';
+
+Syllable syllable(String initial, String rime, Tone tone) =>
+    Syllable(initial: initial, rime: rime, tone: tone);
 
 void main() {
   const translator = PhrasebookTranslator();
 
-  test('matches a whole phrase', () async {
-    expect(await translator.translate('nǐ hǎo'), const Translation('hello'));
+  // wǒ ài nǐ — three ordinary words, so no dictionary has an entry for it.
+  final iLoveYou = TranslationRequest([
+    [syllable('', 'uo', Tone.third)],
+    [syllable('', 'ai', Tone.fourth)],
+    [syllable('n', 'i', Tone.third)],
+  ]);
+
+  test('matches a whole utterance the dictionary cannot have', () async {
+    expect(iLoveYou.written, 'wǒ ài nǐ');
     expect(
-      await translator.translate('nǐ hǎo shìjiè'),
-      const Translation('hello, world'),
+      await translator.translate(iLoveYou),
+      const Translation('I love you'),
     );
   });
 
-  test('matches a single word', () async {
-    expect(await translator.translate('shuǐ'), const Translation('water'));
+  test('leaves anything else to the dictionary behind it', () async {
+    final justYou = TranslationRequest([
+      [syllable('n', 'i', Tone.third)],
+    ]);
+    expect(await translator.translate(justYou), isNull);
   });
 
-  test(
-    'glosses word by word when the phrase is unknown, and says so',
-    () async {
-      expect(
-        await translator.translate('wǒ hěn hǎo'),
-        const Translation('I; me · very · good', wordByWord: true),
-      );
-    },
-  );
-
-  test('prefers a whole-phrase match over a gloss', () async {
-    final result = await translator.translate('wǒ ài nǐ');
-    expect(result, const Translation('I love you'));
-    expect(result!.wordByWord, isFalse);
-  });
-
-  test('gives up rather than guessing at unknown words', () async {
-    expect(await translator.translate('zhèige'), isNull);
-    expect(await translator.translate('nǐ zhèige'), isNull);
-  });
-
-  test('ignores case and surrounding or repeated whitespace', () async {
-    expect(
-      await translator.translate('  Nǐ   hǎo '),
-      const Translation('hello'),
-    );
+  // Tones distinguish words, so a phrasebook must not treat them as noise.
+  test('does not match when the tones are wrong', () async {
+    final wrongTone = TranslationRequest([
+      [syllable('', 'uo', Tone.third)],
+      [syllable('', 'ai', Tone.first)],
+      [syllable('n', 'i', Tone.third)],
+    ]);
+    expect(await translator.translate(wrongTone), isNull);
   });
 
   test('has nothing to say about empty input', () async {
-    expect(await translator.translate(''), isNull);
-    expect(await translator.translate('   '), isNull);
-  });
-
-  // Tones distinguish words, so a translator must not treat them as noise.
-  test('does not match a phrase whose tones are wrong', () async {
-    expect(await translator.translate('ni hao'), isNull);
-    expect(await translator.translate('nì hǎo'), isNull);
+    expect(await translator.translate(const TranslationRequest([])), isNull);
   });
 }

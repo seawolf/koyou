@@ -38,16 +38,17 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   void _edit(Composition next) {
     setState(() => _composition = next);
-    _translate(next.text);
+    _translate(next);
   }
 
-  Future<void> _translate(String text) async {
-    final result = text.isEmpty
+  Future<void> _translate(Composition composition) async {
+    final request = TranslationRequest(composition.words);
+    final result = request.isEmpty
         ? null
-        : await widget.translator.translate(text);
+        : await widget.translator.translate(request);
     if (!mounted) return;
     // A slower earlier lookup must not overwrite a newer one.
-    if (_composition.text != text) return;
+    if (_composition.text != composition.text) return;
     setState(() => _translation = result);
   }
 
@@ -72,6 +73,25 @@ class _ComposeScreenState extends State<ComposeScreen> {
               KeyArrangement.articulatory => 'Switch to QWERTY order',
               KeyArrangement.qwerty => 'Switch to articulation order',
             },
+          ),
+          // CC-CEDICT is CC BY-SA 4.0, which asks for attribution. This is it.
+          IconButton(
+            key: const Key('credits'),
+            onPressed: () => showAboutDialog(
+              context: context,
+              applicationName: 'Kǒuyǔ',
+              children: const [
+                Text(
+                  'Word meanings come from CC-CEDICT, a community maintained '
+                  'free Chinese-English dictionary published by MDBG.\n\n'
+                  'Used under the Creative Commons Attribution-ShareAlike 4.0 '
+                  'International licence.\n'
+                  'https://creativecommons.org/licenses/by-sa/4.0/',
+                ),
+              ],
+            ),
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Credits',
           ),
           // Away from the thumb: rare, and it throws away everything typed.
           IconButton(
@@ -223,9 +243,14 @@ class _Reading extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
             ),
-            if (translation.wordByWord)
+            // Say what kind of answer this is. Without it, three candidate
+            // meanings read as one confident translation.
+            if (translation.wordByWord || translation.uncertain)
               Text(
-                'word by word',
+                [
+                  if (translation.wordByWord) 'word by word',
+                  if (translation.uncertain) 'several words sound like this',
+                ].join(' · '),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
