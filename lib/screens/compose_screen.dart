@@ -8,6 +8,7 @@ import '../audio/speech.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../translation/model_store.dart';
+import '../translation/tone_suggestion.dart';
 import '../translation/translator.dart';
 import '../widgets/blinking_cursor.dart';
 import '../widgets/pinyin_keyboard.dart';
@@ -25,6 +26,7 @@ class ComposeScreen extends StatefulWidget {
     required this.modelStore,
     this.phraseTranslator,
     this.speech,
+    this.suggester,
   });
 
   /// Passed through to the model screen. Owned above this screen so a download
@@ -53,6 +55,10 @@ class ComposeScreen extends StatefulWidget {
 
   /// Says the pinyin aloud, on demand. Null where nothing can.
   final Speech? speech;
+
+  /// Notices a mistyped tone. Asked on every edit, because it is a handful
+  /// of dictionary lookups rather than anything that needs thinking about.
+  final Suggester? suggester;
 
   @override
   State<ComposeScreen> createState() => _ComposeScreenState();
@@ -88,6 +94,9 @@ class _ComposeScreenState extends State<ComposeScreen> {
   /// worse than saying nothing. Over the web the same shard is an HTTP fetch,
   /// which has no upper bound — that is the case this exists for.
   static const _worthMentioning = Duration(milliseconds: 250);
+
+  /// A tone that looks like a slip, if one does.
+  ToneSuggestion? _suggestion;
 
   /// Whether this device has a Mandarin voice, once asked.
   ///
@@ -160,11 +169,14 @@ class _ComposeScreenState extends State<ComposeScreen> {
       setState(() {
         _translation = null;
         _phrase = null;
+        _suggestion = null;
         _lookingUp = false;
         _thinking = false;
       });
       return;
     }
+
+    _suggest(composition, request);
 
     // Any edit invalidates the considered answer: it was about different words.
     setState(() {
@@ -188,6 +200,17 @@ class _ComposeScreenState extends State<ComposeScreen> {
       _translation = result;
       _lookingUp = false;
     });
+  }
+
+  Future<void> _suggest(
+    Composition composition,
+    TranslationRequest request,
+  ) async {
+    final suggester = widget.suggester;
+    if (suggester == null) return;
+    final found = await suggester.check(request);
+    if (!mounted || _composition.text != composition.text) return;
+    setState(() => _suggestion = found);
   }
 
   void _schedulePhrase(Composition composition) {
@@ -295,6 +318,14 @@ class _ComposeScreenState extends State<ComposeScreen> {
             lookingUp: _lookingUp,
             thinking: _thinking,
             onMoveCaret: (caret) => _edit(_composition.movedTo(caret)),
+            suggestion: _suggestion,
+            onAccept: (suggestion) => _edit(
+              _composition.retoned(
+                suggestion.word,
+                suggestion.syllable,
+                suggestion.tone,
+              ),
+            ),
           );
           // The keyboard's height now follows the stage on show rather than a
           // fixed fraction, which is safe because it is anchored to the far
@@ -372,6 +403,8 @@ class _Reading extends StatelessWidget {
     required this.lookingUp,
     required this.thinking,
     required this.onMoveCaret,
+    required this.suggestion,
+    required this.onAccept,
   });
 
   final Composition composition;
@@ -386,6 +419,9 @@ class _Reading extends StatelessWidget {
   final bool thinking;
 
   final ValueChanged<Caret> onMoveCaret;
+
+  final ToneSuggestion? suggestion;
+  final ValueChanged<ToneSuggestion> onAccept;
 
   @override
   Widget build(BuildContext context) {
@@ -431,6 +467,17 @@ class _Reading extends StatelessWidget {
             _ComposedLine(composition: composition, onMoveCaret: onMoveCaret),
           _Rest(
             children: [
+              // Directly under the line it is about, and above the meaning:
+              // if the tone is wrong, the meaning below is answering the
+              // wrong question.
+              if (suggestion case final suggestion?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _Suggestion(
+                    suggestion: suggestion,
+                    onAccept: () => onAccept(suggestion),
+                  ),
+                ),
               // Plain text, not a spinner. An indeterminate spinner never stops
               // animating, and for something that usually takes under 25ms the
               // motion would be the only thing anyone noticed.
@@ -777,4 +824,67 @@ class _Rest extends StatelessWidget {
       children: children,
     ),
   );
+}
+
+/// A tone that looks like a slip, offered rather than applied.
+///
+/// Offered, never corrected automatically: the learner may have meant the
+/// obscure word, and silently retoning what someone typed in a language they
+/// are learning would be the rudest thing this app could do.
+class _Suggestion extends StatelessWidget {
+  const _Suggestion({required this.suggestion, required this.onAccept});
+
+  final ToneSuggestion suggestion;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          key: const Key('suggestion'),
+          onTap: onAccept,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.spellcheck,
+                  size: 16,
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 8),
+                // The corrected line, and the word it would make, so the
+                // reason is on show rather than implied.
+                Flexible(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(text: 'did you mean '),
+                        TextSpan(
+                          text: suggestion.written,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(text: '? — ${suggestion.gloss}'),
+                      ],
+                    ),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -243,6 +243,17 @@ Two traps in there, both of which cost an afternoon:
   bare `TextStyle`, and let the button colour its own text.
   `test/screens/key_contrast_test.dart` measures every kind of key against WCAG
   AA in both themes; run it after touching colours.
+- **Do not route tone correction through the model.** It is a dictionary
+  question — 0.16ms warm — and a model would mean a second generation on top of
+  the translation, for the least reliable thing a small model does: it does not
+  know which tone is right, it knows which sentence sounds likely, and it nags
+  confidently about correct input.
+- **Never rank-ratio one word against another to correct it.** 呢 is rank 96
+  against 你 at 5, and 时 is 115 against 是 at 4; both are perfectly good words.
+  `DictionarySuggester` only speaks when what was typed is *not a word*, or is
+  a word no syllabus contains. Widening that will make it nag, and
+  `bundled_dictionary_test.dart` pins twelve ordinary inputs it must stay
+  silent on.
 - **Pinyin does not identify a word, so never present a lookup as certain
   when it isn't.** Only 17% of one-syllable pinyin keys map to a single word,
   against 91% for two syllables. `Translation.uncertain` exists for this and

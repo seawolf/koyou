@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/keyboard_layout.dart';
+import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
@@ -10,6 +11,7 @@ import 'package:kouyu/widgets/blinking_cursor.dart';
 import 'package:kouyu/widgets/pinyin_keyboard.dart';
 import 'package:kouyu/audio/speech.dart';
 import 'package:kouyu/translation/model_store_absent.dart';
+import 'package:kouyu/translation/tone_suggestion.dart';
 
 /// Records what it was asked, so the screen's use of the seam can be checked
 /// without depending on any translator's contents.
@@ -22,6 +24,20 @@ class _RecordingTranslator implements Translator {
   Future<Translation?> translate(TranslationRequest request) async {
     asked.add(request.written);
     keys.add(request.key);
+    return reply;
+  }
+}
+
+/// Offers a fixed suggestion, so the screen can be tested without a dictionary.
+class _FakeSuggester implements Suggester {
+  _FakeSuggester(this.reply);
+
+  final ToneSuggestion? reply;
+  int asked = 0;
+
+  @override
+  Future<ToneSuggestion?> check(TranslationRequest request) async {
+    asked++;
     return reply;
   }
 }
@@ -75,6 +91,7 @@ void main() {
     Translator? translator,
     Translator? phraseTranslator,
     Speech? speech,
+    Suggester? suggester,
     Brightness brightness = Brightness.light,
     Size size = const Size(375, 812),
   }) async {
@@ -88,6 +105,7 @@ void main() {
           translator: translator ?? _RecordingTranslator(),
           phraseTranslator: phraseTranslator,
           speech: speech,
+          suggester: suggester,
           // The web implementation, imported directly: it reports
           // "no model on this platform" and touches no plugin, which
           // is what a widget test wants.
@@ -777,6 +795,81 @@ void main() {
       await type(tester, 'w', 'o', 3);
       await tap(tester, 'space');
       expect(composed(tester), 'wǒ ');
+    });
+  });
+
+  group('a mistyped tone', () {
+    const nihao = ToneSuggestion(
+      written: 'nǐhǎo',
+      gloss: 'hello',
+      word: 0,
+      syllable: 1,
+      tone: Tone.third,
+    );
+
+    testWidgets('is offered rather than applied', (tester) async {
+      await pump(tester, suggester: _FakeSuggester(nihao));
+      await type(tester, 'n', 'i', 3);
+      await type(tester, 'h', 'ao', 1);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('suggestion')), findsOneWidget);
+      expect(find.textContaining('nǐhǎo'), findsOneWidget);
+      expect(find.textContaining('hello'), findsOneWidget);
+      // Not applied until asked: the learner may have meant the odd word.
+      expect(composed(tester), 'nǐhāo');
+    });
+
+    testWidgets('is applied when tapped, and then goes away', (tester) async {
+      await pump(tester, suggester: _FakeSuggester(nihao));
+      await type(tester, 'n', 'i', 3);
+      await type(tester, 'h', 'ao', 1);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('suggestion')));
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'nǐhǎo');
+    });
+
+    testWidgets('shows nothing when there is nothing to say', (tester) async {
+      await pump(tester, suggester: _FakeSuggester(null));
+      await type(tester, 'n', 'i', 3);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('suggestion')), findsNothing);
+    });
+
+    testWidgets('clears with the line', (tester) async {
+      await pump(tester, suggester: _FakeSuggester(nihao));
+      await type(tester, 'n', 'i', 3);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('suggestion')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('clear')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('suggestion')), findsNothing);
+    });
+
+    testWidgets('fits a narrow screen', (tester) async {
+      await pump(
+        tester,
+        suggester: _FakeSuggester(
+          const ToneSuggestion(
+            written: 'wǒ xiǎng qù běijīng chī kǎoyā',
+            gloss: 'to want; would like; to think',
+            word: 0,
+            syllable: 0,
+            tone: Tone.third,
+          ),
+        ),
+        size: const Size(320, 568),
+      );
+      await type(tester, 'n', 'i', 3);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final chip = tester.getRect(find.byKey(const Key('suggestion')));
+      expect(chip.right, lessThanOrEqualTo(320));
     });
   });
 

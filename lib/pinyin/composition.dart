@@ -263,6 +263,24 @@ class Composition {
     );
   }
 
+  /// One syllable's tone changed, leaving everything else — including the
+  /// caret — where it is.
+  ///
+  /// What accepting a suggested correction does. Only the tone moves, so there
+  /// is nothing to re-parse: the letters the learner chose are still theirs.
+  Composition retoned(int word, int syllable, Tone tone) {
+    if (word < 0 || word >= words.length) return this;
+    if (syllable < 0 || syllable >= words[word].length) return this;
+    final next = _mutableWords();
+    final old = next[word][syllable];
+    next[word][syllable] = Syllable(
+      initial: old.initial,
+      rime: old.rime,
+      tone: tone,
+    );
+    return Composition(words: next, caret: caret);
+  }
+
   /// The caret at the very end, which is where typing leaves it.
   Caret get end => Caret(word: words.length - 1, syllable: words.last.length);
 

@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kouyu/pinyin/inventory.dart';
 import 'package:kouyu/pinyin/syllable.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/dictionary_translator.dart';
+import 'package:kouyu/translation/tone_suggestion.dart';
 import 'package:kouyu/translation/translator.dart';
 
 Syllable syllable(String initial, String rime, Tone tone) =>
@@ -164,6 +166,50 @@ void main() {
     expect(obscure.rank, isNull);
   });
 
+  // Against the real data rather than a stand-in, because the whole value of
+  // the tone suggester is that it stays quiet on ordinary input, and only the
+  // real frequency ranks can show that.
+  group('suggesting a mistyped tone', () {
+    late Suggester suggester;
+
+    setUp(() => suggester = DictionarySuggester(dictionary));
+
+    Future<String?> check(String written) async {
+      final request = TranslationRequest([_parse(written)]);
+      return (await suggester.check(request))?.written;
+    }
+
+    test('offers the word that was meant', () async {
+      expect(await check('ni3 hao1'), 'nǐhǎo');
+      expect(await check('zai4 jian1'), 'zàijiàn');
+      expect(await check('shi4 jie2'), 'shìjiè');
+      expect(await check('lao3 shi2'), 'lǎoshī');
+      // 泄泻 is a real word, so this one needs the unranked signal.
+      expect(await check('xie4 xie4'), 'xièxie');
+    });
+
+    test('stays quiet on ordinary input', () async {
+      for (final right in [
+        'ni3 hao3',
+        'shi4 jie4',
+        'peng2 you5',
+        'xie4 xie5',
+        'lao3 shi1',
+        'zai4 jian4',
+        'mei2 guan1 xi5',
+      ]) {
+        expect(await check(right), isNull, reason: right);
+      }
+    });
+
+    test('stays quiet on a single syllable, however obscure', () async {
+      // 呢 is rank 96 against 你 at rank 5; a ratio rule would nag here.
+      for (final one in ['ni2', 'shi2', 'ma1', 'mai2', 'wo3']) {
+        expect(await check(one), isNull, reason: one);
+      }
+    });
+  });
+
   test('characters are carried but never the only thing offered', () async {
     final entries = await dictionary.lookUp('ni3 hao3');
     // Kept for a future translation service, which needs characters.
@@ -171,4 +217,29 @@ void main() {
     // But there is always an English gloss to show instead.
     expect(entries.first.glosses.first, isNotEmpty);
   });
+}
+
+/// Turns `ni3 hao1` into syllables, using the inventory to split each one.
+List<Syllable> _parse(String numbered) => [
+  for (final part in numbered.split(' ')) _syllable(part),
+];
+
+Syllable _syllable(String part) {
+  final tone = Tone.values.firstWhere(
+    (tone) => tone.number == int.parse(part.substring(part.length - 1)),
+  );
+  final letters = part.substring(0, part.length - 1);
+  for (final entry in syllableInventory.entries) {
+    for (final rime in entry.value) {
+      final candidate = Syllable(
+        initial: entry.key,
+        rime: rime,
+        tone: Tone.neutral,
+      );
+      if (candidate.letters == letters) {
+        return Syllable(initial: entry.key, rime: rime, tone: tone);
+      }
+    }
+  }
+  throw ArgumentError('not a syllable: $part');
 }

@@ -10,6 +10,7 @@ import 'translation/model_store.dart';
 import 'translation/model_translator.dart';
 import 'translation/on_device_backend.dart';
 import 'translation/phrasebook_translator.dart';
+import 'translation/tone_suggestion.dart';
 import 'translation/translator.dart';
 
 class KouyuApp extends StatefulWidget {
@@ -58,6 +59,9 @@ class _KouyuAppState extends State<KouyuApp> {
       home: ComposeScreen(
         modelStore: _modelStore,
         speech: _speech,
+        // A dictionary question, not a model's: it stays quiet on correct
+        // pinyin because frequency data is not an opinion.
+        suggester: DictionarySuggester(Dictionary.bundled()),
         translator: CompositeTranslator([
           const PhrasebookTranslator(),
           DictionaryTranslator(Dictionary.bundled()),

@@ -405,6 +405,45 @@ Stripping only the characters left subjectless prose, and a gloss left dangling
 on "variant of" or "(from)" is dropped instead. That recovers about 9,400
 glosses and 6,900 entries.
 
+### Noticing a mistyped tone
+
+Type `nǐ hāo` and the app offers `nǐhǎo` — 你好 — as a tap. Offered, never
+applied: the learner may have meant the odd word, and silently retoning what
+someone wrote in a language they are learning would be the rudest thing this
+app could do. Accepting changes one tone and nothing else, so the letters and
+the caret stay where they were.
+
+**This is a dictionary question, not a model's.** It takes **0.16ms** once the
+shard is loaded, 37ms cold, against the second or two a phone needs for one
+model generation — and asking a model would mean a *second* generation on top
+of the translation. It is also the least reliable thing to ask a small model:
+it does not know which tone is right, it knows which sentence sounds likely,
+and it will nag confidently about correct input. Frequency data is not an
+opinion.
+
+Two signals, both narrow enough to stay quiet on correct pinyin:
+
+- **What was typed is not a word, and the same letters with another tone are.**
+  Not a judgement at all. `nǐ hāo` is nothing; `nǐ hǎo` is 你好.
+- **What was typed is a word, but one no syllabus contains, while a
+  tone-neighbour is common.** `xiè xiè` is 泄泻, "(TCM) to have diarrhea" —
+  a real entry, so the first signal says nothing — and `xiè xie` is 谢谢.
+
+What it deliberately does **not** do is compare how common two words are. 呢 is
+rank 96 and 你 is rank 5, so a ratio rule would "correct" a perfectly good
+particle; 时 at 115 would be corrected to 是 at 4. Being a ranked word at all
+is enough to be left alone, and single syllables are never questioned, because
+an obscure one can be a deliberate pick from the candidate list.
+
+Measured against the real data it fires on `nǐ hāo`, `zài jiān`, `shì jié`,
+`lǎo shí` and `xiè xiè`, and stays silent on 你好, 世界, 朋友, 谢谢, 老师,
+再见, 没关系, 我, 时, 妈, 呢 and 埋.
+
+What it cannot catch is a wrong tone that still makes a sensible word in
+context — `wǒ shí` where `wǒ shì` was meant. That needs to know what the
+sentence is about, which is a model's job, and a job for a better model than
+fits on a phone.
+
 ### Saying it aloud
 
 The speaker in the app bar reads the line back, in Mandarin, on request. It
