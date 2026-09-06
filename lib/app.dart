@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'audio/mandarin_speech.dart';
+import 'audio/speech.dart';
 import 'screens/compose_screen.dart';
 import 'theme.dart';
 import 'translation/dictionary.dart';
@@ -21,6 +23,11 @@ class _KouyuAppState extends State<KouyuApp> {
   /// Owned here, above the screens, so a 533MB download is not cancelled by
   /// navigating away from the screen that started it.
   final ModelStore _modelStore = modelStore();
+
+  /// The one place a voice is named, as with the translators. Speech is not a
+  /// tier of translation — it answers how the pinyin sounds, not what it means
+  /// — so it is wired separately and fails separately.
+  final Speech _speech = MandarinSpeech(Dictionary.bundled());
 
   @override
   void dispose() {
@@ -50,6 +57,7 @@ class _KouyuAppState extends State<KouyuApp> {
       // the dictionary answers alone.
       home: ComposeScreen(
         modelStore: _modelStore,
+        speech: _speech,
         translator: CompositeTranslator([
           const PhrasebookTranslator(),
           DictionaryTranslator(Dictionary.bundled()),

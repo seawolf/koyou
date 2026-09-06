@@ -8,6 +8,7 @@ import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
 import 'package:kouyu/widgets/blinking_cursor.dart';
 import 'package:kouyu/widgets/pinyin_keyboard.dart';
+import 'package:kouyu/audio/speech.dart';
 import 'package:kouyu/translation/model_store_absent.dart';
 
 /// Records what it was asked, so the screen's use of the seam can be checked
@@ -23,6 +24,32 @@ class _RecordingTranslator implements Translator {
     keys.add(request.key);
     return reply;
   }
+}
+
+/// A voice that records what it was asked to say.
+class _FakeSpeech implements Speech {
+  _FakeSpeech({this.canSpeak = true, this.resolvable = true});
+
+  final bool canSpeak;
+
+  /// Whether the pinyin can be turned into characters at all.
+  final bool resolvable;
+
+  final List<String> said = [];
+  int stops = 0;
+
+  @override
+  Future<bool> available() async => canSpeak;
+
+  @override
+  Future<bool> speak(TranslationRequest request) async {
+    if (!canSpeak || !resolvable) return false;
+    said.add(request.written);
+    return true;
+  }
+
+  @override
+  Future<void> stop() async => stops++;
 }
 
 /// A translator that answers only when told to, for testing lookup latency.
@@ -47,6 +74,7 @@ void main() {
     WidgetTester tester, {
     Translator? translator,
     Translator? phraseTranslator,
+    Speech? speech,
     Brightness brightness = Brightness.light,
     Size size = const Size(375, 812),
   }) async {
@@ -59,6 +87,7 @@ void main() {
         home: ComposeScreen(
           translator: translator ?? _RecordingTranslator(),
           phraseTranslator: phraseTranslator,
+          speech: speech,
           // The web implementation, imported directly: it reports
           // "no model on this platform" and touches no plugin, which
           // is what a widget test wants.
@@ -524,6 +553,100 @@ void main() {
         expect(rect.right, lessThanOrEqualTo(size.width), reason: gloss.pinyin);
       }
     }
+  });
+
+  group('saying it aloud', () {
+    testWidgets('there is no button where there is no voice', (tester) async {
+      await pump(tester, speech: _FakeSpeech(canSpeak: false));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('speak')), findsNothing);
+    });
+
+    testWidgets('nor where nothing can speak at all', (tester) async {
+      await pump(tester);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('speak')), findsNothing);
+    });
+
+    testWidgets('says what has been typed, when asked', (tester) async {
+      final voice = _FakeSpeech();
+      await pump(tester, speech: voice);
+      await tester.pumpAndSettle();
+
+      // Nothing committed, nothing to say.
+      expect(
+        tester.widget<IconButton>(find.byKey(const Key('speak'))).onPressed,
+        isNull,
+      );
+
+      await type(tester, 'w', 'o', 3);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('speak')));
+      await tester.pumpAndSettle();
+
+      expect(voice.said, ['wǒ']);
+    });
+
+    // Speaking as the line grows would say a fragment of a sentence after
+    // every syllable, which is the behaviour this app must not have.
+    testWidgets('never speaks unasked', (tester) async {
+      final voice = _FakeSpeech();
+      await pump(tester, speech: voice);
+      await tester.pumpAndSettle();
+
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expect(voice.said, isEmpty);
+    });
+
+    // An utterance about the text as it was is wrong the moment it changes.
+    testWidgets('stops when the text changes underneath it', (tester) async {
+      final voice = _FakeSpeech();
+      await pump(tester, speech: voice);
+      await tester.pumpAndSettle();
+
+      await type(tester, 'w', 'o', 3);
+      await tester.tap(find.byKey(const Key('speak')));
+      await tester.pumpAndSettle();
+      final before = voice.stops;
+
+      await tap(tester, 'backspace');
+      await tester.pumpAndSettle();
+      expect(voice.stops, greaterThan(before));
+    });
+
+    testWidgets('says so when there is no audio for the words', (tester) async {
+      await pump(tester, speech: _FakeSpeech(resolvable: false));
+      await tester.pumpAndSettle();
+
+      await type(tester, 'w', 'o', 3);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('speak')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('no-audio')), findsOneWidget);
+    });
+
+    // The speaker is a fifth app bar action, and four was already close.
+    testWidgets('five actions still fit a narrow screen', (tester) async {
+      await pump(tester, speech: _FakeSpeech(), size: const Size(320, 568));
+      await tester.pumpAndSettle();
+
+      for (final id in ['speak', 'model', 'arrangement', 'credits', 'clear']) {
+        final rect = tester.getRect(find.byKey(Key(id)));
+        expect(rect.right, lessThanOrEqualTo(320), reason: id);
+        expect(rect.left, greaterThanOrEqualTo(0), reason: id);
+        // Five of them fit by the title giving way, not by the buttons
+        // shrinking: 48pt is the smallest a thumb should be asked to hit.
+        expect(rect.width, greaterThanOrEqualTo(48), reason: id);
+      }
+      expect(find.text('Kǒuyǔ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   // Staging exists partly to keep the banks small enough to fit a phone.

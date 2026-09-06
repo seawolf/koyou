@@ -163,6 +163,23 @@ Two traps in there, both of which cost an afternoon:
   is not a simplified one, it is an ambiguous one — never strip or normalise
   tones away, including in lookup keys and cache keys. UI chrome stays in
   English.
+- **Speech is not a tier of translation.** It answers how the pinyin sounds,
+  not what it means, and the two fail independently — a phrase with no
+  translation is still worth hearing, which is why `wǒ ài nǐ` must not go
+  silent just because the phrasebook answered it and carries no characters.
+  So `lib/audio/` resolves the characters itself and `Speech` is wired
+  separately in `app.dart`. Screens may import `audio/speech.dart` and nothing
+  else from there.
+- **Never speak unasked.** Reading the line back as it grows would say a
+  fragment of a sentence after every syllable. The speaker is a button, any
+  edit stops what is playing, and there is a test that nothing is spoken
+  without a tap.
+- **Audio needs characters, and is immune to the ambiguity translation is
+  not.** A voice handed `wǒ mài shū` says nothing useful, so the dictionary
+  resolves 我卖书 first. But because a key carries its tone, every word
+  matching it is pronounced identically — 前 and 钱 are both `qián` — so a
+  wrong pick that ruins a translation still sounds right. Do not add
+  disambiguation machinery for audio's sake.
 - **Keep the UI and translation apart.** Nothing under `lib/screens/` or
   `lib/widgets/` may import a translation implementation — only
   `translation/translator.dart`. `lib/app.dart` is the one place an

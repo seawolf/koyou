@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../audio/speech.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../translation/model_store.dart';
@@ -22,6 +23,7 @@ class ComposeScreen extends StatefulWidget {
     required this.translator,
     required this.modelStore,
     this.phraseTranslator,
+    this.speech,
   });
 
   /// Passed through to the model screen. Owned above this screen so a download
@@ -47,6 +49,9 @@ class ComposeScreen extends StatefulWidget {
   /// Still just a [Translator]: this screen knows there is a considered tier,
   /// not what is in it. Null where there is none.
   final Translator? phraseTranslator;
+
+  /// Says the pinyin aloud, on demand. Null where nothing can.
+  final Speech? speech;
 
   @override
   State<ComposeScreen> createState() => _ComposeScreenState();
@@ -83,6 +88,12 @@ class _ComposeScreenState extends State<ComposeScreen> {
   /// which has no upper bound — that is the case this exists for.
   static const _worthMentioning = Duration(milliseconds: 250);
 
+  /// Whether this device has a Mandarin voice, once asked.
+  ///
+  /// Null until the answer arrives, and the control stays hidden until then —
+  /// it appears at most once, rather than flickering in and out.
+  bool _canSpeak = false;
+
   /// Which initial-bank arrangement is in use, switchable from the app bar.
   ///
   /// QWERTY by default: it is what most hands already know, and its three rows
@@ -90,9 +101,46 @@ class _ComposeScreenState extends State<ComposeScreen> {
   /// to scroll.
   KeyArrangement _arrangement = KeyArrangement.qwerty;
 
+  @override
+  void initState() {
+    super.initState();
+    _askAboutSpeech();
+  }
+
+  Future<void> _askAboutSpeech() async {
+    final speech = widget.speech;
+    if (speech == null) return;
+    final can = await speech.available();
+    if (!mounted || !can) return;
+    setState(() => _canSpeak = true);
+  }
+
   void _edit(Composition next) {
+    // Whatever is being said is about the text as it was, so it is now wrong.
+    widget.speech?.stop();
     setState(() => _composition = next);
     _translate(next);
+  }
+
+  /// Speaks what has been typed, on the learner's say-so and never otherwise.
+  ///
+  /// Deliberately manual. Speaking as the line grows would say a fragment of
+  /// a sentence after every syllable, which is both unusable and the fastest
+  /// way to make someone put the phone down.
+  Future<void> _speak() async {
+    final speech = widget.speech;
+    if (speech == null) return;
+    final said = await speech.speak(TranslationRequest(_composition.words));
+    if (said || !mounted) return;
+    // A button that appears to do nothing is worse than one that explains.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        key: Key('no-audio'),
+        content: Text(
+          'No audio for this — a word here is not in the dictionary.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -184,6 +232,15 @@ class _ComposeScreenState extends State<ComposeScreen> {
               KeyArrangement.qwerty => 'Switch to articulation order',
             },
           ),
+          if (_canSpeak)
+            IconButton(
+              key: const Key('speak'),
+              // Nothing committed means nothing to say: a lone draft syllable
+              // has no tone yet, so it is not a syllable anyone can pronounce.
+              onPressed: _composition.text.isEmpty ? null : _speak,
+              icon: const Icon(Icons.volume_up_outlined),
+              tooltip: 'Say it',
+            ),
           IconButton(
             key: const Key('model'),
             onPressed: () => Navigator.of(context).push(

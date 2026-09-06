@@ -156,6 +156,7 @@ flutter test
 | `lib/theme.dart`         | Brand seed colour and the light/dark themes          |
 | `lib/pinyin/`            | Pure Dart, no Flutter: the syllable inventory, tones, spelling, and the editing model |
 | `lib/translation/`       | The `Translator` seam, the CC-CEDICT lookup, and a small phrasebook |
+| `lib/audio/`             | The `Speech` seam and the platform voice behind it   |
 | `lib/screens/`           | One file per screen                                  |
 | `lib/widgets/`           | Reusable widgets, e.g. the keyboard                  |
 | `test/`                  | Mirrors `lib/` (`lib/screens/x.dart` → `test/screens/x_test.dart`) |
@@ -390,6 +391,47 @@ Now a bracketed aside containing a reference is removed whole, leaving "you".
 Stripping only the characters left subjectless prose, and a gloss left dangling
 on "variant of" or "(from)" is dropped instead. That recovers about 9,400
 glosses and 6,900 entries.
+
+### Saying it aloud
+
+The speaker in the app bar reads the line back, in Mandarin, on request. It
+uses **the platform's own voice** — Android's TTS engine, iOS's
+`AVSpeechSynthesizer`, or a browser's speech synthesis, through `flutter_tts`.
+
+Not a model. Qwen3.5 emits text only, whatever it is fed; llama.cpp *can* run
+OuteTTS with a WavTokenizer vocoder, and Chinese is one of its better
+languages, but that is another gigabyte of weights plus a vocoder and audio
+plumbing to get worse Mandarin than a phone gives away for nothing. The
+platform voice also costs no bundle size, needs no download to manage, and is
+the one tier that works on the web as well.
+
+It runs on the same bridge as everything else: a Chinese voice handed
+`wǒ mài shū` says nothing useful, so the dictionary resolves it to 我卖书
+first. That makes audio the third use of `DictionaryEntry.simplified`, after
+the dictionary's own lookups and the model's.
+
+Audio is also **more robust than translation** to the one weakness of that
+resolution. Where `qián` resolves to 前 and the learner meant 钱, the
+translation is wrong but the sound is not: the key carries the tone, so every
+word matching it is pronounced identically. A wrong character, read aloud, is
+still the right syllable.
+
+Two deliberate choices:
+
+- **On request only.** Speaking as the line grows would read out a fragment of
+  a sentence after every syllable — unusable, and the fastest way to make
+  someone put the phone down. Any edit stops whatever is playing, because it
+  was about the text as it was.
+- **Slower than conversational**, because the point is to hear the tones.
+
+Where the device has no Chinese voice the button is not there at all, rather
+than present and silent. Where a word cannot be resolved, nothing is spoken and
+the screen says why.
+
+One thing to expect rather than fix: a native voice applies **tone sandhi** —
+不 `bù` becomes `bú` before a fourth tone, 一 `yī` becomes `yì` — so the audio
+will not always match the tone marks on screen. That is what a native speaker
+says, which for a speaking app is the point.
 
 ### Licence
 
