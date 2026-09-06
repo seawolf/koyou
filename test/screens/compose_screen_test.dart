@@ -8,6 +8,7 @@ import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
 import 'package:kouyu/widgets/blinking_cursor.dart';
 import 'package:kouyu/widgets/pinyin_keyboard.dart';
+import 'package:kouyu/translation/model_store_absent.dart';
 
 /// Records what it was asked, so the screen's use of the seam can be checked
 /// without depending on any translator's contents.
@@ -54,7 +55,13 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: brightness == Brightness.light ? kLightTheme : kDarkTheme,
-        home: ComposeScreen(translator: translator ?? _RecordingTranslator()),
+        home: ComposeScreen(
+          translator: translator ?? _RecordingTranslator(),
+          // The web implementation, imported directly: it reports
+          // "no model on this platform" and touches no plugin, which
+          // is what a widget test wants.
+          modelStore: modelStore(),
+        ),
       ),
     );
   }
@@ -811,6 +818,31 @@ void main() {
       expect(tester.takeException(), isNull, reason: initial.label);
       await tap(tester, 'trail-initial');
     }
+  });
+
+  // A fourth action went into the app bar for the model screen. Four buttons
+  // plus the title is where an app bar starts to overflow on a small phone.
+  testWidgets('the app bar fits its actions on a narrow screen', (
+    tester,
+  ) async {
+    await pump(tester, size: const Size(320, 568));
+
+    for (final id in ['model', 'arrangement', 'credits', 'clear']) {
+      final rect = tester.getRect(find.byKey(Key(id)));
+      expect(rect.right, lessThanOrEqualTo(320), reason: id);
+      expect(rect.left, greaterThanOrEqualTo(0), reason: id);
+    }
+    expect(find.text('Kǒuyǔ'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the model button opens the model screen', (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(const Key('model')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Whole phrases'), findsOneWidget);
+    expect(find.byKey(const Key('model-status')), findsOneWidget);
   });
 
   testWidgets('renders in both light and dark themes', (tester) async {

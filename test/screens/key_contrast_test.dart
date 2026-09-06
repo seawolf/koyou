@@ -7,6 +7,7 @@ import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
 import 'package:kouyu/translation/translator.dart';
 import 'package:kouyu/widgets/blinking_cursor.dart';
+import 'package:kouyu/translation/model_store_absent.dart';
 
 class _SilentTranslator implements Translator {
   @override
@@ -66,7 +67,13 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme,
-        home: ComposeScreen(translator: _SilentTranslator()),
+        home: ComposeScreen(
+          translator: _SilentTranslator(),
+          // The web implementation, imported directly: it reports
+          // "no model on this platform" and touches no plugin, which
+          // is what a widget test wants.
+          modelStore: modelStore(),
+        ),
       ),
     );
   }

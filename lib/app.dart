@@ -4,13 +4,29 @@ import 'screens/compose_screen.dart';
 import 'theme.dart';
 import 'translation/dictionary.dart';
 import 'translation/dictionary_translator.dart';
+import 'translation/model_store.dart';
 import 'translation/model_translator.dart';
 import 'translation/on_device_backend.dart';
 import 'translation/phrasebook_translator.dart';
 import 'translation/translator.dart';
 
-class KouyuApp extends StatelessWidget {
+class KouyuApp extends StatefulWidget {
   const KouyuApp({super.key});
+
+  @override
+  State<KouyuApp> createState() => _KouyuAppState();
+}
+
+class _KouyuAppState extends State<KouyuApp> {
+  /// Owned here, above the screens, so a 533MB download is not cancelled by
+  /// navigating away from the screen that started it.
+  final ModelStore _modelStore = modelStore();
+
+  @override
+  void dispose() {
+    _modelStore.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +47,7 @@ class KouyuApp extends StatelessWidget {
       // On the web, and on a device that has not downloaded the weights, the
       // model declines everything and this is the pair it always was.
       home: ComposeScreen(
+        modelStore: _modelStore,
         translator: CompositeTranslator([
           const PhrasebookTranslator(),
           ModelTranslator(

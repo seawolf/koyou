@@ -139,10 +139,41 @@ model on short sentences — but they give no prompt control, and the two prompt
 failures above show how much of the quality here came from prompt shape. **The
 0.8B numbers in this document are the bar a platform backend has to clear.**
 
-If a model does ship instead, the weights cannot ride along inside the app:
-Google Play caps the base AAB download at 200MB and the release APK is already
-48MB. That makes it a first-run download. Apple deprecated On-Demand Resources
-in iOS 27, so Background Assets is the route there.
+### Getting the weights onto the device
+
+They cannot ride along inside the app: Google Play caps the base AAB download
+at 200MB, and the release APK is 27MB for `arm64-v8a` alone (48MB across every
+ABI). So they are fetched once, on request, into the app's support directory —
+not documents, which iOS offers to the Files app and backs up to iCloud, and
+533MB of re-downloadable weights should be neither.
+
+`ModelStore` owns that, and the screen behind the ✨ button drives it:
+
+- **Pinned by digest.** `ModelAsset` carries the exact size and the SHA-256
+  from the publisher's LFS metadata. The digest is the only thing that says the
+  533MB which arrived are the 533MB that were measured, and if the publisher
+  replaces the file, failing is better than quietly running a different model.
+  Hashing streams in chunks — reading 533MB into memory to hash it would be the
+  largest allocation the app ever made, on the device least able to afford it.
+- **Resumable.** A download this size over a phone's connection *will* be
+  interrupted, so it writes to `<name>.part` and asks for `bytes=<already>-`
+  next time. Verified against the real host: HuggingFace answers `206` with a
+  `content-range`, and Dart keeps the header across the 302 to the CDN.
+  A host that ignores the range and answers `200` starts over rather than
+  appending to what is there.
+- **Switchable without deleting.** A marker file beside the weights, so turning
+  the model off frees the memory the engine holds mapped but costs nothing to
+  turn back on. A marker rather than a stored preference because it describes
+  the file, disappears with the file, and spares the app a preferences
+  dependency for one boolean.
+
+The backend re-checks all of that on every phrase rather than latching, because
+downloading, deleting and switching off all happen while the app is running.
+Only a genuine load failure latches.
+
+Apple deprecated On-Demand Resources in iOS 27; Background Assets is the route
+there if this should ever be a system-managed download rather than the app's
+own.
 
 ### Web keeps the dictionary
 

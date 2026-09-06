@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
+import '../translation/model_store.dart';
 import '../translation/translator.dart';
 import '../widgets/blinking_cursor.dart';
 import '../widgets/pinyin_keyboard.dart';
+import 'model_screen.dart';
 
 /// Compose Mandarin as pinyin with tone marks, and see what it means.
 ///
@@ -15,7 +17,15 @@ import '../widgets/pinyin_keyboard.dart';
 /// time, and translation apps take phrases but want Hanzi, so there is nowhere
 /// to simply type `nǐ hǎo, shìjiè`. This screen is that missing box.
 class ComposeScreen extends StatefulWidget {
-  const ComposeScreen({super.key, required this.translator});
+  const ComposeScreen({
+    super.key,
+    required this.translator,
+    required this.modelStore,
+  });
+
+  /// Passed through to the model screen. Owned above this screen so a download
+  /// carries on when the learner navigates away from it.
+  final ModelStore modelStore;
 
   /// Supplied by the caller, and typed as the interface only, so this screen
   /// never names a translation implementation. Swapping in a real model is a
@@ -110,6 +120,16 @@ class _ComposeScreenState extends State<ComposeScreen> {
               KeyArrangement.articulatory => 'Switch to QWERTY order',
               KeyArrangement.qwerty => 'Switch to articulation order',
             },
+          ),
+          IconButton(
+            key: const Key('model'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => ModelScreen(store: widget.modelStore),
+              ),
+            ),
+            icon: const Icon(Icons.auto_awesome_outlined),
+            tooltip: 'Whole phrases',
           ),
           // CC-CEDICT asks for attribution under CC BY-SA 4.0. This is it.
           IconButton(

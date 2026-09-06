@@ -1,22 +1,8 @@
-import 'dart:io';
-
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
-import 'package:path_provider/path_provider.dart';
 
+import 'model_asset.dart';
+import 'model_store_native.dart';
 import 'translation_backend.dart';
-
-/// Where the weights live once they are on the device.
-///
-/// Not in the app bundle: Google Play caps the base download at 200MB and the
-/// release APK is already 48MB, so the weights are fetched once and kept in the
-/// app's support directory. Until they are there [onDeviceBackend] returns null
-/// and the dictionary answers on its own.
-const modelFileName = 'Qwen3.5-0.8B-Q4_K_M.gguf';
-
-Future<File> modelFile() async {
-  final directory = await getApplicationSupportDirectory();
-  return File('${directory.path}/$modelFileName');
-}
 
 /// The on-device backend. Declines until the weights are actually there.
 ///
@@ -47,8 +33,13 @@ class LlamaBackend implements TranslationBackend {
   LlamaEngine? _engine;
   Future<LlamaEngine?>? _spawning;
 
-  /// Whether spawning has already failed. Without this a device that cannot
-  /// load the library retries on every keystroke.
+  /// Set only when loading genuinely failed — a corrupt file, or no llama.cpp
+  /// on this platform — so a device that cannot run the model stops retrying
+  /// on every phrase.
+  ///
+  /// Deliberately not set when the weights are merely absent or switched off.
+  /// Those change while the app is running, and latching would mean the model
+  /// stayed silent until a restart.
   bool _unavailable = false;
 
   /// The prompt measured in `docs/local-model.md`. Two failures had to be
@@ -88,22 +79,26 @@ class LlamaBackend implements TranslationBackend {
   /// A translated phrase, and no room to ramble.
   static const _maxReplyTokens = 48;
 
-  Future<LlamaEngine?> _ensureEngine() {
-    if (_unavailable) return Future.value();
+  Future<LlamaEngine?> _ensureEngine() async {
+    if (_unavailable) return null;
+
+    if (modelPath == null && !await weightsUsable(ModelAsset.qwen08b)) {
+      // Not downloaded, removed, or switched off. Checked every time rather
+      // than once, because all three change while the app is running — and if
+      // an engine is already up, this is where switching the model off gives
+      // back the 533MB it holds mapped.
+      await dispose();
+      return null;
+    }
+
     final engine = _engine;
-    if (engine != null) return Future.value(engine);
+    if (engine != null) return engine;
     return _spawning ??= _spawn();
   }
 
   Future<LlamaEngine?> _spawn() async {
     try {
-      final path = modelPath ?? (await modelFile()).path;
-      if (!File(path).existsSync()) {
-        // Not downloaded yet. Not a failure, but not worth re-checking on
-        // every keystroke either — a download would restart the app's tier.
-        _unavailable = true;
-        return null;
-      }
+      final path = modelPath ?? (await weightsFile(ModelAsset.qwen08b)).path;
       final engine = await LlamaEngine.spawn(
         libraryPath: libraryPath,
         // gpuLayers stays 0: the bundled Android library is a CPU build, and
