@@ -36,10 +36,23 @@ Staging it buys three things a full keyboard can't:
 - **Grouped by vowel.** The rimes come in a line per starting vowel —
   `a ai ao an ang`, then `ou ong`, then `e ei en eng` — so the bank is scanned
   rather than searched.
-- **A caret marks where you are.** A trailing space renders as nothing, so
-  pressing space and then starting the next syllable looks identical to
-  forgetting to press it — and `wǒài` is not `wǒ ài`. A blinking caret sits at
-  the end of the text with the pending space drawn in front of it.
+- **A caret marks where you are, and can be moved.** A trailing space renders
+  as nothing, so pressing space and then starting the next syllable looks
+  identical to forgetting to press it — and `wǒài` is not `wǒ ài`. A blinking
+  caret sits where the next syllable will go, with the space after a word break
+  drawn explicitly.
+
+  Tap a syllable to put the caret before it, or past its middle to put the
+  caret after it, as in any other text field. Everything then happens there:
+  typing inserts, backspace deletes what is behind the caret, and space breaks
+  the word at that point. So a syllable four words back can be fixed without
+  retyping everything after it.
+
+  The caret moves between syllables, never inside one. A syllable is what the
+  keyboard produces and what a learner says, so there is no useful position
+  between a vowel and its own tone mark. Moving the caret also drops a
+  half-typed syllable: it has no tone, so it is not a syllable yet, and
+  carrying half of one to a new place in the line is stranger than losing it.
 
 ### Two arrangements of the initial bank
 

@@ -220,6 +220,18 @@ Two traps in there, both of which cost an afternoon:
   `translation/translator.dart`. `lib/app.dart` is the one place an
   implementation is named. The UI is under active design and translation is
   not; neither should churn because of the other.
+- **Editing happens at the caret, not at the end.** `Composition.caret` is an
+  insertion point between syllables, and `commit`, `space` and `backspace` all
+  act there. It defaults to `Caret(word: 0, syllable: 0)`, which for an empty
+  line is also the end, so anything built by typing keeps the caret at the end
+  without tracking it — that is why adding the caret changed none of the
+  existing behaviour. Never reintroduce `words.last`.
+- **A span cannot be handed its own bounds.** The composed line is one
+  paragraph, so tap targets are `TextSpan.recognizer`s and the midpoint used to
+  decide "before or after this syllable" is measured with a `TextPainter` as
+  the spans are built. It has to be captured per recognizer: held in a field,
+  every syllable read the last one's midpoint and only the final syllable
+  worked. There is a test for the right half specifically.
 - **`inventory.dart` decides what can be typed.** The keyboard's banks are
   derived from it, so a syllable is made reachable by adding it there, never by
   adding a key to a widget. Anything the inventory omits is unreachable by

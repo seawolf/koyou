@@ -209,6 +209,121 @@ void main() {
     });
   });
 
+  group('the caret', () {
+    /// `wǒ mài shū` — two words, the middle one a single syllable.
+    Composition line() {
+      var composition = type(const Composition(), 'w', 'uo', Tone.third);
+      composition = composition.space();
+      composition = type(composition, 'm', 'ai', Tone.fourth);
+      composition = composition.space();
+      return type(composition, 'sh', 'u', Tone.first);
+    }
+
+    test('typing leaves it at the end', () {
+      final composition = line();
+      expect(composition.caret, composition.end);
+      expect(composition.textBefore, 'wǒ mài shū');
+      expect(composition.textAfter, isEmpty);
+    });
+
+    test('splits the line where it sits', () {
+      final composition = line().movedTo(const Caret(word: 1, syllable: 0));
+      expect(composition.textBefore, 'wǒ ');
+      expect(composition.textAfter, 'mài shū');
+      // The halves still reassemble the line.
+      expect(composition.textBefore + composition.textAfter, 'wǒ mài shū');
+      expect(composition.text, 'wǒ mài shū', reason: 'moving edits nothing');
+    });
+
+    test('inserts where it sits, and moves on', () {
+      final moved = line().movedTo(const Caret(word: 1, syllable: 0));
+      final inserted = type(moved, 'h', 'ao', Tone.third);
+
+      expect(inserted.text, 'wǒ hǎomài shū');
+      expect(inserted.caret, const Caret(word: 1, syllable: 1));
+      // And the next syllable lands after the first, not before it.
+      expect(type(inserted, 'b', 'u', Tone.fourth).text, 'wǒ hǎobùmài shū');
+    });
+
+    test('deletes what is behind it, not what is at the end', () {
+      final moved = line().movedTo(const Caret(word: 1, syllable: 1));
+      expect(moved.backspace().text, 'wǒ shū');
+      expect(moved.backspace().caret, const Caret(word: 1, syllable: 0));
+    });
+
+    // At the start of a word what is behind the caret is the word break.
+    test('at a word start, deletes the break and joins the words', () {
+      final moved = line().movedTo(const Caret(word: 1, syllable: 0));
+      final joined = moved.backspace();
+
+      expect(joined.text, 'wǒmài shū');
+      expect(joined.caret, const Caret(word: 0, syllable: 1));
+      expect(joined.textBefore, 'wǒ');
+      expect(joined.textAfter, 'mài shū');
+    });
+
+    test('space splits the word it is inside', () {
+      var composition = type(const Composition(), 'sh', 'i', Tone.fourth);
+      composition = type(composition, 'j', 'ie', Tone.fourth);
+      expect(composition.text, 'shìjiè');
+
+      final split = composition
+          .movedTo(const Caret(word: 0, syllable: 1))
+          .space();
+      expect(split.text, 'shì jiè');
+      expect(split.caret, const Caret(word: 1, syllable: 0));
+    });
+
+    test('space is refused at the start of a word', () {
+      final moved = line().movedTo(const Caret(word: 1, syllable: 0));
+      expect(moved.space(), same(moved), reason: 'nothing to break off');
+    });
+
+    test('moving drops a half-typed syllable', () {
+      final drafting = line().withInitial(key('h')).withRime('ao');
+      expect(drafting.preview, 'wǒ mài shūhao');
+
+      final moved = drafting.movedTo(const Caret(word: 0, syllable: 0));
+      expect(moved.draft.isEmpty, isTrue);
+      expect(moved.preview, 'wǒ mài shū');
+    });
+
+    test('is clamped to somewhere it can be', () {
+      final composition = line();
+      expect(
+        composition.movedTo(const Caret(word: 9, syllable: 9)).caret,
+        composition.end,
+      );
+      expect(
+        composition.movedTo(const Caret(word: -1, syllable: -1)).caret,
+        const Caret(word: 0, syllable: 0),
+      );
+    });
+
+    test('clearing puts it back to the start', () {
+      expect(line().cleared().caret, const Caret(word: 0, syllable: 0));
+    });
+
+    // Everything typed after a reposition has to end up in the right place,
+    // so this walks a whole edit rather than one operation.
+    test('a whole insertion in the middle', () {
+      // wǒ shū, then go back and put mài between them.
+      var composition = type(const Composition(), 'w', 'uo', Tone.third);
+      composition = composition.space();
+      composition = type(composition, 'sh', 'u', Tone.first);
+      expect(composition.text, 'wǒ shū');
+
+      composition = composition.movedTo(const Caret(word: 1, syllable: 0));
+      composition = type(composition, 'm', 'ai', Tone.fourth);
+      expect(composition.text, 'wǒ màishū');
+
+      // A space after it makes them separate words.
+      composition = composition.space();
+      expect(composition.text, 'wǒ mài shū');
+      expect(composition.caret, const Caret(word: 2, syllable: 0));
+    });
+  });
+
   test('clearing resets everything', () {
     var composition = type(const Composition(), 'n', 'i', Tone.third);
     composition = composition.space().withInitial(key('h'));

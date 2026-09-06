@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../audio/speech.dart';
@@ -293,6 +294,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
             phrase: _phrase,
             lookingUp: _lookingUp,
             thinking: _thinking,
+            onMoveCaret: (caret) => _edit(_composition.movedTo(caret)),
           );
           // The keyboard's height now follows the stage on show rather than a
           // fixed fraction, which is safe because it is anchored to the far
@@ -369,6 +371,7 @@ class _Reading extends StatelessWidget {
     required this.phrase,
     required this.lookingUp,
     required this.thinking,
+    required this.onMoveCaret,
   });
 
   final Composition composition;
@@ -381,6 +384,8 @@ class _Reading extends StatelessWidget {
 
   final bool lookingUp;
   final bool thinking;
+
+  final ValueChanged<Caret> onMoveCaret;
 
   @override
   Widget build(BuildContext context) {
@@ -416,35 +421,7 @@ class _Reading extends StatelessWidget {
               ),
             )
           else
-            Text.rich(
-              key: const Key('composed'),
-              TextSpan(
-                children: [
-                  TextSpan(text: composition.text),
-                  // The draft is dimmed: it has no tone yet, so it is not yet
-                  // a syllable anyone should read aloud.
-                  TextSpan(
-                    text: composition.draftSuffix,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.55,
-                      ),
-                    ),
-                  ),
-                  // The space a pending word break stands for, which the text
-                  // itself does not carry.
-                  if (composition.hasPendingWordBreak)
-                    const TextSpan(text: ' '),
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: BlinkingCursor(
-                      height: theme.textTheme.displaySmall?.fontSize ?? 36,
-                    ),
-                  ),
-                ],
-              ),
-              style: theme.textTheme.displaySmall,
-            ),
+            _ComposedLine(composition: composition, onMoveCaret: onMoveCaret),
           // Plain text, not a spinner. An indeterminate spinner never stops
           // animating, and for something that usually takes under 25ms the
           // motion would be the only thing anyone noticed.
@@ -599,5 +576,148 @@ class _Words extends StatelessWidget {
           ),
       ],
     );
+  }
+}
+
+/// The composed line, with a caret in it that can be moved by tapping.
+///
+/// One paragraph rather than a row of separate widgets, so the text kerns,
+/// wraps and aligns as text — and so the whole line stays readable as a single
+/// [Text] to anything that wants to read it. The taps therefore hang off the
+/// spans, which means gesture recognizers, which means this has to be
+/// stateful: a recognizer outlives a build and has to be disposed.
+class _ComposedLine extends StatefulWidget {
+  const _ComposedLine({required this.composition, required this.onMoveCaret});
+
+  final Composition composition;
+  final ValueChanged<Caret> onMoveCaret;
+
+  @override
+  State<_ComposedLine> createState() => _ComposedLineState();
+}
+
+class _ComposedLineState extends State<_ComposedLine> {
+  /// One per syllable on screen, rebuilt whenever the line changes.
+  final List<TapGestureRecognizer> _taps = [];
+
+  @override
+  void dispose() {
+    _disposeTaps();
+    super.dispose();
+  }
+
+  void _disposeTaps() {
+    for (final tap in _taps) {
+      tap.dispose();
+    }
+    _taps.clear();
+  }
+
+  /// A tap on a syllable puts the caret at [before], or after that syllable if
+  /// the tap landed past [midpoint] — which is what every other text field
+  /// does, and the only way to reach the end of a word by tapping its last
+  /// syllable.
+  ///
+  /// [midpoint] is measured from the text as the spans are built, because a
+  /// paragraph does not hand a span its own bounds. It has to be captured per
+  /// recognizer: held in a field instead, every syllable read the last one's
+  /// midpoint and the right half never worked except on the final syllable.
+  TapGestureRecognizer _tap(Caret before, Caret after, double midpoint) {
+    final recognizer = TapGestureRecognizer()
+      ..onTapUp = (details) {
+        final box = context.findRenderObject();
+        if (box is! RenderBox) return;
+        final local = box.globalToLocal(details.globalPosition);
+        widget.onMoveCaret(local.dx < midpoint ? before : after);
+      };
+    _taps.add(recognizer);
+    return recognizer;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.displaySmall;
+    final composition = widget.composition;
+    _disposeTaps();
+
+    final caret = WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: BlinkingCursor(height: style?.fontSize ?? 36),
+    );
+    // The draft is dimmed: it has no tone yet, so it is not yet a syllable
+    // anyone should read aloud.
+    final draft = TextSpan(
+      text: composition.draftSuffix,
+      style: TextStyle(
+        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+      ),
+    );
+
+    final spans = <InlineSpan>[];
+    var painted = 0.0;
+    var anythingBefore = false;
+
+    void addCaret() {
+      spans.add(draft);
+      spans.add(caret);
+    }
+
+    for (var word = 0; word < composition.words.length; word++) {
+      final syllables = composition.words[word];
+      // An empty word still renders something if the caret is sitting in it —
+      // the draft, or the caret alone — and it still needs the space that
+      // separates it from the word before. Without this the space after a
+      // word break was invisible, and `wǒài` looked like `wǒ ài`.
+      final visible = syllables.isNotEmpty || composition.caret.word == word;
+      if (anythingBefore && visible) {
+        spans.add(const TextSpan(text: ' '));
+        painted += _widthOf(' ', style);
+      }
+      // Only real syllables count as text before. A word holding nothing but
+      // the caret — what backspacing the first syllable of a line leaves —
+      // must not put a space in front of the word after it.
+      if (syllables.isNotEmpty) anythingBefore = true;
+
+      for (var index = 0; index <= syllables.length; index++) {
+        if (composition.caret.word == word &&
+            composition.caret.syllable == index) {
+          addCaret();
+        }
+        if (index == syllables.length) break;
+
+        final written = syllables[index].written;
+        final width = _widthOf(written, style);
+        final midpoint = painted + width / 2;
+        painted += width;
+        spans.add(
+          TextSpan(
+            text: written,
+            recognizer: _tap(
+              Caret(word: word, syllable: index),
+              Caret(word: word, syllable: index + 1),
+              midpoint,
+            ),
+          ),
+        );
+      }
+    }
+
+    return Text.rich(
+      key: const Key('composed'),
+      TextSpan(children: spans),
+      style: style,
+    );
+  }
+
+  /// How wide [text] is in [style], for splitting a syllable down the middle.
+  double _widthOf(String text, TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
   }
 }

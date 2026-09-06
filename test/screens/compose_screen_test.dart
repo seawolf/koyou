@@ -649,6 +649,88 @@ void main() {
     });
   });
 
+  group('moving the caret', () {
+    /// Types `wǒ mài` and reports the rect of the composed line.
+    Future<Rect> twoWords(WidgetTester tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      expect(composed(tester), 'wǒ mài');
+      return tester.getRect(find.byKey(const Key('composed')));
+    }
+
+    Future<void> tapLine(WidgetTester tester, Rect line, double dx) async {
+      await tester.tapAt(Offset(line.left + dx, line.center.dy));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('tapping the left of a syllable puts the caret before it', (
+      tester,
+    ) async {
+      final line = await twoWords(tester);
+      await tapLine(tester, line, 2);
+
+      await type(tester, 'h', 'ao', 3);
+      expect(composed(tester), 'hǎowǒ mài');
+    });
+
+    testWidgets('tapping the right of a syllable puts the caret after it', (
+      tester,
+    ) async {
+      final line = await twoWords(tester);
+      // Still inside the first syllable, past its middle.
+      await tapLine(tester, line, 60);
+
+      await type(tester, 'h', 'ao', 3);
+      expect(composed(tester), 'wǒhǎo mài');
+    });
+
+    // The point of the feature: fix a syllable in the middle without
+    // retyping everything after it.
+    testWidgets('backspace then deletes at the caret, not at the end', (
+      tester,
+    ) async {
+      final line = await twoWords(tester);
+      await tapLine(tester, line, 60);
+
+      await tap(tester, 'backspace');
+      await tester.pumpAndSettle();
+      expect(composed(tester), 'mài', reason: 'wǒ went, mài stayed');
+    });
+
+    testWidgets('typing continues from where the caret was moved to', (
+      tester,
+    ) async {
+      final line = await twoWords(tester);
+      await tapLine(tester, line, 2);
+
+      await type(tester, 'h', 'ao', 3);
+      await type(tester, 'b', 'u', 4);
+      // Both new syllables land in order, ahead of what was there.
+      expect(composed(tester), 'hǎobùwǒ mài');
+    });
+
+    testWidgets('a half-typed syllable is dropped when the caret moves', (
+      tester,
+    ) async {
+      final line = await twoWords(tester);
+      await tap(tester, 'initial-h');
+      await tap(tester, 'rime-ao');
+      expect(composed(tester), 'wǒ màihao');
+
+      await tapLine(tester, line, 2);
+      expect(composed(tester), 'wǒ mài');
+    });
+
+    testWidgets('the space after a word break is still drawn', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      expect(composed(tester), 'wǒ ');
+    });
+  });
+
   // Staging exists partly to keep the banks small enough to fit a phone.
   testWidgets('every bank fits phone width without clipping', (tester) async {
     await pump(tester);
