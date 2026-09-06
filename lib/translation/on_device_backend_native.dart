@@ -33,6 +33,15 @@ class LlamaBackend implements TranslationBackend {
   LlamaEngine? _engine;
   Future<LlamaEngine?>? _spawning;
 
+  /// Generations run one at a time, in the order asked for.
+  ///
+  /// Not an optimisation — a correctness fix. Sessions created on one engine
+  /// share KV sequence 0, so two generations at once corrupt each other's
+  /// cache: on a laptop, five overlapping translations produced "I am. 10. 11.
+  /// 12." from 我是 and threw on the other four. The app asks on every
+  /// keystroke, which is exactly how they overlap.
+  Future<void> _queue = Future<void>.value();
+
   /// Set only when loading genuinely failed — a corrupt file, or no llama.cpp
   /// on this platform — so a device that cannot run the model stops retrying
   /// on every phrase.
@@ -77,7 +86,20 @@ class LlamaBackend implements TranslationBackend {
   static const _contextTokens = 1024;
 
   /// A translated phrase, and no room to ramble.
-  static const _maxReplyTokens = 48;
+  static const _maxReplyTokens = 32;
+
+  /// Deterministic, but not `SamplerParams.greedyDefault`.
+  ///
+  /// `greedy: true` short-circuits to argmax and ignores the rest of the
+  /// chain, penalties included, which is how a wobble turns into "10. 11. 12."
+  /// and runs to the token limit. A temperature of zero collapses to the same
+  /// argmax *after* the filters, so the repeat penalty still applies and the
+  /// answer is still the same every time.
+  static const _sampler = SamplerParams(
+    temperature: 0,
+    repeatPenalty: 1.1,
+    penaltyLastN: 64,
+  );
 
   Future<LlamaEngine?> _ensureEngine() async {
     if (_unavailable) return null;
@@ -118,7 +140,15 @@ class LlamaBackend implements TranslationBackend {
   }
 
   @override
-  Future<String?> translate(String chinese) async {
+  Future<String?> translate(String chinese) {
+    final result = _queue.then((_) => _generate(chinese));
+    // The queue must survive a failed generation, so swallow the error here;
+    // [_generate] has already turned it into a null for the caller.
+    _queue = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
+  Future<String?> _generate(String chinese) async {
     final engine = await _ensureEngine();
     if (engine == null) return null;
 
@@ -128,13 +158,19 @@ class LlamaBackend implements TranslationBackend {
       final reply = StringBuffer();
       await for (final event in session.generate(
         prompt: _prompt(chinese),
-        sampler: SamplerParams.greedyDefault,
+        sampler: _sampler,
         maxTokens: _maxReplyTokens,
       )) {
-        if (event is TokenEvent) reply.write(event.text);
+        if (event is! TokenEvent) continue;
+        reply.write(event.text);
+        // A translation is one line. Stopping at the first break both trims
+        // the answer and cancels the rest of the generation, which is the only
+        // stop sequence available here — and the difference between "I am his
+        // own." and "I am his own.\n10.1.1.1.1.1. 2011."
+        if (reply.toString().contains('\n')) break;
       }
-      final text = reply.toString().trim();
-      return text.isEmpty ? null : text;
+      final text = reply.toString().split('\n').first.trim();
+      return _plausible(text) ? text : null;
     } on Object {
       // Anything the engine throws mid-generation. The dictionary is behind
       // this, so a failure costs a better answer rather than any answer.
@@ -143,6 +179,27 @@ class LlamaBackend implements TranslationBackend {
       await session?.dispose();
     }
   }
+
+  /// Whether a reply is worth showing a learner.
+  ///
+  /// A last line of defence, not a substitute for the fixes above. A small
+  /// model that loses its footing does not produce a slightly wrong
+  /// translation, it produces a numbered list or a snippet of JavaScript, and
+  /// either is worse than falling through to the dictionary. Deliberately
+  /// permissive about digits, since "I am 10 years old" is a fair translation.
+  static bool _plausible(String reply) {
+    if (reply.isEmpty) return false;
+    final letters = RegExp(r'[A-Za-z]').allMatches(reply).length;
+    if (letters < 2) return false;
+    // Mostly not-letters means a list, a table, or code.
+    if (letters < reply.length / 3) return false;
+    return !_codeish.hasMatch(reply);
+  }
+
+  /// Shapes that are never English prose.
+  static final _codeish = RegExp(
+    r'[{}<>]|;\s*$|\b(?:function|console|printf|import|def|var|let|const)\b',
+  );
 
   /// Releases the weights. Worth calling when the model tier is switched off,
   /// since the engine holds 533MB mapped until it goes.
