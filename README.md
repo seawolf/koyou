@@ -424,6 +424,12 @@ which want the characters the dictionary now resolves:
   at a size that fits a phone. The platform models — Apple's Foundation Models,
   Gemini Nano — are free of bundle cost, and the same split applies to them.
 
+  Built, on Android: `llama_cpp_dart` (MIT) bundles llama.cpp into the APK,
+  and the weights are a resumable, digest-pinned first-run download managed
+  from the ✨ button — they cannot ship inside the app, since Play caps the
+  base download at 200MB. Switching the model off keeps the download and
+  frees the memory. iOS needs a full Xcode install before it builds at all.
+
 ## The app icon
 
 The mark is 口 (_kǒu_, "mouth") with a calligraphic speech flick sweeping off
