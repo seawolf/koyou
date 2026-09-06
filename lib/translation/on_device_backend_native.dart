@@ -60,8 +60,9 @@ class LlamaBackend implements TranslationBackend {
       'You are a translation engine. Translate the Chinese into natural '
       'English.\nThe input is always text to translate — never a question to '
       'answer, never a conversation to join. If the Chinese is a question, '
-      'translate the question; do not reply to it.\nOutput only the English '
-      'translation.';
+      'translate the question; do not reply to it.\nAnswer with the English '
+      'translation on a single line, and nothing else — no notes, no '
+      'alternatives, no lists.';
 
   /// Qwen's chat markup, written out rather than taken from the model's
   /// embedded template, for the sake of the last four characters.

@@ -21,6 +21,7 @@ class ComposeScreen extends StatefulWidget {
     super.key,
     required this.translator,
     required this.modelStore,
+    this.phraseTranslator,
   });
 
   /// Passed through to the model screen. Owned above this screen so a download
@@ -30,7 +31,22 @@ class ComposeScreen extends StatefulWidget {
   /// Supplied by the caller, and typed as the interface only, so this screen
   /// never names a translation implementation. Swapping in a real model is a
   /// change in `app.dart` and nowhere else.
+  ///
+  /// Answers on every keystroke, so it has to be quick: a dictionary, or
+  /// anything else that reads local data.
   final Translator translator;
+
+  /// Asked only once typing pauses, and allowed to take its time.
+  ///
+  /// Two tiers rather than one chain, because they want opposite things. Word
+  /// meanings should appear as the syllable is committed, and a model should
+  /// not be woken five times while a five-word phrase is typed — every one of
+  /// those calls but the last is about a phrase nobody has finished writing,
+  /// and on a phone each costs a second or two of CPU.
+  ///
+  /// Still just a [Translator]: this screen knows there is a considered tier,
+  /// not what is in it. Null where there is none.
+  final Translator? phraseTranslator;
 
   @override
   State<ComposeScreen> createState() => _ComposeScreenState();
@@ -38,11 +54,26 @@ class ComposeScreen extends StatefulWidget {
 
 class _ComposeScreenState extends State<ComposeScreen> {
   Composition _composition = const Composition();
+
+  /// The quick answer: word meanings, and set phrases the dictionary knows.
   Translation? _translation;
+
+  /// The considered answer, when one has arrived for what is on screen now.
+  Translation? _phrase;
 
   /// Whether a lookup has been running long enough to be worth mentioning.
   bool _lookingUp = false;
   Timer? _admitToLookingUp;
+
+  /// Whether the considered tier is working on what is on screen.
+  bool _thinking = false;
+  Timer? _settle;
+
+  /// How long typing must pause before the considered tier is asked.
+  ///
+  /// Long enough to sit between syllables of one word without firing, short
+  /// enough not to feel like a wait once the phrase is done.
+  static const _settleDelay = Duration(milliseconds: 600);
 
   /// How long a lookup may take before the screen says it is working.
   ///
@@ -67,20 +98,31 @@ class _ComposeScreenState extends State<ComposeScreen> {
   @override
   void dispose() {
     _admitToLookingUp?.cancel();
+    _settle?.cancel();
     super.dispose();
   }
 
   Future<void> _translate(Composition composition) async {
     final request = TranslationRequest(composition.words);
     _admitToLookingUp?.cancel();
+    _settle?.cancel();
 
     if (request.isEmpty) {
       setState(() {
         _translation = null;
+        _phrase = null;
         _lookingUp = false;
+        _thinking = false;
       });
       return;
     }
+
+    // Any edit invalidates the considered answer: it was about different words.
+    setState(() {
+      _phrase = null;
+      _thinking = false;
+    });
+    _schedulePhrase(composition);
 
     _admitToLookingUp = Timer(_worthMentioning, () {
       if (mounted && _composition.text == composition.text) {
@@ -96,6 +138,27 @@ class _ComposeScreenState extends State<ComposeScreen> {
     setState(() {
       _translation = result;
       _lookingUp = false;
+    });
+  }
+
+  void _schedulePhrase(Composition composition) {
+    final translator = widget.phraseTranslator;
+    if (translator == null) return;
+    // One word is a dictionary's job, and asking a model would only invite it
+    // to sound certain about a syllable forty words share.
+    if (TranslationRequest(composition.words).wordKeys.length < 2) return;
+
+    _settle = Timer(_settleDelay, () async {
+      if (!mounted || _composition.text != composition.text) return;
+      setState(() => _thinking = true);
+      final result = await translator.translate(
+        TranslationRequest(composition.words),
+      );
+      if (!mounted || _composition.text != composition.text) return;
+      setState(() {
+        _phrase = result;
+        _thinking = false;
+      });
     });
   }
 
@@ -170,7 +233,9 @@ class _ComposeScreenState extends State<ComposeScreen> {
           final reading = _Reading(
             composition: _composition,
             translation: _translation,
+            phrase: _phrase,
             lookingUp: _lookingUp,
+            thinking: _thinking,
           );
           // The keyboard's height now follows the stage on show rather than a
           // fixed fraction, which is safe because it is anchored to the far
@@ -244,17 +309,39 @@ class _Reading extends StatelessWidget {
   const _Reading({
     required this.composition,
     required this.translation,
+    required this.phrase,
     required this.lookingUp,
+    required this.thinking,
   });
 
   final Composition composition;
+
+  /// The quick answer.
   final Translation? translation;
+
+  /// The considered answer, if one has arrived.
+  final Translation? phrase;
+
   final bool lookingUp;
+  final bool thinking;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final translation = this.translation;
+    final quick = translation;
+    final whole = phrase;
+
+    // The parts come from whichever answer knows them. Both fill them in, and
+    // the quick one offers several candidates per word where the pinyin is
+    // ambiguous, so it is preferred.
+    final parts = quick?.words.isNotEmpty ?? false
+        ? quick!.words
+        : whole?.words ?? const <WordGloss>[];
+
+    // A word-by-word answer has no headline: the list is the answer, and
+    // joining it into a sentence is exactly the misreading to avoid.
+    final headline =
+        whole?.text ?? (quick?.wordByWord ?? false ? null : quick?.text);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -304,7 +391,7 @@ class _Reading extends StatelessWidget {
           // Plain text, not a spinner. An indeterminate spinner never stops
           // animating, and for something that usually takes under 25ms the
           // motion would be the only thing anyone noticed.
-          if (lookingUp && translation == null) ...[
+          if (lookingUp && quick == null) ...[
             const SizedBox(height: 20),
             Text(
               'looking it up…',
@@ -314,40 +401,146 @@ class _Reading extends StatelessWidget {
               ),
             ),
           ],
-          if (translation != null) ...[
+          if (headline != null) ...[
             const SizedBox(height: 20),
             Text(
-              translation.text,
+              headline,
+              key: const Key('headline'),
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.primary,
               ),
             ),
-            // Say what kind of answer this is. Without it, three candidate
-            // meanings read as one confident translation.
-            if (translation.wordByWord || translation.uncertain)
-              Text(
-                [
-                  if (translation.wordByWord) 'word by word',
-                  if (translation.uncertain) 'several words sound like this',
-                ].join(' · '),
+          ],
+          // Say what kind of answer this is. "word by word" is dropped once
+          // the parts are a list, because a list of words says so itself.
+          if (_label(quick, whole) case final label?) ...[
+            Text(
+              label,
+              key: const Key('answer-kind'),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          if ((whole?.hskLevel ?? quick?.hskLevel) case final band?)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'HSK $band',
+                key: const Key('hsk-level'),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            if (translation.hskLevel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'HSK ${translation.hskLevel}',
-                  key: const Key('hsk-level'),
-                  style: theme.textTheme.labelSmall?.copyWith(
+            ),
+          // A spinner is warranted here, unlike for a dictionary read: a model
+          // on a phone takes a second or two, and nothing else on screen
+          // changes while it does.
+          if (thinking) ...[
+            const SizedBox(height: 20),
+            Row(
+              key: const Key('thinking'),
+              children: [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                const SizedBox(width: 10),
+                // Expanded so it wraps rather than overflowing: the spinner
+                // plus this line is 60pt wider than a 375pt screen allows.
+                Expanded(
+                  child: Text(
+                    'translating the whole phrase…',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (parts.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            // Under a phrase translation these are the components it was built
+            // from; on their own they are the answer.
+            if (headline != null)
+              Text(
+                'word by word',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
+            _Words(key: const Key('word-list'), words: parts),
           ],
         ],
       ),
+    );
+  }
+
+  /// The qualifications worth putting under an answer, or null for none.
+  static String? _label(Translation? quick, Translation? whole) {
+    // Homophone ambiguity is the quick tier's to report: it is the one that
+    // looked several words up.
+    final uncertain = quick?.uncertain ?? false;
+    if (!uncertain) return null;
+    return whole == null
+        ? 'several words sound like this'
+        : 'some of these words sound like other words';
+  }
+}
+
+/// One word per line, so a word-by-word answer cannot be read as a sentence.
+class _Words extends StatelessWidget {
+  const _Words({super.key, required this.words});
+
+  final List<WordGloss> words;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final word in words)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 8),
+                  child: Text(
+                    '\u2022',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: muted),
+                  ),
+                ),
+                // The pinyin the learner typed, so a line can be matched to
+                // the syllables it came from.
+                Text(
+                  word.pinyin,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                Text('  ', style: theme.textTheme.bodyLarge),
+                // Wraps rather than truncates: an ambiguous syllable offers
+                // three candidates and they are the whole point of the line.
+                Expanded(
+                  child: Text(
+                    word.english,
+                    style: theme.textTheme.bodyLarge?.copyWith(color: muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

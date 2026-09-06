@@ -46,6 +46,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     Translator? translator,
+    Translator? phraseTranslator,
     Brightness brightness = Brightness.light,
     Size size = const Size(375, 812),
   }) async {
@@ -57,6 +58,7 @@ void main() {
         theme: brightness == Brightness.light ? kLightTheme : kDarkTheme,
         home: ComposeScreen(
           translator: translator ?? _RecordingTranslator(),
+          phraseTranslator: phraseTranslator,
           // The web implementation, imported directly: it reports
           // "no model on this platform" and touches no plugin, which
           // is what a widget test wants.
@@ -332,15 +334,196 @@ void main() {
     expect(translator.keys.last, 'shi4', reason: 'the dictionary key is wrong');
   });
 
-  testWidgets('labels a word-by-word gloss as such', (tester) async {
+  // A word-by-word answer is a list, not a sentence. Joined on one line,
+  // "you · good" invites being read as a translation of the phrase, which is
+  // the one thing it is not.
+  testWidgets('a word-by-word gloss is a list, one word per line', (
+    tester,
+  ) async {
     final translator = _RecordingTranslator()
-      ..reply = const Translation('you · good', wordByWord: true);
+      ..reply = const Translation(
+        'you · good',
+        wordByWord: true,
+        words: [
+          WordGloss(pinyin: 'nǐ', english: 'you'),
+          WordGloss(pinyin: 'hǎo', english: 'good'),
+        ],
+      );
     await pump(tester, translator: translator);
 
     await type(tester, 'n', 'i', 3);
 
-    expect(find.text('you · good'), findsOneWidget);
-    expect(find.text('word by word'), findsOneWidget);
+    // Each word on its own line, labelled with the pinyin it came from.
+    expect(find.byKey(const Key('word-list')), findsOneWidget);
+    for (final part in ['nǐ', 'you', 'hǎo', 'good']) {
+      expect(find.text(part), findsOneWidget, reason: part);
+    }
+    // And not as one run-together line, nor with a headline pretending to be
+    // a translation of the whole.
+    expect(find.text('you · good'), findsNothing);
+    expect(find.byKey(const Key('headline')), findsNothing);
+  });
+
+  group('the considered tier', () {
+    /// Counts calls and answers when told to, so the wait can be inspected.
+    Translation phrase(String text) => Translation(
+      text,
+      words: const [
+        WordGloss(pinyin: 'wǒ', english: 'I; me'),
+        WordGloss(pinyin: 'mài', english: 'to sell'),
+      ],
+    );
+
+    // The defect this exists to prevent: woken on every keystroke, the model
+    // spends a second of a phone's CPU per syllable translating a phrase
+    // nobody has finished writing — and on a shared engine those calls
+    // corrupt each other.
+    testWidgets('is not asked while typing continues', (tester) async {
+      final slow = _RecordingTranslator()..reply = phrase('I sell');
+      await pump(tester, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      // A space, so these are two words: a single word, however many
+      // syllables, is the dictionary's job and never reaches this tier.
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      expect(slow.asked, isEmpty, reason: 'nothing until typing pauses');
+
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+      expect(slow.asked, ['wǒ mài'], reason: 'asked once, for the whole thing');
+    });
+
+    testWidgets('is never asked about a single word', (tester) async {
+      final slow = _RecordingTranslator()..reply = phrase('I');
+      await pump(tester, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      expect(slow.asked, isEmpty);
+    });
+
+    testWidgets('shows a spinner while it works', (tester) async {
+      final slow = _SlowTranslator();
+      await pump(tester, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      // A space, so these are two words: a single word, however many
+      // syllables, is the dictionary's job and never reaches this tier.
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      expect(find.byKey(const Key('thinking')), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(find.byKey(const Key('thinking')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      slow.pending!.complete(phrase('I sell books'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('thinking')), findsNothing);
+      expect(find.text('I sell books'), findsOneWidget);
+    });
+
+    // What the phrase means, and what each word in it means, are both worth
+    // seeing — the second is how a learner checks the first.
+    testWidgets('shows the parts beside the whole', (tester) async {
+      final quick = _RecordingTranslator()
+        ..reply = const Translation(
+          'I; me · to sell',
+          wordByWord: true,
+          words: [
+            WordGloss(pinyin: 'wǒ', english: 'I; me'),
+            WordGloss(pinyin: 'mài', english: 'to sell'),
+          ],
+        );
+      final slow = _RecordingTranslator()..reply = phrase('I sell books');
+      await pump(tester, translator: quick, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      // A space, so these are two words: a single word, however many
+      // syllables, is the dictionary's job and never reaches this tier.
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('headline')), findsOneWidget);
+      expect(find.text('I sell books'), findsOneWidget);
+      expect(find.byKey(const Key('word-list')), findsOneWidget);
+      expect(find.text('to sell'), findsOneWidget);
+      expect(find.text('word by word'), findsOneWidget);
+    });
+
+    // An answer about words the learner has since changed is worse than none.
+    testWidgets('a further edit drops the answer it was about', (tester) async {
+      final slow = _SlowTranslator();
+      await pump(tester, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      // A space, so these are two words: a single word, however many
+      // syllables, is the dictionary's job and never reaches this tier.
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pump(const Duration(milliseconds: 700));
+      final answering = slow.pending!;
+
+      await tap(tester, 'backspace');
+      answering.complete(phrase('I sell books'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('I sell books'), findsNothing);
+      expect(find.byKey(const Key('thinking')), findsNothing);
+    });
+
+    testWidgets('leaves no timer running when the screen goes away', (
+      tester,
+    ) async {
+      await pump(tester, phraseTranslator: _SlowTranslator());
+      await type(tester, 'w', 'o', 3);
+      // A space, so these are two words: a single word, however many
+      // syllables, is the dictionary's job and never reaches this tier.
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // A word list is the widest thing the reading area ever holds: an ambiguous
+  // syllable offers three candidate meanings, and there is one line per word.
+  testWidgets('a long word list fits, in both orientations', (tester) async {
+    const crowded = Translation(
+      'x',
+      wordByWord: true,
+      uncertain: true,
+      words: [
+        WordGloss(pinyin: 'shì', english: 'to be / life / matter / to serve'),
+        WordGloss(pinyin: 'jiè', english: 'boundary / to introduce / world'),
+        WordGloss(pinyin: 'zhuāng', english: 'to install / village / solemn'),
+        WordGloss(pinyin: 'nǚ', english: 'female / woman / daughter'),
+        WordGloss(pinyin: 'lǜ', english: 'law / rate / green / to consider'),
+      ],
+    );
+
+    for (final size in [const Size(375, 667), const Size(812, 375)]) {
+      final translator = _RecordingTranslator()..reply = crowded;
+      await pump(tester, translator: translator, size: size);
+      // A first-row rime, because the rime bank scrolls in landscape and `i`
+      // sits below the fold there.
+      await type(tester, 'n', 'a', 3);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('word-list')), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: '$size');
+      // Every line inside the screen, not merely un-crashed.
+      for (final gloss in crowded.words) {
+        final rect = tester.getRect(find.text(gloss.english));
+        expect(rect.right, lessThanOrEqualTo(size.width), reason: gloss.pinyin);
+      }
+    }
   });
 
   // Staging exists partly to keep the banks small enough to fit a phone.

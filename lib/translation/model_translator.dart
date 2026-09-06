@@ -31,13 +31,20 @@ class ModelTranslator implements Translator {
     final words = request.wordKeys;
     if (words.length < 2) return null;
 
+    final written = request.writtenWords;
     final chinese = StringBuffer();
-    for (final key in words) {
-      final entries = await dictionary.lookUp(key);
+    final parts = <WordGloss>[];
+    for (var index = 0; index < words.length; index++) {
+      final entries = await dictionary.lookUp(words[index]);
       // One unresolvable word and the whole sentence would be guesswork, so
       // hand back to the dictionary rather than translate around a hole.
       if (entries.isEmpty) return null;
       chinese.write(entries.first.simplified);
+      // Kept as the phrase is assembled, so the parts can be shown beside the
+      // whole. The lookups have happened anyway; this costs nothing.
+      parts.add(
+        WordGloss(pinyin: written[index], english: entries.first.glosses.first),
+      );
     }
 
     final english = await backend.translate(chinese.toString());
@@ -47,6 +54,6 @@ class ModelTranslator implements Translator {
     // uncertain either — that flag is about homophones, and this is one
     // reading of a whole phrase. No HSK band: it describes a word, and this
     // spans several.
-    return Translation(english.trim());
+    return Translation(english.trim(), words: parts);
   }
 }

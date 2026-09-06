@@ -139,6 +139,50 @@ model on short sentences — but they give no prompt control, and the two prompt
 failures above show how much of the quality here came from prompt shape. **The
 0.8B numbers in this document are the bar a platform backend has to clear.**
 
+### Asking it at the right moment
+
+The model is a second tier, asked only once typing pauses — 600ms — and never
+about a single word, which is the dictionary's job.
+
+That is not tuning. Asked on every keystroke it was asked five times while a
+five-word phrase was typed, and four of those were about a phrase nobody had
+finished writing; on a phone each costs a second or two of CPU. Worse, those
+calls overlapped, and **sessions created on one engine share KV sequence 0**,
+so generations in flight together trample each other's cache. That is what
+produced the nonsense on a real device — "I am his own." followed by
+"10.1.1.1.1.1. 2011.", and once a fragment of JavaScript.
+
+Reproduced on a laptop: five overlapping requests gave "I am. ⏎ 10. ⏎ 11. ⏎
+12." for 我是 and threw on the other four; the same five in turn were all
+correct. So generations are queued one at a time in `LlamaBackend`, and there
+are tests that five at once come back sane and agree with five in turn.
+
+The screen's debounce is the other half: it stops the queue filling with work
+about phrases that have already been superseded.
+
+Three guards behind both, because a small model that loses its footing does not
+produce a slightly wrong translation:
+
+- **Stop at the first newline**, which also cancels the generation — the only
+  stop sequence the package offers. On the screenshot's answer that alone
+  leaves "I am his own." and nothing else.
+- **Not `SamplerParams.greedyDefault`.** `greedy: true` short-circuits to argmax
+  and ignores the rest of the chain, penalties included, which is how a wobble
+  becomes "10. 11. 12." and runs to the token limit. `temperature: 0` collapses
+  to the same argmax *after* the filters, so the repeat penalty applies and the
+  answer is still deterministic.
+- **Refuse a reply that is mostly not letters, or that looks like code.**
+  Permissive about digits: "I am 10 years old" is a fair translation.
+
+### Showing the parts and the whole
+
+`Translation.words` carries a gloss per word, so a word-by-word answer is a
+list read down the page rather than `you · good` on one line, which invites
+being read as a sentence — the one thing it is not. A phrase translation
+carries them too, from the lookups it already did to resolve the characters, so
+the components sit under the whole and a learner can see which English came
+from which word.
+
 ### Getting the weights onto the device
 
 They cannot ride along inside the app: Google Play caps the base AAB download

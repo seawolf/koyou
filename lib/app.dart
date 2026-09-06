@@ -37,25 +37,27 @@ class _KouyuAppState extends State<KouyuApp> {
       // The one place translation implementations are named. Everything below
       // here knows only the Translator interface.
       //
-      // Order matters, because the first answer wins. Curated phrases first,
-      // since they cover whole utterances nothing else can. Then the model,
-      // which declines anything shorter than two words and anything the
-      // dictionary cannot resolve to characters. The dictionary last, because
-      // it always has an answer — a word-by-word gloss — so anything after it
-      // would never be reached.
+      // Two tiers, because they want opposite things.
       //
-      // On the web, and on a device that has not downloaded the weights, the
-      // model declines everything and this is the pair it always was.
+      // The quick one answers every keystroke, so it only reads local data:
+      // curated phrases first, since they cover whole utterances nothing else
+      // can, then the dictionary, which always has an answer.
+      //
+      // The considered one is asked once typing pauses, and is the only place
+      // a model belongs — woken on every keystroke it would spend a second of
+      // a phone's CPU translating a phrase nobody has finished writing. On the
+      // web, and on a device without the weights, it declines everything and
+      // the dictionary answers alone.
       home: ComposeScreen(
         modelStore: _modelStore,
         translator: CompositeTranslator([
           const PhrasebookTranslator(),
-          ModelTranslator(
-            dictionary: Dictionary.bundled(),
-            backend: onDeviceBackend(),
-          ),
           DictionaryTranslator(Dictionary.bundled()),
         ]),
+        phraseTranslator: ModelTranslator(
+          dictionary: Dictionary.bundled(),
+          backend: onDeviceBackend(),
+        ),
       ),
     );
   }

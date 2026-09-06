@@ -36,18 +36,23 @@ class DictionaryTranslator implements Translator {
     final keys = request.wordKeys;
     if (keys.length < 2) return null;
 
-    final glosses = <String>[];
+    final written = request.writtenWords;
+    final words = <WordGloss>[];
     var uncertain = false;
-    for (final key in keys) {
-      final entries = await dictionary.lookUp(key);
+    for (var index = 0; index < keys.length; index++) {
+      final entries = await dictionary.lookUp(keys[index]);
       if (entries.isEmpty) return null;
-      glosses.add(_describe(entries));
+      words.add(WordGloss(pinyin: written[index], english: _describe(entries)));
       uncertain |= _isAmbiguous(entries);
     }
+    // [text] stays filled for anything that wants one line of it — a test, a
+    // log, a future share sheet. The screen reads [words] and lays them out
+    // down the page instead.
     return Translation(
-      glosses.join(' · '),
+      words.map((word) => word.english).join(' · '),
       wordByWord: true,
       uncertain: uncertain,
+      words: words,
     );
   }
 

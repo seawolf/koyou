@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../pinyin/syllable.dart';
 
 /// What a [Translator] is asked about.
@@ -32,11 +34,45 @@ class TranslationRequest {
       .map((syllable) => syllable.numbered)
       .join(' ');
 
+  /// Each word as written, tone marks included: `[nǐ hǎo, shìjiè]`.
+  ///
+  /// Pairs with [wordKeys] index for index, so a per-word answer can be
+  /// labelled with the pinyin the learner actually typed.
+  List<String> get writtenWords => [
+    for (final word in words)
+      if (word.isNotEmpty) word.map((syllable) => syllable.written).join(),
+  ];
+
   /// One dictionary key per word: `[ni3 hao3, shi4 jie4]`.
   List<String> get wordKeys => [
     for (final word in words)
       if (word.isNotEmpty) word.map((syllable) => syllable.numbered).join(' '),
   ];
+}
+
+/// One word of what was typed, and what it means on its own.
+///
+/// Structured rather than a joined string, because a list of words is read
+/// down rather than along: `nǐ · hǎo · shì · jiè` on one line invites being
+/// read as a sentence, which is the one thing a word-by-word answer is not.
+@immutable
+class WordGloss {
+  const WordGloss({required this.pinyin, required this.english});
+
+  /// As written, with tone marks.
+  final String pinyin;
+
+  final String english;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WordGloss && other.pinyin == pinyin && other.english == english;
+
+  @override
+  int get hashCode => Object.hash(pinyin, english);
+
+  @override
+  String toString() => '$pinyin: $english';
 }
 
 /// What a [Translator] came back with.
@@ -46,6 +82,7 @@ class Translation {
     this.wordByWord = false,
     this.uncertain = false,
     this.hskLevel,
+    this.words = const <WordGloss>[],
   });
 
   final String text;
@@ -70,6 +107,13 @@ class Translation {
   /// vocabulary or something they have wandered into.
   final int? hskLevel;
 
+  /// What each word means on its own, where that is known.
+  ///
+  /// Carried even when [text] is a translation of the whole phrase, because
+  /// the parts are worth seeing next to the whole: a learner who typed five
+  /// words wants to know which English came from which of them.
+  final List<WordGloss> words;
+
   @override
   String toString() => text;
 
@@ -79,10 +123,12 @@ class Translation {
       other.text == text &&
       other.wordByWord == wordByWord &&
       other.uncertain == uncertain &&
-      other.hskLevel == hskLevel;
+      other.hskLevel == hskLevel &&
+      listEquals(other.words, words);
 
   @override
-  int get hashCode => Object.hash(text, wordByWord, uncertain, hskLevel);
+  int get hashCode =>
+      Object.hash(text, wordByWord, uncertain, hskLevel, Object.hashAll(words));
 }
 
 /// Turns composed pinyin into English.
