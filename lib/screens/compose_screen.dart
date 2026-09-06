@@ -406,7 +406,11 @@ class _Reading extends StatelessWidget {
         whole?.text ?? (quick?.wordByWord ?? false ? null : quick?.text);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      // Horizontal padding is applied per child rather than here, so the
+      // composed line can run edge to edge: its tap area has to include the
+      // margin beside the text, or reaching the start of the line means
+      // hitting the left half of one 18pt syllable.
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -414,102 +418,109 @@ class _Reading extends StatelessWidget {
           // vowel keys spell nothing on their own, so choosing `a` used to
           // blank this area instead of leaving the prompt up.
           if (composition.preview.isEmpty)
-            Text(
-              'Your pinyin appears here',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            Padding(
+              padding: _sides,
+              child: Text(
+                'Your pinyin appears here',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             )
           else
             _ComposedLine(composition: composition, onMoveCaret: onMoveCaret),
-          // Plain text, not a spinner. An indeterminate spinner never stops
-          // animating, and for something that usually takes under 25ms the
-          // motion would be the only thing anyone noticed.
-          if (lookingUp && quick == null) ...[
-            const SizedBox(height: 20),
-            Text(
-              'looking it up…',
-              key: const Key('looking-up'),
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if (headline != null) ...[
-            const SizedBox(height: 20),
-            Text(
-              headline,
-              key: const Key('headline'),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-          // Say what kind of answer this is. "word by word" is dropped once
-          // the parts are a list, because a list of words says so itself.
-          if (_label(quick, whole) case final label?) ...[
-            Text(
-              label,
-              key: const Key('answer-kind'),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if ((whole?.hskLevel ?? quick?.hskLevel) case final band?)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'HSK $band',
-                key: const Key('hsk-level'),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          // A spinner is warranted here, unlike for a dictionary read: a model
-          // on a phone takes a second or two, and nothing else on screen
-          // changes while it does.
-          if (thinking) ...[
-            const SizedBox(height: 20),
-            Row(
-              key: const Key('thinking'),
-              children: [
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+          _Rest(
+            children: [
+              // Plain text, not a spinner. An indeterminate spinner never stops
+              // animating, and for something that usually takes under 25ms the
+              // motion would be the only thing anyone noticed.
+              if (lookingUp && quick == null) ...[
+                const SizedBox(height: 20),
+                Text(
+                  'looking it up…',
+                  key: const Key('looking-up'),
+                  style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(width: 10),
-                // Expanded so it wraps rather than overflowing: the spinner
-                // plus this line is 60pt wider than a 375pt screen allows.
-                Expanded(
+              ],
+              if (headline != null) ...[
+                const SizedBox(height: 20),
+                Text(
+                  headline,
+                  key: const Key('headline'),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+              // Say what kind of answer this is. "word by word" is dropped once
+              // the parts are a list, because a list of words says so itself.
+              if (_label(quick, whole) case final label?) ...[
+                Text(
+                  label,
+                  key: const Key('answer-kind'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if ((whole?.hskLevel ?? quick?.hskLevel) case final band?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'translating the whole phrase…',
-                    style: theme.textTheme.labelMedium?.copyWith(
+                    'HSK $band',
+                    key: const Key('hsk-level'),
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
-              ],
-            ),
-          ],
-          if (parts.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            // Under a phrase translation these are the components it was built
-            // from; on their own they are the answer.
-            if (headline != null)
-              Text(
-                'word by word',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              // A spinner is warranted here, unlike for a dictionary read: a model
+              // on a phone takes a second or two, and nothing else on screen
+              // changes while it does.
+              if (thinking) ...[
+                const SizedBox(height: 20),
+                Row(
+                  key: const Key('thinking'),
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Expanded so it wraps rather than overflowing: the spinner
+                    // plus this line is 60pt wider than a 375pt screen allows.
+                    Expanded(
+                      child: Text(
+                        'translating the whole phrase…',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            _Words(key: const Key('word-list'), words: parts),
-          ],
+              ],
+              if (parts.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                // Under a phrase translation these are the components it was built
+                // from; on their own they are the answer.
+                if (headline != null)
+                  Text(
+                    'word by word',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                _Words(key: const Key('word-list'), words: parts),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -703,10 +714,35 @@ class _ComposedLineState extends State<_ComposedLine> {
       }
     }
 
-    return Text.rich(
-      key: const Key('composed'),
-      TextSpan(children: spans),
-      style: style,
+    return Stack(
+      children: [
+        // Behind the text, and hit-tested after it, so a tap on a syllable
+        // still reaches that syllable's own recognizer. Only taps that miss
+        // the glyphs — beside the line, or just above and below it — land
+        // here, and those snap to whichever end they are nearer.
+        Positioned.fill(
+          child: GestureDetector(
+            key: const Key('composed-margin'),
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (details) => widget.onMoveCaret(
+              details.localPosition.dx < _sides.left
+                  ? const Caret(word: 0, syllable: 0)
+                  : composition.end,
+            ),
+          ),
+        ),
+        Padding(
+          // Vertical room so a tap a little above or below the text still
+          // counts, and the horizontal margin the rest of the reading area
+          // has, here as part of the tappable band rather than outside it.
+          padding: _sides + const EdgeInsets.symmetric(vertical: 10),
+          child: Text.rich(
+            key: const Key('composed'),
+            TextSpan(children: spans),
+            style: style,
+          ),
+        ),
+      ],
     );
   }
 
@@ -720,4 +756,25 @@ class _ComposedLineState extends State<_ComposedLine> {
     painter.dispose();
     return width;
   }
+}
+
+/// The horizontal margin the reading area keeps, except where a child needs
+/// the full width to be tappable.
+const _sides = EdgeInsets.symmetric(horizontal: 24);
+
+/// Everything in the reading area apart from the composed line, which is the
+/// one child that runs edge to edge.
+class _Rest extends StatelessWidget {
+  const _Rest({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: _sides,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
+  );
 }

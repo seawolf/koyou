@@ -711,6 +711,55 @@ void main() {
       expect(composed(tester), 'hǎobùwǒ mài');
     });
 
+    // Reaching the start of the line used to mean hitting the left half of one
+    // 18pt syllable. The margin beside the text is part of the tap area now.
+    testWidgets('tapping the margin to the left snaps to the start', (
+      tester,
+    ) async {
+      await twoWords(tester);
+      final band = tester.getRect(find.byKey(const Key('composed-margin')));
+      await tester.tapAt(Offset(band.left + 4, band.center.dy));
+      await tester.pumpAndSettle();
+
+      await type(tester, 'h', 'ao', 3);
+      expect(composed(tester), 'hǎowǒ mài');
+    });
+
+    testWidgets('tapping past the end of the text snaps to the end', (
+      tester,
+    ) async {
+      await twoWords(tester);
+      final band = tester.getRect(find.byKey(const Key('composed-margin')));
+      // Move the caret away first, so snapping back to the end is visible.
+      await tester.tapAt(Offset(band.left + 4, band.center.dy));
+      await tester.pumpAndSettle();
+      await tester.tapAt(Offset(band.right - 4, band.center.dy));
+      await tester.pumpAndSettle();
+
+      await type(tester, 'h', 'ao', 3);
+      expect(composed(tester), 'wǒ màihǎo');
+    });
+
+    // A tap a little above or below the text should still count: the glyphs
+    // are only as tall as the text, which is a thin target.
+    testWidgets('a tap just above or below the line still counts', (
+      tester,
+    ) async {
+      await twoWords(tester);
+      final band = tester.getRect(find.byKey(const Key('composed-margin')));
+      final text = tester.getRect(find.byKey(const Key('composed')));
+      expect(
+        band.height,
+        greaterThan(text.height),
+        reason: 'the band has to be taller than the glyphs to be reachable',
+      );
+
+      await tester.tapAt(Offset(band.left + 4, band.top + 2));
+      await tester.pumpAndSettle();
+      await type(tester, 'h', 'ao', 3);
+      expect(composed(tester), 'hǎowǒ mài');
+    });
+
     testWidgets('a half-typed syllable is dropped when the caret moves', (
       tester,
     ) async {
