@@ -63,6 +63,41 @@ setting this up:
 - **The app renders into a small box in the corner.** Flutter laid out against
   the viewport size it saw at load and missed a later resize. Reload.
 
+## Two Android build warnings that are not bugs
+
+Both appear on every `flutter build apk`. Neither breaks the build, and neither
+is fixable here. Do not spend an afternoon on them again.
+
+**`java.lang.System::load has been called by ... NativeLibraryLoader`** —
+Gradle 9.3.1's own `native-platform` JAR calling a restricted method on a newer
+JDK. Nothing in this repo is involved. Adding
+`--enable-native-access=ALL-UNNAMED` to `org.gradle.jvmargs` was tried and does
+**not** silence it: the call is in Gradle's launcher JVM, not the daemon those
+args configure. It goes away when Gradle does.
+
+**`Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP):
+flutter_tts`** — this one is real, and will eventually fail rather than warn.
+The switch is `android.builtInKotlin` in `android/gradle.properties`, which the
+Flutter template sets to `false`. Setting it to `true` fails immediately and
+says exactly why:
+
+```
+> Failed to apply plugin 'kotlin-android'
+  Solution: Remove the 'org.jetbrains.kotlin.android' plugin from this
+  project's build file: .../flutter_tts-4.2.5/android/build.gradle
+```
+
+So the blocker is entirely inside `flutter_tts`, not here — **this app is
+already on built-in Kotlin**: its `plugins` block applies only
+`com.android.application` and the Flutter plugin, and the
+`org.jetbrains.kotlin.android` line in `settings.gradle.kts` is `apply false`,
+a version declaration rather than an application.
+
+Switching packages does not help. `stts`, the obvious alternative, has not
+migrated either — its changelog moved to the Kotlin Gradle *DSL*, which is a
+different thing. The fix is upstream; when `flutter_tts` ships it, flip
+`android.builtInKotlin` to `true` and check the build.
+
 ## Deliberate decisions, so don't "fix" them
 
 **No CJK font is bundled**, chosen for the bundle size saved. This costs much
