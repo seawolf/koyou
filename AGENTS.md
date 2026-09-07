@@ -63,6 +63,36 @@ setting this up:
 - **The app renders into a small box in the corner.** Flutter laid out against
   the viewport size it saw at load and missed a later resize. Reload.
 
+## The web model tier
+
+`web/wllama/` is staged by `tool/fetch_wllama.sh` and **not committed** — 9MB
+of third-party browser build, for which npm is the source of truth. A build
+without it degrades to the dictionary rather than failing, which is the same
+contract a phone with no weights has, so do not add a hard error.
+
+The version is pinned in that script for a reason. wllama's API changed shape
+between majors and the failures are not readable:
+
+- **`pathConfig` wants a `default` key** in 3.x, holding the URL of the single
+  `wasm/wllama.wasm`. The 2.x `single-thread` / `multi-thread` keys throw
+  `"default" is missing from pathConfig`.
+- **`createCompletion` takes one options object**, llama.cpp-server shaped:
+  `{prompt, n_predict, temperature, stop}`. There is no `nPredict`. Called the
+  2.x way — `createCompletion(prompt, opts)` — the string lands where the
+  options belong, the encoded worker message is garbage, and it surfaces as
+  `RangeError: Invalid typed array length: 1163217991` from `runAction`
+  reading a length out of the wasm heap. It looks like a broken model or a
+  broken wasm and is neither.
+- **`stop: ['\n']`** is a real stop sequence here, which the native side has to
+  imitate by breaking out of its token stream.
+
+Multi-threaded WASM needs `COOP`/`COEP` on the host for `SharedArrayBuffer`.
+Not required where WebGPU is available, which is now every major browser.
+
+The parts worth testing live in `web_model.dart`, which imports no
+`dart:js_interop` and so runs on the VM with a fake engine. Keep it that way:
+only the binding in `on_device_backend_web.dart` should need a browser.
+
 ## Two Android build warnings that are not bugs
 
 Both appear on every `flutter build apk`. Neither breaks the build, and neither

@@ -219,14 +219,50 @@ Apple deprecated On-Demand Resources in iOS 27; Background Assets is the route
 there if this should ever be a system-managed download rather than the app's
 own.
 
-### Web keeps the dictionary
+### The web runs the same model
 
-No backend runs on the web, and that is a reason to keep the web target rather
-than drop it. `TranslationBackend.translate` returns null when there is nothing
-to offer, so the web build falls through to the dictionary with no code removed
-and no branch to maintain — and the dictionary is a genuinely useful product on
-its own. Web is also the fastest place to check anything visual. Dropping a
-target later is easy; the loop is worth more than the tidiness.
+An earlier draft said no backend runs on the web. That is no longer true:
+[wllama](https://github.com/ngxson/wllama) is llama.cpp compiled to WASM with a
+WebGPU backend, so a browser runs the very same GGUF a phone does, through the
+same prompt in `model_prompt.dart`.
+
+Measured in a real browser against the real weights, the answers matched the
+native ones exactly:
+
+| Chinese | in the browser |
+| ------- | -------------- |
+| 我卖书 / 我买书 | "I sell books." / "I bought a book." |
+| 你叫什么名字 | "What is your name?" |
+| 这个多少钱 | "How much does this cost?" |
+| 请慢一点说 | "Please speak more slowly." |
+| 他吻我 | "He kissed me." |
+
+About **300ms** per translation after the first, and 20s to fetch and load the
+533MB the first time. Weights live in the origin's private file system (OPFS),
+which wllama owns — so the web store reports and drives rather than managing
+bytes, and there is no second cache to disagree with it.
+
+Three routes were compared before picking this one:
+
+- **The browser's own `Translator` API** (Chrome 138+, Edge 148+). Free,
+  private, no download to manage — and the exact analogue of using the
+  platform's voice for speech. Rejected only because it is **desktop-only**:
+  Firefox and Safari do not have it, and neither does any mobile browser.
+- **A server doing the inference.** Works everywhere with no client download,
+  but the learner's text would leave the device, it stops working offline, and
+  static hosting becomes a service to run. The rest of this app is offline by
+  construction; that is worth more.
+- **wllama in the tab**, which is what shipped. WebGPU now ships in every major
+  browser *including mobile* — Safari 26 on iOS and iPadOS, Chrome on Android
+  12+ — so this is the widest reach of the three. It also puts the model on an
+  iPhone before the native app exists, since iOS cannot be built here at all.
+
+The web server's useful job turned out not to be inference. HuggingFace already
+serves the weights cross-origin with range support — verified, it reflects the
+`Origin` header and answers `206` — so nothing needs proxying. What a real host
+should do is set caching and compression, and `COOP`/`COEP` if the WASM
+fallback is to use threads, since `SharedArrayBuffer` needs cross-origin
+isolation. Headers, not compute.
 
 ### What is built
 
@@ -290,13 +326,13 @@ managing SDK packages from the command line.
 ## Suggested tiers
 
 The dictionary is tier zero and always on: it is what makes the tones survive,
-what resolves the characters, and the only tier that works on the web.
+what resolves the characters, and the only tier that needs nothing downloaded.
 
 | tier | adds | weights | offline / web |
 | ---- | ---- | ------- | ------------- |
 | Dictionary only | — | 7.5MB | yes, everywhere |
-| **Light (proposed default)** | Qwen3.5-0.8B | ~0.55GB | native only |
-| Full | Qwen3.5-2B | ~1.3GB | native only |
+| **Light (proposed default)** | Qwen3.5-0.8B | 533MB | phones, and any browser with WebGPU |
+| Full | Qwen3.5-2B | ~1.3GB | untested |
 
 0.8B is now the proposed default rather than something to leave out. It matches
 2B on this set at a third of the weights and twice the speed, which on a phone

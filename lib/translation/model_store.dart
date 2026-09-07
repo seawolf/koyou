@@ -2,14 +2,18 @@ import 'package:flutter/foundation.dart';
 
 import 'model_asset.dart';
 
-export 'model_store_absent.dart' if (dart.library.io) 'model_store_native.dart';
+export 'model_store_web.dart' if (dart.library.io) 'model_store_native.dart';
 
 /// Fetches, verifies, and forgets the on-device weights.
 ///
-/// An interface for the same reason [TranslationBackend] is one: the web build
-/// has no model and no file system to keep one in, so it gets an
-/// implementation that reports [ModelState.unsupported] and does nothing. The
-/// screen renders whichever it is given without asking which platform it is on.
+/// An interface because the two platforms keep the weights in different
+/// places and by different means. On a phone this owns the file: a resumable
+/// download, a digest check, a part-file. In a browser wllama owns the OPFS
+/// cache, so the web store reports and drives rather than managing bytes —
+/// duplicating that would mean two caches disagreeing.
+///
+/// The screen renders whichever it is given without asking which it has, and a
+/// platform with no model at all reports [ModelState.unsupported].
 abstract interface class ModelStore {
   ModelAsset get asset;
 

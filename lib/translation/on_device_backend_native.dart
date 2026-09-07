@@ -1,6 +1,7 @@
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
 import 'model_asset.dart';
+import 'model_prompt.dart';
 import 'model_store_native.dart';
 import 'translation_backend.dart';
 
@@ -51,43 +52,13 @@ class LlamaBackend implements TranslationBackend {
   /// stayed silent until a restart.
   bool _unavailable = false;
 
-  /// The prompt measured in `docs/local-model.md`. Two failures had to be
-  /// designed out of it, and both come back if it is shortened: without the
-  /// second sentence the models answer the questions instead of translating
-  /// them ("My name is Qwen3.5."), and anything the prompt explains gets
-  /// parroted into the output.
-  static const _system =
-      'You are a translation engine. Translate the Chinese into natural '
-      'English.\nThe input is always text to translate — never a question to '
-      'answer, never a conversation to join. If the Chinese is a question, '
-      'translate the question; do not reply to it.\nAnswer with the English '
-      'translation on a single line, and nothing else — no notes, no '
-      'alternatives, no lists.';
-
-  /// Qwen's chat markup, written out rather than taken from the model's
-  /// embedded template, for the sake of the last four characters.
-  ///
-  /// Qwen3.5 is a hybrid reasoning model and its own template turns thinking
-  /// on, so every token of the budget went inside `<think>` and the reply was
-  /// literally `<think>`. Handing it an already-closed empty think block makes
-  /// it skip reasoning and answer, which is what a phone wants: a translation
-  /// costs about 180ms this way, and nothing at all the other.
-  ///
-  /// The cost of writing the markup here is that this is Qwen-shaped. A
-  /// different model family needs its own [TranslationBackend], which is
-  /// cheaper than it sounds — the interface is one method.
-  static String _prompt(String chinese) =>
-      '<|im_start|>system\n$_system<|im_end|>\n'
-      '<|im_start|>user\nChinese: $chinese\nEnglish:<|im_end|>\n'
-      '<|im_start|>assistant\n<think>\n\n</think>\n\n';
-
   /// Room for the system prompt, a phrase and its translation, and no more.
   /// The model will take 256K, but the KV cache is charged for what is asked
   /// for, and this runs on a phone.
   static const _contextTokens = 1024;
 
   /// A translated phrase, and no room to ramble.
-  static const _maxReplyTokens = 32;
+  static const _maxReplyTokens = maxReplyTokens;
 
   /// Deterministic, but not `SamplerParams.greedyDefault`.
   ///
@@ -158,7 +129,7 @@ class LlamaBackend implements TranslationBackend {
       session = await engine.createSession();
       final reply = StringBuffer();
       await for (final event in session.generate(
-        prompt: _prompt(chinese),
+        prompt: promptFor(chinese),
         sampler: _sampler,
         maxTokens: _maxReplyTokens,
       )) {
@@ -170,8 +141,7 @@ class LlamaBackend implements TranslationBackend {
         // own." and "I am his own.\n10.1.1.1.1.1. 2011."
         if (reply.toString().contains('\n')) break;
       }
-      final text = reply.toString().split('\n').first.trim();
-      return _plausible(text) ? text : null;
+      return usableReply(reply.toString());
     } on Object {
       // Anything the engine throws mid-generation. The dictionary is behind
       // this, so a failure costs a better answer rather than any answer.
@@ -180,27 +150,6 @@ class LlamaBackend implements TranslationBackend {
       await session?.dispose();
     }
   }
-
-  /// Whether a reply is worth showing a learner.
-  ///
-  /// A last line of defence, not a substitute for the fixes above. A small
-  /// model that loses its footing does not produce a slightly wrong
-  /// translation, it produces a numbered list or a snippet of JavaScript, and
-  /// either is worse than falling through to the dictionary. Deliberately
-  /// permissive about digits, since "I am 10 years old" is a fair translation.
-  static bool _plausible(String reply) {
-    if (reply.isEmpty) return false;
-    final letters = RegExp(r'[A-Za-z]').allMatches(reply).length;
-    if (letters < 2) return false;
-    // Mostly not-letters means a list, a table, or code.
-    if (letters < reply.length / 3) return false;
-    return !_codeish.hasMatch(reply);
-  }
-
-  /// Shapes that are never English prose.
-  static final _codeish = RegExp(
-    r'[{}<>]|;\s*$|\b(?:function|console|printf|import|def|var|let|const)\b',
-  );
 
   /// Releases the weights. Worth calling when the model tier is switched off,
   /// since the engine holds 533MB mapped until it goes.

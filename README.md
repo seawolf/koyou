@@ -170,6 +170,7 @@ flutter test
 | `lib/pinyin/`            | Pure Dart, no Flutter: the syllable inventory, tones, spelling, and the editing model |
 | `lib/translation/`       | The `Translator` seam, the CC-CEDICT lookup, and a small phrasebook |
 | `lib/audio/`             | The `Speech` seam and the platform voice behind it   |
+| `web/kouyu_model.js`     | The browser side of the model tier; everything testable is in Dart |
 | `lib/screens/`           | One file per screen                                  |
 | `lib/widgets/`           | Reusable widgets, e.g. the keyboard                  |
 | `test/`                  | Mirrors `lib/` (`lib/screens/x.dart` → `test/screens/x_test.dart`) |
@@ -518,11 +519,28 @@ which want the characters the dictionary now resolves:
   at a size that fits a phone. The platform models — Apple's Foundation Models,
   Gemini Nano — are free of bundle cost, and the same split applies to them.
 
-  Built, on Android: `llama_cpp_dart` (MIT) bundles llama.cpp into the APK,
-  and the weights are a resumable, digest-pinned first-run download managed
-  from the ✨ button — they cannot ship inside the app, since Play caps the
-  base download at 200MB. Switching the model off keeps the download and
-  frees the memory. iOS needs a full Xcode install before it builds at all.
+  Built, on Android and in the browser. `llama_cpp_dart` (MIT) bundles
+  llama.cpp into the APK, and the weights are a resumable, digest-pinned
+  first-run download managed from the ✨ button — they cannot ship inside the
+  app, since Play caps the base download at 200MB. Switching the model off
+  keeps the download and frees the memory. iOS needs a full Xcode install
+  before it builds at all.
+
+  The web build runs the **same** GGUF through the same prompt:
+  [wllama](https://github.com/ngxson/wllama) is llama.cpp compiled to WASM with
+  a WebGPU backend, and the weights sit in the origin's private file system. In
+  a real browser the answers matched the native ones exactly, at about 300ms
+  each. Staging it is one command:
+
+  ```bash
+  tool/fetch_wllama.sh
+  ```
+
+  Without that the web build still works — the model backend declines and the
+  dictionary answers, which is the same thing that happens on a phone with no
+  weights downloaded. WebGPU now ships in every major browser including mobile,
+  so this is also the only way to get the model onto an iPhone until iOS can be
+  built.
 
 ## The app icon
 

@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Staged by tool/fetch_wllama.sh — a third-party browser build, not ours.
+/web/wllama/
