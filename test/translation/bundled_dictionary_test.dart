@@ -186,10 +186,11 @@ void main() {
       final found = await translator.translate(request);
       expect(found?.text, contains('fate'), reason: request.written);
       expect(
-        found?.wordByWord,
-        isFalse,
+        found?.matchedWhole,
+        isTrue,
         reason: 'an entry for the whole thing, so the model is not needed',
       );
+      expect(found?.wordByWord, isFalse);
       expect(found?.hskLevel, 7);
     }
   });

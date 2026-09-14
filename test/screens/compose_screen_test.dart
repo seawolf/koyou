@@ -343,7 +343,8 @@ void main() {
   testWidgets('sends the toned text to the translator and shows the reply', (
     tester,
   ) async {
-    final translator = _RecordingTranslator()..reply = const Translation('you');
+    final translator = _RecordingTranslator()
+      ..reply = const Translation('you', matchedWhole: true);
     await pump(tester, translator: translator);
 
     await type(tester, 'n', 'i', 3);
@@ -359,6 +360,9 @@ void main() {
       ..reply = const Translation(
         'life / matter / to serve as an official',
         uncertain: true,
+        // A whole-key hit, even though the key is one syllable and forty
+        // words share it.
+        matchedWhole: true,
       );
     await pump(tester, translator: translator);
 
@@ -514,6 +518,7 @@ void main() {
         ..reply = const Translation(
           'fate or chance that brings people together',
           hskLevel: 7,
+          matchedWhole: true,
         );
       final slow = _RecordingTranslator()..reply = phrase('A portion');
       await pump(tester, translator: quick, phraseTranslator: slow);
@@ -563,7 +568,11 @@ void main() {
     // displace an exact one.
     testWidgets('a late answer cannot displace an exact match', (tester) async {
       final quick = _RecordingTranslator()
-        ..reply = const Translation('fate or chance', hskLevel: 7);
+        ..reply = const Translation(
+          'fate or chance',
+          hskLevel: 7,
+          matchedWhole: true,
+        );
       final slow = _SlowTranslator();
       await pump(tester, translator: quick, phraseTranslator: slow);
 
@@ -1333,7 +1342,9 @@ void main() {
 
       // Faster than the threshold, so nothing should have flashed up.
       expect(find.byKey(const Key('looking-up')), findsNothing);
-      translator.pending!.complete(const Translation('you'));
+      translator.pending!.complete(
+        const Translation('you', matchedWhole: true),
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('looking-up')), findsNothing);
       expect(find.text('you'), findsOneWidget);
@@ -1354,7 +1365,9 @@ void main() {
       // The pinyin is still readable while it waits.
       expect(composed(tester), 'nǐ');
 
-      translator.pending!.complete(const Translation('you'));
+      translator.pending!.complete(
+        const Translation('you', matchedWhole: true),
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('looking-up')), findsNothing);
       expect(find.text('you'), findsOneWidget);
@@ -1393,14 +1406,17 @@ void main() {
       // Replacing the screen mid-lookup: a pending timer would fail the test.
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
-      translator.pending!.complete(const Translation('you'));
+      translator.pending!.complete(
+        const Translation('you', matchedWhole: true),
+      );
       await tester.pumpAndSettle();
     });
   });
 
   // A keyboard whose keys move while you use it is worse than a cramped one.
   testWidgets('the keys do not move as text is composed', (tester) async {
-    final translator = _RecordingTranslator()..reply = const Translation('you');
+    final translator = _RecordingTranslator()
+      ..reply = const Translation('you', matchedWhole: true);
     await pump(tester, translator: translator);
 
     final before = tester.getRect(find.byKey(const Key('initial-b')));

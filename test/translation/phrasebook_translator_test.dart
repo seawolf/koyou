@@ -19,10 +19,10 @@ void main() {
 
   test('matches a whole utterance the dictionary cannot have', () async {
     expect(iLoveYou.written, 'wǒ ài nǐ');
-    expect(
-      await translator.translate(iLoveYou),
-      const Translation('I love you'),
-    );
+    final found = await translator.translate(iLoveYou);
+    expect(found, const Translation('I love you', matchedWhole: true));
+    // A hand-checked whole utterance, so nothing generative may displace it.
+    expect(found?.matchedWhole, isTrue);
   });
 
   test('leaves anything else to the dictionary behind it', () async {

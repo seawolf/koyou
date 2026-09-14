@@ -109,6 +109,31 @@ void main() {
     expect(selling.asked, '我卖');
   });
 
+  // The invariant that used to be implicit. The screen once decided "this is
+  // an entry for the whole line" from the absence of a word-by-word flag,
+  // which a model's answer also lacks — so a model in the quick chain would
+  // have outranked the dictionary it exists to defer to.
+  test('never claims to have matched the whole line', () async {
+    final translator = ModelTranslator(
+      dictionary: dictionary,
+      backend: _Spy('I sell books.'),
+    );
+
+    final result = await translator.translate(
+      request([
+        [_wo],
+        [_syllable('m', 'ai', Tone.fourth)],
+      ]),
+    );
+
+    expect(result?.text, 'I sell books.');
+    expect(
+      result?.matchedWhole,
+      isFalse,
+      reason: 'it generated an answer, it did not look one up',
+    );
+  });
+
   test('a word the dictionary cannot place falls through', () async {
     final spy = _Spy();
     final translator = ModelTranslator(dictionary: dictionary, backend: spy);

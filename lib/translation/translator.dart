@@ -83,6 +83,7 @@ class Translation {
     this.uncertain = false,
     this.hskLevel,
     this.words = const <WordGloss>[],
+    this.matchedWhole = false,
   });
 
   final String text;
@@ -107,6 +108,20 @@ class Translation {
   /// vocabulary or something they have wandered into.
   final int? hskLevel;
 
+  /// Whether this is a single entry covering everything typed — a set phrase,
+  /// an idiom, a compound — rather than an answer assembled from the parts or
+  /// generated from them.
+  ///
+  /// Stated by whoever produced the answer, because only they know. The screen
+  /// used to infer it from `!wordByWord`, which was right only for as long as
+  /// nothing generative sat in the quick chain: a model's answer is not word
+  /// by word either, so it would have counted as an entry and outranked the
+  /// dictionary it was meant to defer to.
+  ///
+  /// An entry beats a paraphrase of the same words, which is why 缘分 survives
+  /// being typed `yuán fèn` — see `ModelTranslator`.
+  final bool matchedWhole;
+
   /// What each word means on its own, where that is known.
   ///
   /// Carried even when [text] is a translation of the whole phrase, because
@@ -124,11 +139,18 @@ class Translation {
       other.wordByWord == wordByWord &&
       other.uncertain == uncertain &&
       other.hskLevel == hskLevel &&
+      other.matchedWhole == matchedWhole &&
       listEquals(other.words, words);
 
   @override
-  int get hashCode =>
-      Object.hash(text, wordByWord, uncertain, hskLevel, Object.hashAll(words));
+  int get hashCode => Object.hash(
+    text,
+    wordByWord,
+    uncertain,
+    hskLevel,
+    matchedWhole,
+    Object.hashAll(words),
+  );
 }
 
 /// Turns composed pinyin into English.

@@ -26,6 +26,9 @@ class DictionaryTranslator implements Translator {
     if (whole.isNotEmpty) {
       return Translation(
         _describe(whole),
+        // One entry for everything typed. The key drops word breaks, so this
+        // finds 缘分 whether it was spaced or not.
+        matchedWhole: true,
         uncertain: _isAmbiguous(whole),
         // Taken from the word offered first, not from whichever entry happens
         // to carry a band.

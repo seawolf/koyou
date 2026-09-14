@@ -280,6 +280,14 @@ Two traps in there, both of which cost an afternoon:
   `yuán fèn` and `yuánfèn` both find 缘分; the model is handed one character per
   word, so the spaced one reached it as 元份 and its paraphrase won. Widening
   this to "ask always and prefer the model" brings that back.
+- **`Translation.matchedWhole` is stated, never inferred.** Whoever answers
+  says whether it is a single entry for everything typed; the screen only
+  reads it. Deducing it from `!wordByWord` worked only while nothing
+  generative sat in the quick chain — a model's answer is not word by word
+  either, so it would have counted as an entry and outranked the dictionary it
+  defers to. `app.dart` did once have `ModelTranslator` in that chain, so this
+  is not hypothetical. `model_translator_test.dart` pins that a generated
+  answer never sets it.
 - **Do not route tone correction through the model.** It is a dictionary
   question — 0.16ms warm — and a model would mean a second generation on top of
   the translation, for the least reliable thing a small model does: it does not

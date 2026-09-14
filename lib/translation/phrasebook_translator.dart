@@ -17,7 +17,8 @@ class PhrasebookTranslator implements Translator {
   Future<Translation?> translate(TranslationRequest request) async {
     final phrase = request.written.toLowerCase();
     final match = _phrasebook[phrase];
-    return match == null ? null : Translation(match);
+    // A whole utterance, hand-checked: nothing beats it.
+    return match == null ? null : Translation(match, matchedWhole: true);
   }
 }
 

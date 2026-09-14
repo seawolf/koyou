@@ -204,12 +204,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   /// Whether the quick tier matched everything typed as a single entry.
   ///
-  /// True for a curated phrase and for a dictionary entry covering the whole
-  /// line — both exact, and both better than a paraphrase assembled from
-  /// per-word guesses. False for a word-by-word gloss, which is precisely
-  /// where a model earns its place.
-  bool get _dictionaryHasTheWhole =>
-      _translation != null && !_translation!.wordByWord;
+  /// Set by whoever answered rather than deduced here: a curated phrase and a
+  /// dictionary entry covering the whole line are both exact, and both better
+  /// than a paraphrase assembled from per-word guesses. False for a
+  /// word-by-word gloss, which is precisely where a model earns its place.
+  bool get _dictionaryHasTheWhole => _translation?.matchedWhole ?? false;
 
   Future<void> _suggest(
     Composition composition,
@@ -459,8 +458,8 @@ class _Reading extends StatelessWidget {
     //
     // A word-by-word answer has no headline: the list is the answer, and
     // joining it into a sentence is exactly the misreading to avoid.
-    final exact = quick != null && !quick.wordByWord;
-    final headline = exact ? quick.text : whole?.text;
+    final exact = quick?.matchedWhole ?? false;
+    final headline = exact ? quick!.text : whole?.text;
 
     return SingleChildScrollView(
       // Horizontal padding is applied per child rather than here, so the
