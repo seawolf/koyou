@@ -166,6 +166,34 @@ void main() {
     expect(obscure.rank, isNull);
   });
 
+  // Spacing a compound is an easy thing for a learner to get wrong, and the
+  // lookup key drops word breaks so that it does not matter: 缘分 is one entry
+  // whether it was typed `yuánfèn` or `yuán fèn`.
+  test('a compound is found however it was spaced', () async {
+    final translator = DictionaryTranslator(dictionary);
+    final yuan = syllable('', 'üan', Tone.second);
+    final fen = syllable('f', 'en', Tone.fourth);
+
+    for (final request in [
+      TranslationRequest([
+        [yuan, fen],
+      ]),
+      TranslationRequest([
+        [yuan],
+        [fen],
+      ]),
+    ]) {
+      final found = await translator.translate(request);
+      expect(found?.text, contains('fate'), reason: request.written);
+      expect(
+        found?.wordByWord,
+        isFalse,
+        reason: 'an entry for the whole thing, so the model is not needed',
+      );
+      expect(found?.hskLevel, 7);
+    }
+  });
+
   // Against the real data rather than a stand-in, because the whole value of
   // the tone suggester is that it stays quiet on ordinary input, and only the
   // real frequency ranks can show that.

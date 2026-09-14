@@ -445,6 +445,20 @@ context — `wǒ shí` where `wǒ shì` was meant. That needs to know what the
 sentence is about, which is a model's job, and a job for a better model than
 fits on a phone.
 
+### Which tier answers
+
+The dictionary answers every keystroke; the model is asked once typing pauses,
+and **only about what the dictionary could not answer whole**. Where the
+dictionary matched the entire line as one entry — a set phrase, an idiom, a
+compound — that is the answer, and the model is not woken at all.
+
+That last rule is not tidiness. The lookup key drops word breaks, so 缘分 is
+found whether it was typed `yuánfèn` or `yuán fèn`. But the model is handed one
+character per *word*, so the spaced spelling reached it as 元份 — not a word —
+and its paraphrase, "A portion", displaced "fate or chance that brings people
+together" which the dictionary already had. Spacing a compound is an easy thing
+for a learner to get wrong, and now it costs nothing.
+
 ### Saying it aloud
 
 The speaker in the app bar reads the line back, in Mandarin, on request. It

@@ -202,6 +202,15 @@ class _ComposeScreenState extends State<ComposeScreen> {
     });
   }
 
+  /// Whether the quick tier matched everything typed as a single entry.
+  ///
+  /// True for a curated phrase and for a dictionary entry covering the whole
+  /// line — both exact, and both better than a paraphrase assembled from
+  /// per-word guesses. False for a word-by-word gloss, which is precisely
+  /// where a model earns its place.
+  bool get _dictionaryHasTheWhole =>
+      _translation != null && !_translation!.wordByWord;
+
   Future<void> _suggest(
     Composition composition,
     TranslationRequest request,
@@ -222,6 +231,14 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
     _settle = Timer(_settleDelay, () async {
       if (!mounted || _composition.text != composition.text) return;
+      // The model is for what a dictionary cannot do. Where the dictionary has
+      // matched the whole line as one entry there is nothing left to ask, and
+      // asking anyway makes it worse: the model is handed one character per
+      // word, so `yuán fèn` reaches it as 元份 — not a word — and its
+      // paraphrase displaced 缘分, "fate or chance that brings people
+      // together", which the dictionary had already found. A second of a
+      // phone's CPU saved, as well.
+      if (_dictionaryHasTheWhole) return;
       setState(() => _thinking = true);
       final result = await translator.translate(
         TranslationRequest(composition.words),
@@ -436,10 +453,14 @@ class _Reading extends StatelessWidget {
         ? quick!.words
         : whole?.words ?? const <WordGloss>[];
 
+    // An exact match for the whole line beats a model's paraphrase of it, so
+    // a late answer about words the dictionary already knew cannot displace
+    // them — see `_dictionaryHasTheWhole`.
+    //
     // A word-by-word answer has no headline: the list is the answer, and
     // joining it into a sentence is exactly the misreading to avoid.
-    final headline =
-        whole?.text ?? (quick?.wordByWord ?? false ? null : quick?.text);
+    final exact = quick != null && !quick.wordByWord;
+    final headline = exact ? quick.text : whole?.text;
 
     return SingleChildScrollView(
       // Horizontal padding is applied per child rather than here, so the

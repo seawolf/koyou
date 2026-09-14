@@ -273,6 +273,13 @@ Two traps in there, both of which cost an afternoon:
   bare `TextStyle`, and let the button colour its own text.
   `test/screens/key_contrast_test.dart` measures every kind of key against WCAG
   AA in both themes; run it after touching colours.
+- **The model is only asked what the dictionary could not answer.** Its own
+  doc says so, and the code has to agree: where the quick tier matched the
+  whole line as one entry — a curated phrase, or a dictionary entry — the model
+  is not asked and cannot displace it. The lookup key drops word breaks, so
+  `yuán fèn` and `yuánfèn` both find 缘分; the model is handed one character per
+  word, so the spaced one reached it as 元份 and its paraphrase won. Widening
+  this to "ask always and prefer the model" brings that back.
 - **Do not route tone correction through the model.** It is a dictionary
   question — 0.16ms warm — and a model would mean a second generation on top of
   the translation, for the least reliable thing a small model does: it does not

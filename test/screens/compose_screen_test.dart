@@ -503,6 +503,81 @@ void main() {
       expect(find.text('word by word'), findsOneWidget);
     });
 
+    // 缘分 is one dictionary entry, and the dictionary finds it whether or not
+    // the learner spaced it — the lookup key drops word breaks. The model is
+    // handed one character per word though, so a spaced `yuán fèn` reached it
+    // as 元份 and its paraphrase displaced the real answer.
+    testWidgets('is not asked when the dictionary has the whole line', (
+      tester,
+    ) async {
+      final quick = _RecordingTranslator()
+        ..reply = const Translation(
+          'fate or chance that brings people together',
+          hskLevel: 7,
+        );
+      final slow = _RecordingTranslator()..reply = phrase('A portion');
+      await pump(tester, translator: quick, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      expect(slow.asked, isEmpty, reason: 'nothing left to ask');
+      expect(
+        find.text('fate or chance that brings people together'),
+        findsOneWidget,
+      );
+      expect(find.text('A portion'), findsNothing);
+      expect(find.byKey(const Key('thinking')), findsNothing);
+    });
+
+    // Which is the case the model exists for.
+    testWidgets('is still asked when the dictionary only has the words', (
+      tester,
+    ) async {
+      final quick = _RecordingTranslator()
+        ..reply = const Translation(
+          'I; me · to sell',
+          wordByWord: true,
+          words: [
+            WordGloss(pinyin: 'wǒ', english: 'I; me'),
+            WordGloss(pinyin: 'mài', english: 'to sell'),
+          ],
+        );
+      final slow = _RecordingTranslator()..reply = phrase('I sell books');
+      await pump(tester, translator: quick, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      expect(slow.asked, ['wǒ mài']);
+      expect(find.text('I sell books'), findsOneWidget);
+    });
+
+    // Belt and braces for the race: an answer that arrives anyway must not
+    // displace an exact one.
+    testWidgets('a late answer cannot displace an exact match', (tester) async {
+      final quick = _RecordingTranslator()
+        ..reply = const Translation('fate or chance', hskLevel: 7);
+      final slow = _SlowTranslator();
+      await pump(tester, translator: quick, phraseTranslator: slow);
+
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      await type(tester, 'm', 'ai', 4);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      // It was never asked, so there is nothing pending to complete.
+      expect(slow.pending, isNull);
+      expect(find.text('fate or chance'), findsOneWidget);
+    });
+
     // An answer about words the learner has since changed is worse than none.
     testWidgets('a further edit drops the answer it was about', (tester) async {
       final slow = _SlowTranslator();
