@@ -332,6 +332,42 @@ class Composition {
     return this;
   }
 
+  /// Lifts a committed syllable back into the draft, to be finished again.
+  ///
+  /// What double-tapping or long-pressing a syllable does. The syllable comes
+  /// out of the line and the caret takes its place, so choosing again puts the
+  /// new one exactly where the old one was.
+  ///
+  /// [stage] says how far back to go: [ComposeStage.tone] keeps the initial
+  /// and the rime and asks only for the tone, which is the common fix;
+  /// [ComposeStage.rime] keeps the initial and asks again for what follows it.
+  /// Going back to [ComposeStage.initial] would leave nothing of the syllable,
+  /// which is what backspace is for.
+  Composition redraft(int word, int syllable, ComposeStage stage) {
+    if (stage == ComposeStage.initial) return this;
+    if (word < 0 || word >= words.length) return this;
+    final here = words[word];
+    if (here is! Spoken) return this;
+    if (syllable < 0 || syllable >= here.syllables.length) return this;
+
+    final chosen = here.syllables[syllable];
+    final key = keyFor(chosen);
+    // A syllable the keyboard could not have produced cannot be put back into
+    // its banks either. Nothing in the inventory is like this, but a stand-in
+    // in a test can be.
+    if (key == null) return this;
+
+    final next = [...words];
+    next[word] = Spoken([...here.syllables]..removeAt(syllable));
+    return Composition(
+      words: next,
+      caret: Caret(word: word, syllable: syllable),
+      draft: stage == ComposeStage.tone
+          ? Draft(initial: key, rime: chosen.rime)
+          : Draft(initial: key),
+    );
+  }
+
   /// Moves the caret, clamped to somewhere it can actually be.
   ///
   /// Drops any draft. A draft has no tone, so it is not yet a syllable, and

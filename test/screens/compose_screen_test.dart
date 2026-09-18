@@ -993,7 +993,10 @@ void main() {
       await tester.tap(find.text('Getting around'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Tap a syllable'), findsOneWidget);
+      // Two hints begin "Tap a syllable" — placing the caret, and retoning —
+      // so these name what is unique to each.
+      expect(find.textContaining('put the caret'), findsOneWidget);
+      expect(find.textContaining('choose its tone again'), findsOneWidget);
       expect(find.textContaining('Mandarin voice'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -1006,6 +1009,114 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('reopening a syllable', () {
+    /// `nǐ hǎo`, and the rect of the line.
+    Future<Rect> niHao(WidgetTester tester) async {
+      await pump(tester);
+      await type(tester, 'n', 'i', 3);
+      await tap(tester, 'space');
+      await type(tester, 'h', 'ao', 3);
+      expect(composed(tester), 'nǐ hǎo');
+      return tester.getRect(find.byKey(const Key('composed')));
+    }
+
+    // Tapping twice on the same syllable asks for its tone again. The first
+    // tap still places the caret, so nothing waits on a possible second —
+    // which is the whole reason this is not `onDoubleTap`.
+    testWidgets('a second tap asks for the tone again', (tester) async {
+      final line = await niHao(tester);
+      final at = Offset(line.left + 4, line.center.dy);
+
+      await tester.tapAt(at);
+      await tester.pump(const Duration(milliseconds: 40));
+      await tester.tapAt(at);
+      await tester.pumpAndSettle();
+
+      // The syllable is out of the line and its tone is being chosen again.
+      expect(find.byKey(const Key('tone-1')), findsOneWidget);
+      expect(composed(tester), 'ni hǎo');
+
+      await tap(tester, 'tone-4');
+      await tester.pumpAndSettle();
+      expect(composed(tester), 'nì hǎo');
+    });
+
+    testWidgets('two taps far apart in time are just two taps', (tester) async {
+      final line = await niHao(tester);
+      final at = Offset(line.left + 4, line.center.dy);
+
+      await tester.tapAt(at);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tapAt(at);
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'nǐ hǎo', reason: 'nothing was reopened');
+      expect(find.byKey(const Key('tone-1')), findsNothing);
+    });
+
+    testWidgets('a second tap elsewhere is not a second tap', (tester) async {
+      final line = await niHao(tester);
+
+      await tester.tapAt(Offset(line.left + 4, line.center.dy));
+      await tester.pump(const Duration(milliseconds: 40));
+      await tester.tapAt(Offset(line.right - 4, line.center.dy));
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'nǐ hǎo');
+      expect(find.byKey(const Key('tone-1')), findsNothing);
+    });
+
+    testWidgets('holding asks for what follows the initial', (tester) async {
+      final line = await niHao(tester);
+
+      await tester.longPressAt(Offset(line.left + 4, line.center.dy));
+      await tester.pumpAndSettle();
+
+      // Back at the rime bank, with the initial kept.
+      expect(find.byKey(const Key('rime-i')), findsOneWidget);
+      expect(composed(tester), 'n hǎo');
+
+      await tap(tester, 'rime-en');
+      await tap(tester, 'tone-3');
+      await tester.pumpAndSettle();
+      expect(composed(tester), 'něn hǎo');
+    });
+
+    testWidgets('holding a name does nothing to it', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await tester.tap(find.byKey(const Key('add-word')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('literal-field')), 'Steve');
+      await tester.tap(find.byKey(const Key('literal-accept')));
+      await tester.pumpAndSettle();
+
+      final line = tester.getRect(find.byKey(const Key('composed')));
+      await tester.longPressAt(Offset(line.right - 6, line.center.dy));
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'wǒ Steve');
+    });
+
+    // The point of doing this by hand: placing the caret must not wait to see
+    // whether a second tap is coming.
+    testWidgets('the first tap places the caret at once', (tester) async {
+      final line = await niHao(tester);
+
+      await tester.tapAt(Offset(line.left + 4, line.center.dy));
+      await tester.pump();
+
+      // No settling, no timers waited on: the caret has already moved, so
+      // typing lands at the start.
+      await type(tester, 'm', 'a', 5);
+      expect(
+        composed(tester),
+        'ma'
+        'nǐ hǎo',
+      );
     });
   });
 

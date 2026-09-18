@@ -324,6 +324,70 @@ void main() {
     });
   });
 
+  group('reopening a syllable', () {
+    /// `nǐ hǎo`.
+    Composition line() {
+      var composition = type(const Composition(), 'n', 'i', Tone.third);
+      composition = composition.space();
+      return type(composition, 'h', 'ao', Tone.third);
+    }
+
+    test('back to the tone keeps the letters and asks again', () {
+      final reopened = line().redraft(1, 0, ComposeStage.tone);
+
+      expect(reopened.stage, ComposeStage.tone);
+      expect(reopened.text, 'nǐ', reason: 'the syllable came out of the line');
+      // Untoned, because the tone is the thing being chosen again.
+      expect(reopened.preview, 'nǐ hao');
+      expect(reopened.caret, const Caret(word: 1, syllable: 0));
+
+      // And choosing puts it back exactly where it was.
+      expect(reopened.commit(Tone.fourth).text, 'nǐ hào');
+    });
+
+    test('back to the rime asks for what follows the initial', () {
+      final reopened = line().redraft(1, 0, ComposeStage.rime);
+
+      expect(reopened.stage, ComposeStage.rime);
+      expect(reopened.preview, 'nǐ h');
+      expect(reopened.withRime('en').commit(Tone.third).text, 'nǐ hěn');
+    });
+
+    // A syllable in the middle has to come back to the middle.
+    test('puts the new syllable back where the old one was', () {
+      var composition = type(const Composition(), 'n', 'i', Tone.third);
+      composition = type(composition, 'h', 'ao', Tone.third);
+      composition = type(composition, 'm', 'a', Tone.neutral);
+      expect(composition.text, 'nǐhǎoma');
+
+      final reopened = composition.redraft(0, 1, ComposeStage.tone);
+      expect(reopened.preview, 'nǐhaoma');
+      expect(reopened.commit(Tone.fourth).text, 'nǐhàoma');
+    });
+
+    test(
+      'going back to the initial is refused, being what backspace is for',
+      () {
+        final composition = line();
+        expect(
+          composition.redraft(1, 0, ComposeStage.initial),
+          same(composition),
+        );
+      },
+    );
+
+    test('a position outside the line is refused', () {
+      final composition = line();
+      expect(composition.redraft(9, 0, ComposeStage.tone), same(composition));
+      expect(composition.redraft(1, 9, ComposeStage.tone), same(composition));
+    });
+
+    test('a name has no stages to go back to', () {
+      final composition = line().withLiteral('Steve');
+      expect(composition.redraft(2, 0, ComposeStage.tone), same(composition));
+    });
+  });
+
   test('clearing resets everything', () {
     var composition = type(const Composition(), 'n', 'i', Tone.third);
     composition = composition.space().withInitial(key('h'));

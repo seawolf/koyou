@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../audio/speech.dart';
 import '../pinyin/composition.dart';
@@ -347,6 +348,8 @@ class _ComposeScreenState extends State<ComposeScreen> {
             lookingUp: _lookingUp,
             thinking: _thinking,
             onMoveCaret: (caret) => _edit(_composition.movedTo(caret)),
+            onReopen: (word, syllable, stage) =>
+                _edit(_composition.redraft(word, syllable, stage)),
             onEditLiteral: (word, text) => _askForWord(
               at: Caret(word: word, syllable: 0),
               existing: text,
@@ -438,6 +441,7 @@ class _Reading extends StatelessWidget {
     required this.thinking,
     required this.onMoveCaret,
     required this.onEditLiteral,
+    required this.onReopen,
     required this.suggestion,
     required this.onAccept,
   });
@@ -455,6 +459,7 @@ class _Reading extends StatelessWidget {
 
   final ValueChanged<Caret> onMoveCaret;
   final void Function(int word, String text) onEditLiteral;
+  final void Function(int word, int syllable, ComposeStage stage) onReopen;
 
   final ToneSuggestion? suggestion;
   final ValueChanged<ToneSuggestion> onAccept;
@@ -508,6 +513,7 @@ class _Reading extends StatelessWidget {
               composition: composition,
               onMoveCaret: onMoveCaret,
               onEditLiteral: onEditLiteral,
+              onReopen: onReopen,
             ),
           _Rest(
             children: [
@@ -693,6 +699,7 @@ class _ComposedLine extends StatefulWidget {
     required this.composition,
     required this.onMoveCaret,
     required this.onEditLiteral,
+    required this.onReopen,
   });
 
   final Composition composition;
@@ -701,54 +708,138 @@ class _ComposedLine extends StatefulWidget {
   /// Asked to reopen the editor on the name at this word index.
   final void Function(int word, String text) onEditLiteral;
 
+  /// Asked to lift a committed syllable back into the draft, at a stage.
+  final void Function(int word, int syllable, ComposeStage stage) onReopen;
+
   @override
   State<_ComposedLine> createState() => _ComposedLineState();
 }
 
 class _ComposedLineState extends State<_ComposedLine> {
-  /// One per syllable on screen, rebuilt whenever the line changes.
-  final List<TapGestureRecognizer> _taps = [];
+  /// Where each unit of the line sits in the paragraph's own text, so a touch
+  /// can be turned into "which syllable".
+  final List<_Unit> _units = [];
 
-  @override
-  void dispose() {
-    _disposeTaps();
-    super.dispose();
-  }
+  /// The paragraph itself, for turning a point into a text position. It knows
+  /// about wrapping; arithmetic over glyph widths does not.
+  final GlobalKey _paragraph = GlobalKey();
 
-  void _disposeTaps() {
-    for (final tap in _taps) {
-      tap.dispose();
-    }
-    _taps.clear();
-  }
-
-  /// A tap on a syllable puts the caret at [before], or after that syllable if
-  /// the tap landed past [midpoint] — which is what every other text field
-  /// does, and the only way to reach the end of a word by tapping its last
-  /// syllable.
+  /// The last tap, for spotting a second one on the same syllable.
   ///
-  /// [midpoint] is measured from the text as the spans are built, because a
-  /// paragraph does not hand a span its own bounds. It has to be captured per
-  /// recognizer: held in a field instead, every syllable read the last one's
-  /// midpoint and the right half never worked except on the final syllable.
-  /// A tap on a name reopens the editor on it.
-  TapGestureRecognizer _edit(int word, String text) {
-    final recognizer = TapGestureRecognizer()
-      ..onTap = () => widget.onEditLiteral(word, text);
-    _taps.add(recognizer);
-    return recognizer;
+  /// Timed off the frame clock rather than the wall clock: it is monotonic,
+  /// and it is the one a test can advance, so the window below is something
+  /// that can actually be checked rather than asserted.
+  _Unit? _lastTapped;
+  Duration _lastTapAt = Duration.zero;
+
+  /// A second tap on the same syllable reopens its tone.
+  ///
+  /// Done by hand rather than with `onDoubleTap`, which would put every single
+  /// tap behind the double-tap timeout — and placing the caret is the commonest
+  /// thing anyone does here. So the first tap moves the caret at once, and a
+  /// second one within the window supersedes it. Nothing is ever waited for.
+  static const _secondTapWindow = Duration(milliseconds: 300);
+
+  /// The paragraph that actually holds the glyphs.
+  ///
+  /// Not simply what the key finds: a [Text] wraps its paragraph in a
+  /// semantics node, which is a render object too, so asking the key directly
+  /// hands back something that cannot answer where a touch landed — and every
+  /// tap then looked like a miss and snapped to the end of the line.
+  RenderParagraph? get _rendered {
+    RenderParagraph? found;
+    void search(RenderObject object) {
+      if (found != null) return;
+      if (object is RenderParagraph) {
+        found = object;
+        return;
+      }
+      object.visitChildren(search);
+    }
+
+    final root = _paragraph.currentContext?.findRenderObject();
+    if (root != null) search(root);
+    return found;
   }
 
-  TapGestureRecognizer _tap(Caret before, Caret after, double midpoint) {
-    final recognizer = TapGestureRecognizer()
-      ..onTapUp = (details) {
-        final box = context.findRenderObject();
-        if (box is! RenderBox) return;
-        final local = box.globalToLocal(details.globalPosition);
-        widget.onMoveCaret(local.dx < midpoint ? before : after);
-      };
-    _taps.add(recognizer);
-    return recognizer;
+  /// The unit under [local], or null where the touch missed the text.
+  _Unit? _unitAt(Offset local) {
+    final paragraph = _rendered;
+    if (paragraph == null) return null;
+    if (!(Offset.zero & paragraph.size).contains(local)) return null;
+
+    final position = paragraph.getPositionForOffset(local);
+    for (final unit in _units) {
+      // Inclusive of the end: a touch on the right half of a unit's last
+      // character reports the position *after* it, which is still that unit
+      // being touched. Excluding it sent every such tap to the margin, and
+      // the caret to the end of the line.
+      //
+      // Where two units meet inside a word the first wins, which is the same
+      // place either way: after this one is before the next.
+      if (position.offset >= unit.start && position.offset <= unit.end) {
+        return unit;
+      }
+    }
+    return null;
+  }
+
+  /// [global] in the paragraph's own coordinates.
+  Offset? _local(Offset global) => _rendered?.globalToLocal(global);
+
+  void _onTap(Offset global) {
+    final local = _local(global);
+    if (local == null) return;
+    final unit = _unitAt(local);
+
+    if (unit == null) {
+      // Beside the line, or above or below it: snap to whichever end is
+      // nearer rather than doing nothing, since the glyphs are a thin target.
+      widget.onMoveCaret(
+        local.dx < 0
+            ? const Caret(word: 0, syllable: 0)
+            : widget.composition.end,
+      );
+      return;
+    }
+    if (unit.literal != null) {
+      // A name is one thing, and tapping it asks to correct it rather than to
+      // put a caret somewhere inside it.
+      widget.onEditLiteral(unit.word, unit.literal!);
+      return;
+    }
+
+    // The *system* timestamp: the other one asserts when read outside a frame,
+    // and a gesture callback is exactly that. It threw silently and the caret
+    // stopped moving at all.
+    final now = SchedulerBinding.instance.currentSystemFrameTimeStamp;
+    final again = _lastTapped == unit && now - _lastTapAt < _secondTapWindow;
+    _lastTapped = unit;
+    _lastTapAt = now;
+    if (again) {
+      _lastTapped = null;
+      widget.onReopen(unit.word, unit.index, ComposeStage.tone);
+      return;
+    }
+
+    // Before or after, as in any other text field. Measured in characters
+    // rather than pixels, because the paragraph has already done the hard part
+    // of deciding which line and which glyph was hit.
+    final position = _rendered?.getPositionForOffset(local);
+    final middle = unit.start + (unit.end - unit.start) / 2;
+    final before = (position?.offset ?? unit.start) < middle;
+    widget.onMoveCaret(
+      Caret(word: unit.word, syllable: before ? unit.index : unit.index + 1),
+    );
+  }
+
+  void _onLongPress(Offset global) {
+    final local = _local(global);
+    if (local == null) return;
+    final unit = _unitAt(local);
+    if (unit == null || unit.literal != null) return;
+    // Held, rather than tapped twice: going back further is the rarer fix.
+    widget.onReopen(unit.word, unit.index, ComposeStage.rime);
   }
 
   @override
@@ -756,28 +847,38 @@ class _ComposedLineState extends State<_ComposedLine> {
     final theme = Theme.of(context);
     final style = theme.textTheme.displaySmall;
     final composition = widget.composition;
-    _disposeTaps();
-
-    final caret = WidgetSpan(
-      alignment: PlaceholderAlignment.middle,
-      child: BlinkingCursor(height: style?.fontSize ?? 36),
-    );
-    // The draft is dimmed: it has no tone yet, so it is not yet a syllable
-    // anyone should read aloud.
-    final draft = TextSpan(
-      text: composition.draftSuffix,
-      style: TextStyle(
-        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
-      ),
-    );
+    _units.clear();
 
     final spans = <InlineSpan>[];
-    var painted = 0.0;
+    var characters = 0;
     var anythingBefore = false;
 
+    void add(InlineSpan span, String text) {
+      spans.add(span);
+      characters += text.length;
+    }
+
     void addCaret() {
-      spans.add(draft);
-      spans.add(caret);
+      add(
+        TextSpan(
+          text: composition.draftSuffix,
+          // The draft is dimmed: it has no tone yet, so it is not yet a
+          // syllable anyone should read aloud.
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+          ),
+        ),
+        composition.draftSuffix,
+      );
+      // A placeholder is one character of the paragraph's text, so it has to
+      // be counted or every offset after the caret is wrong.
+      add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: BlinkingCursor(height: style?.fontSize ?? 36),
+        ),
+        '￼',
+      );
     }
 
     for (var word = 0; word < composition.words.length; word++) {
@@ -787,14 +888,16 @@ class _ComposedLineState extends State<_ComposedLine> {
       // separates it from the word before. Without this the space after a
       // word break was invisible, and `wǒài` looked like `wǒ ài`.
       final visible = !here.isEmpty || composition.caret.word == word;
-      if (anythingBefore && visible) {
-        spans.add(const TextSpan(text: ' '));
-        painted += _widthOf(' ', style);
-      }
-      // Only real words count as text before. A word holding nothing but the
-      // caret — what backspacing the first syllable of a line leaves — must
-      // not put a space in front of the word after it.
-      if (!here.isEmpty) anythingBefore = true;
+      if (anythingBefore && visible) add(const TextSpan(text: ' '), ' ');
+      // Only words that actually put something on screen count as text before.
+      // A word holding nothing but the caret — what backspacing the first
+      // syllable of a line leaves — must not put a space in front of the word
+      // after it. A draft is different: lifting a syllable back out to retone
+      // it leaves its word empty, and the draft standing in its place is very
+      // much text.
+      final drafting =
+          composition.caret.word == word && composition.draftSuffix.isNotEmpty;
+      if (!here.isEmpty || drafting) anythingBefore = true;
 
       for (var index = 0; index <= here.length; index++) {
         if (composition.caret.word == word &&
@@ -803,85 +906,93 @@ class _ComposedLineState extends State<_ComposedLine> {
         }
         if (index == here.length) break;
 
-        // A name is one unit and a word of its own, so tapping it is not a
-        // request to put the caret somewhere — it is a request to correct the
-        // name. It is shown in the same size but not as pinyin, because it has
-        // no tones and is not something to pronounce syllable by syllable.
-        if (here is Literal) {
-          final width = _widthOf(here.text, style);
-          painted += width;
-          spans.add(
-            TextSpan(
-              text: here.text,
-              style: TextStyle(
-                color: theme.colorScheme.tertiary,
-                fontStyle: FontStyle.italic,
+        final start = characters;
+        switch (here) {
+          case Literal():
+            // Shown in the same size but not as pinyin: it has no tones and is
+            // not something to pronounce syllable by syllable.
+            add(
+              TextSpan(
+                text: here.text,
+                style: TextStyle(
+                  color: theme.colorScheme.tertiary,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
-              recognizer: _edit(word, here.text),
-            ),
-          );
-          continue;
+              here.text,
+            );
+            _units.add(
+              _Unit(
+                word: word,
+                index: index,
+                start: start,
+                end: characters,
+                literal: here.text,
+              ),
+            );
+          case Spoken():
+            final written = here.syllables[index].written;
+            add(TextSpan(text: written), written);
+            _units.add(
+              _Unit(word: word, index: index, start: start, end: characters),
+            );
         }
-
-        final written = (here as Spoken).syllables[index].written;
-        final width = _widthOf(written, style);
-        final midpoint = painted + width / 2;
-        painted += width;
-        spans.add(
-          TextSpan(
-            text: written,
-            recognizer: _tap(
-              Caret(word: word, syllable: index),
-              Caret(word: word, syllable: index + 1),
-              midpoint,
-            ),
-          ),
-        );
       }
     }
 
-    return Stack(
-      children: [
-        // Behind the text, and hit-tested after it, so a tap on a syllable
-        // still reaches that syllable's own recognizer. Only taps that miss
-        // the glyphs — beside the line, or just above and below it — land
-        // here, and those snap to whichever end they are nearer.
-        Positioned.fill(
-          child: GestureDetector(
-            key: const Key('composed-margin'),
-            behavior: HitTestBehavior.opaque,
-            onTapUp: (details) => widget.onMoveCaret(
-              details.localPosition.dx < _sides.left
-                  ? const Caret(word: 0, syllable: 0)
-                  : composition.end,
-            ),
-          ),
-        ),
-        Padding(
-          // Vertical room so a tap a little above or below the text still
-          // counts, and the horizontal margin the rest of the reading area
-          // has, here as part of the tappable band rather than outside it.
-          padding: _sides + const EdgeInsets.symmetric(vertical: 10),
+    return GestureDetector(
+      key: const Key('composed-margin'),
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (details) => _onTap(details.globalPosition),
+      onLongPressStart: (details) => _onLongPress(details.globalPosition),
+      child: Padding(
+        // Vertical room so a tap a little above or below the text still
+        // counts, and the horizontal margin the rest of the reading area has,
+        // here as part of the tappable band rather than outside it.
+        padding: _sides + const EdgeInsets.symmetric(vertical: 10),
+        // A widget takes one key, and two things need one: the paragraph has
+        // to be findable to be asked where a touch landed, and the line is
+        // read back by its own key elsewhere. KeyedSubtree has no render
+        // object of its own, so finding one through it lands on the paragraph.
+        child: KeyedSubtree(
+          key: _paragraph,
           child: Text.rich(
             key: const Key('composed'),
             TextSpan(children: spans),
             style: style,
           ),
         ),
-      ],
+      ),
     );
   }
+}
 
-  /// How wide [text] is in [style], for splitting a syllable down the middle.
-  double _widthOf(String text, TextStyle? style) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    return width;
-  }
+/// One tappable piece of the line, and where it sits in the paragraph's text.
+class _Unit {
+  const _Unit({
+    required this.word,
+    required this.index,
+    required this.start,
+    required this.end,
+    this.literal,
+  });
+
+  final int word;
+  final int index;
+
+  /// Character range within the paragraph, which is what a hit test reports.
+  final int start;
+  final int end;
+
+  /// The name, when this unit is one. Null for a syllable.
+  final String? literal;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _Unit && other.word == word && other.index == index;
+
+  @override
+  int get hashCode => Object.hash(word, index);
 }
 
 /// The horizontal margin the reading area keeps, except where a child needs
@@ -1094,6 +1205,11 @@ const _hints = <(IconData, String)>[
     Icons.touch_app_outlined,
     'Tap a syllable to put the caret before or after '
         'it, or tap beside the line to jump to its start or end.',
+  ),
+  (
+    Icons.replay,
+    'Tap a syllable twice to choose its tone again, or hold it to choose '
+        'what follows the initial again.',
   ),
   (
     Icons.space_bar,

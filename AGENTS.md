@@ -256,12 +256,24 @@ Two traps in there, both of which cost an afternoon:
   line is also the end, so anything built by typing keeps the caret at the end
   without tracking it — that is why adding the caret changed none of the
   existing behaviour. Never reintroduce `words.last`.
-- **A span cannot be handed its own bounds.** The composed line is one
-  paragraph, so tap targets are `TextSpan.recognizer`s and the midpoint used to
-  decide "before or after this syllable" is measured with a `TextPainter` as
-  the spans are built. It has to be captured per recognizer: held in a field,
-  every syllable read the last one's midpoint and only the final syllable
-  worked. There is a test for the right half specifically.
+- **The composed line is hit-tested, not built from tappable spans.** A
+  `TextSpan` takes exactly one recognizer, so tap, second-tap and long-press
+  cannot all hang off one. Instead a single gesture layer asks the
+  `RenderParagraph` where the touch landed and maps that character offset to a
+  unit. Three traps, each of which cost a red test that looked like a broken
+  feature:
+  - A `Text` wraps its paragraph in a semantics node, so `findRenderObject()`
+    does not return the paragraph. Search down for it.
+  - The hit range must include a unit's **end** offset: a touch on the right
+    half of its last character reports the position after it.
+  - `currentFrameTimeStamp` asserts when read outside a frame, which a gesture
+    callback is. Use `currentSystemFrameTimeStamp`, which is also the one a
+    test can advance — the wall clock cannot be, so a timing window checked
+    against `DateTime.now()` is untestable.
+- **Never register `onDoubleTap` on the line.** It puts every single tap behind
+  the double-tap timeout, and placing the caret is the commonest thing anyone
+  does here. A second tap is spotted by hand: the first acts at once, the
+  second supersedes it.
 - **A word is not always syllables.** `Word` is sealed: `Spoken` has pinyin and
   a dictionary key, `Literal` is a name carried as written. Anything walking a
   line must handle both — switch on the type rather than reaching for

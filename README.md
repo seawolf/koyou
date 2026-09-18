@@ -48,6 +48,17 @@ Staging it buys three things a full keyboard can't:
   the word at that point. So a syllable four words back can be fixed without
   retyping everything after it.
 
+  Tapping a syllable twice asks for its tone again, and holding one asks again
+  for what follows the initial — the syllable comes out of the line and the
+  caret takes its place, so the new one lands exactly where the old one was.
+  Getting a tone wrong is the commonest slip there is, and backspacing a whole
+  syllable to fix one mark was a poor trade.
+
+  Both are handled by hand rather than with `onDoubleTap`, which would put
+  every single tap behind the double-tap timeout — and placing the caret is the
+  commonest thing anyone does here. The first tap moves the caret immediately;
+  a second within 300ms supersedes it. Nothing is ever waited for.
+
   The caret moves between syllables, never inside one. A syllable is what the
   keyboard produces and what a learner says, so there is no useful position
   between a vowel and its own tone mark. Moving the caret also drops a

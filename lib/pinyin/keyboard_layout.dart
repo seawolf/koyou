@@ -73,6 +73,21 @@ enum KeyArrangement {
 /// The starting points available, in articulation order.
 final List<InitialKey> initialKeys = _buildInitialKeys();
 
+/// The key a learner would have pressed to start [syllable].
+///
+/// The way back from a committed syllable to the bank it came from, which is
+/// what reopening a stage on one needs. Matched on the rime as well as the
+/// initial, because `w`, `y` and the bare vowels all have no initial at all
+/// and are told apart only by what can follow them.
+InitialKey? keyFor(Syllable syllable) {
+  for (final key in initialKeys) {
+    if (key.initial == syllable.initial && key.rimes.contains(syllable.rime)) {
+      return key;
+    }
+  }
+  return null;
+}
+
 /// The initial bank as rows, in [arrangement].
 ///
 /// Rows are explicit rather than packed, because in both arrangements the rows
