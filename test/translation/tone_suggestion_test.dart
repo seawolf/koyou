@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/composition.dart';
 import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/tone_suggestion.dart';
@@ -34,15 +35,14 @@ void main() {
 
   setUp(() => suggester = DictionarySuggester(_dictionary()));
 
-  TranslationRequest request(List<List<Syllable>> words) =>
-      TranslationRequest(words);
+  TranslationRequest request(List<Word> words) => TranslationRequest(words);
 
   // What was typed is not a word at all, and the same letters with another
   // tone are. No judgement involved.
   test('offers the word when the tone makes nothing', () async {
     final found = await suggester.check(
       request([
-        [_s('n', 'i', Tone.third), _s('h', 'ao', Tone.first)],
+        Spoken([_s('n', 'i', Tone.third), _s('h', 'ao', Tone.first)]),
       ]),
     );
 
@@ -58,7 +58,7 @@ void main() {
   test('offers a common word over an unranked one', () async {
     final found = await suggester.check(
       request([
-        [_s('x', 'ie', Tone.fourth), _s('x', 'ie', Tone.fourth)],
+        Spoken([_s('x', 'ie', Tone.fourth), _s('x', 'ie', Tone.fourth)]),
       ]),
     );
 
@@ -71,7 +71,7 @@ void main() {
       expect(
         await suggester.check(
           request([
-            [_s('n', 'i', Tone.third), _s('h', 'ao', Tone.third)],
+            Spoken([_s('n', 'i', Tone.third), _s('h', 'ao', Tone.third)]),
           ]),
         ),
         isNull,
@@ -84,7 +84,7 @@ void main() {
       expect(
         await suggester.check(
           request([
-            [_s('n', 'i', Tone.second)],
+            Spoken([_s('n', 'i', Tone.second)]),
           ]),
         ),
         isNull,
@@ -97,15 +97,30 @@ void main() {
       expect(
         await suggester.check(
           request([
-            [_s('sh', 'i', Tone.second)],
+            Spoken([_s('sh', 'i', Tone.second)]),
           ]),
         ),
         isNull,
       );
     });
 
+    // There is no tone in `Steve` to have got wrong.
+    test('on a name', () async {
+      expect(
+        await suggester.check(
+          request([
+            Spoken([_s('n', 'i', Tone.third), _s('h', 'ao', Tone.first)]),
+            const Literal('Steve'),
+          ]),
+        ),
+        isNotNull,
+        reason: 'the pinyin word beside it is still checked',
+      );
+      expect(await suggester.check(request([const Literal('Steve')])), isNull);
+    });
+
     test('when nothing is typed', () async {
-      expect(await suggester.check(request([[]])), isNull);
+      expect(await suggester.check(request([Spoken([])])), isNull);
     });
   });
 

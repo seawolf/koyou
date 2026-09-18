@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../audio/speech.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
+import '../pinyin/word.dart';
 import '../translation/model_store.dart';
 import '../translation/tone_suggestion.dart';
 import '../translation/translator.dart';
@@ -132,6 +133,26 @@ class _ComposeScreenState extends State<ComposeScreen> {
     _translate(next);
   }
 
+  /// Opens the small editor for a word that is not Mandarin.
+  ///
+  /// A dialog rather than another bank of keys, and deliberately a modal one:
+  /// this is the one place the app hands over to the phone's own keyboard,
+  /// because a name is arbitrary letters with capitals in it and that is what
+  /// a phone keyboard is for. Everything about pinyin stays on the app's
+  /// keyboard, which is the whole premise.
+  ///
+  /// [existing] is the name already there when an existing one was tapped, so
+  /// correcting `Steve` opens with `Steve` in the field rather than blank.
+  Future<void> _askForWord({Caret? at, String existing = ''}) async {
+    final typed = await showDialog<String>(
+      context: context,
+      builder: (context) => _WordDialog(existing: existing),
+    );
+    if (typed == null || !mounted) return;
+    final moved = at == null ? _composition : _composition.movedTo(at);
+    _edit(moved.withLiteral(typed));
+  }
+
   /// Speaks what has been typed, on the learner's say-so and never otherwise.
   ///
   /// Deliberately manual. Speaking as the line grows would say a fragment of
@@ -226,7 +247,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
     if (translator == null) return;
     // One word is a dictionary's job, and asking a model would only invite it
     // to sound certain about a syllable forty words share.
-    if (TranslationRequest(composition.words).wordKeys.length < 2) return;
+    if (composition.words.where((word) => !word.isEmpty).length < 2) return;
 
     _settle = Timer(_settleDelay, () async {
       if (!mounted || _composition.text != composition.text) return;
@@ -334,6 +355,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
             lookingUp: _lookingUp,
             thinking: _thinking,
             onMoveCaret: (caret) => _edit(_composition.movedTo(caret)),
+            onEditLiteral: (word, text) => _askForWord(
+              at: Caret(word: word, syllable: 0),
+              existing: text,
+            ),
             suggestion: _suggestion,
             onAccept: (suggestion) => _edit(
               _composition.retoned(
@@ -357,6 +382,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
             onBackTo: (stage) => _edit(_composition.backTo(stage)),
             onSpace: () => _edit(_composition.space()),
             onBackspace: () => _edit(_composition.backspace()),
+            onAddWord: _askForWord,
           );
 
           if (landscape) {
@@ -419,6 +445,7 @@ class _Reading extends StatelessWidget {
     required this.lookingUp,
     required this.thinking,
     required this.onMoveCaret,
+    required this.onEditLiteral,
     required this.suggestion,
     required this.onAccept,
   });
@@ -435,6 +462,7 @@ class _Reading extends StatelessWidget {
   final bool thinking;
 
   final ValueChanged<Caret> onMoveCaret;
+  final void Function(int word, String text) onEditLiteral;
 
   final ToneSuggestion? suggestion;
   final ValueChanged<ToneSuggestion> onAccept;
@@ -484,7 +512,11 @@ class _Reading extends StatelessWidget {
               ),
             )
           else
-            _ComposedLine(composition: composition, onMoveCaret: onMoveCaret),
+            _ComposedLine(
+              composition: composition,
+              onMoveCaret: onMoveCaret,
+              onEditLiteral: onEditLiteral,
+            ),
           _Rest(
             children: [
               // Directly under the line it is about, and above the meaning:
@@ -665,10 +697,17 @@ class _Words extends StatelessWidget {
 /// spans, which means gesture recognizers, which means this has to be
 /// stateful: a recognizer outlives a build and has to be disposed.
 class _ComposedLine extends StatefulWidget {
-  const _ComposedLine({required this.composition, required this.onMoveCaret});
+  const _ComposedLine({
+    required this.composition,
+    required this.onMoveCaret,
+    required this.onEditLiteral,
+  });
 
   final Composition composition;
   final ValueChanged<Caret> onMoveCaret;
+
+  /// Asked to reopen the editor on the name at this word index.
+  final void Function(int word, String text) onEditLiteral;
 
   @override
   State<_ComposedLine> createState() => _ComposedLineState();
@@ -700,6 +739,14 @@ class _ComposedLineState extends State<_ComposedLine> {
   /// paragraph does not hand a span its own bounds. It has to be captured per
   /// recognizer: held in a field instead, every syllable read the last one's
   /// midpoint and the right half never worked except on the final syllable.
+  /// A tap on a name reopens the editor on it.
+  TapGestureRecognizer _edit(int word, String text) {
+    final recognizer = TapGestureRecognizer()
+      ..onTap = () => widget.onEditLiteral(word, text);
+    _taps.add(recognizer);
+    return recognizer;
+  }
+
   TapGestureRecognizer _tap(Caret before, Caret after, double midpoint) {
     final recognizer = TapGestureRecognizer()
       ..onTapUp = (details) {
@@ -742,29 +789,49 @@ class _ComposedLineState extends State<_ComposedLine> {
     }
 
     for (var word = 0; word < composition.words.length; word++) {
-      final syllables = composition.words[word];
+      final here = composition.words[word];
       // An empty word still renders something if the caret is sitting in it —
       // the draft, or the caret alone — and it still needs the space that
       // separates it from the word before. Without this the space after a
       // word break was invisible, and `wǒài` looked like `wǒ ài`.
-      final visible = syllables.isNotEmpty || composition.caret.word == word;
+      final visible = !here.isEmpty || composition.caret.word == word;
       if (anythingBefore && visible) {
         spans.add(const TextSpan(text: ' '));
         painted += _widthOf(' ', style);
       }
-      // Only real syllables count as text before. A word holding nothing but
-      // the caret — what backspacing the first syllable of a line leaves —
-      // must not put a space in front of the word after it.
-      if (syllables.isNotEmpty) anythingBefore = true;
+      // Only real words count as text before. A word holding nothing but the
+      // caret — what backspacing the first syllable of a line leaves — must
+      // not put a space in front of the word after it.
+      if (!here.isEmpty) anythingBefore = true;
 
-      for (var index = 0; index <= syllables.length; index++) {
+      for (var index = 0; index <= here.length; index++) {
         if (composition.caret.word == word &&
             composition.caret.syllable == index) {
           addCaret();
         }
-        if (index == syllables.length) break;
+        if (index == here.length) break;
 
-        final written = syllables[index].written;
+        // A name is one unit and a word of its own, so tapping it is not a
+        // request to put the caret somewhere — it is a request to correct the
+        // name. It is shown in the same size but not as pinyin, because it has
+        // no tones and is not something to pronounce syllable by syllable.
+        if (here is Literal) {
+          final width = _widthOf(here.text, style);
+          painted += width;
+          spans.add(
+            TextSpan(
+              text: here.text,
+              style: TextStyle(
+                color: theme.colorScheme.tertiary,
+                fontStyle: FontStyle.italic,
+              ),
+              recognizer: _edit(word, here.text),
+            ),
+          );
+          continue;
+        }
+
+        final written = (here as Spoken).syllables[index].written;
         final width = _widthOf(written, style);
         final midpoint = painted + width / 2;
         painted += width;
@@ -905,6 +972,75 @@ class _Suggestion extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Asks for a word that is not Mandarin.
+///
+/// Small, and modal, so it reads as the exception it is: everything else in
+/// this app is typed on the app's own keyboard, one piece of a syllable at a
+/// time. A name has no syllables to choose and no tone to pick.
+class _WordDialog extends StatefulWidget {
+  const _WordDialog({required this.existing});
+
+  final String existing;
+
+  @override
+  State<_WordDialog> createState() => _WordDialogState();
+}
+
+class _WordDialogState extends State<_WordDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.existing)
+        ..selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: widget.existing.length,
+        );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _accept() => Navigator.pop(context, _controller.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final correcting = widget.existing.isNotEmpty;
+
+    return AlertDialog(
+      title: Text(
+        correcting ? 'Correct the word' : 'A word that is not Chinese',
+      ),
+      content: TextField(
+        key: const Key('literal-field'),
+        controller: _controller,
+        autofocus: true,
+        // Names are not sentences, and autocorrect would fight a name it has
+        // never seen. Capitals are left to the learner.
+        autocorrect: false,
+        enableSuggestions: false,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _accept(),
+        decoration: const InputDecoration(
+          hintText: 'Steve',
+          helperText: 'Carried through as you type it, not translated',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          key: const Key('literal-accept'),
+          onPressed: _accept,
+          child: Text(correcting ? 'Correct' : 'Add'),
+        ),
+      ],
     );
   }
 }

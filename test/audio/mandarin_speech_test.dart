@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/audio/mandarin_speech.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/translator.dart';
@@ -55,15 +56,14 @@ void main() {
     );
   });
 
-  TranslationRequest request(List<List<Syllable>> words) =>
-      TranslationRequest(words);
+  TranslationRequest request(List<Word> words) => TranslationRequest(words);
 
   test('speaks the characters, not the pinyin', () async {
     final said = await speech.speak(
       request([
-        [_s('w', 'o', Tone.third)],
-        [_s('m', 'ai', Tone.fourth)],
-        [_s('sh', 'u', Tone.first)],
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('m', 'ai', Tone.fourth)]),
+        Spoken([_s('sh', 'u', Tone.first)]),
       ]),
     );
 
@@ -78,24 +78,38 @@ void main() {
   test('the tone decides what is said', () async {
     await speech.speak(
       request([
-        [_s('w', 'o', Tone.third)],
-        [_s('m', 'ai', Tone.third)],
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('m', 'ai', Tone.third)]),
       ]),
     );
     await speech.speak(
       request([
-        [_s('w', 'o', Tone.third)],
-        [_s('m', 'ai', Tone.fourth)],
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('m', 'ai', Tone.fourth)]),
       ]),
     );
 
     expect(engine.spoken, ['我买', '我卖']);
   });
 
+  // A voice gets the name as written, which is what it would get from any
+  // other Chinese sentence containing one.
+  test('a name is spoken as written', () async {
+    final said = await speech.speak(
+      request([
+        Spoken([_s('w', 'o', Tone.third)]),
+        const Literal('Steve'),
+      ]),
+    );
+
+    expect(said, isTrue);
+    expect(engine.spoken, ['我Steve']);
+  });
+
   test('is slowed down, so the tones can be heard', () async {
     await speech.speak(
       request([
-        [_s('w', 'o', Tone.third)],
+        Spoken([_s('w', 'o', Tone.third)]),
       ]),
     );
     expect(engine.rate, lessThan(0.5));
@@ -106,8 +120,10 @@ void main() {
   test('says nothing when a word cannot be placed', () async {
     final said = await speech.speak(
       request([
-        [_s('w', 'o', Tone.third)],
-        [_s('m', 'ai', Tone.second)], // mai2, absent from the stand-in shard
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([
+          _s('m', 'ai', Tone.second),
+        ]), // mai2, absent from the stand-in shard
       ]),
     );
 
@@ -121,7 +137,7 @@ void main() {
     expect(
       await speech.speak(
         request([
-          [_s('w', 'o', Tone.third)],
+          Spoken([_s('w', 'o', Tone.third)]),
         ]),
       ),
       isFalse,
@@ -133,7 +149,7 @@ void main() {
     for (var i = 0; i < 3; i++) {
       await speech.speak(
         request([
-          [_s('w', 'o', Tone.third)],
+          Spoken([_s('w', 'o', Tone.third)]),
         ]),
       );
     }

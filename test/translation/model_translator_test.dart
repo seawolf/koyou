@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/model_translator.dart';
@@ -45,8 +46,7 @@ void main() {
     );
   });
 
-  TranslationRequest request(List<List<Syllable>> words) =>
-      TranslationRequest(words);
+  TranslationRequest request(List<Word> words) => TranslationRequest(words);
 
   test('a single word is left to the dictionary', () async {
     final spy = _Spy();
@@ -55,7 +55,7 @@ void main() {
     expect(
       await translator.translate(
         request([
-          [_wo],
+          Spoken([_wo]),
         ]),
       ),
       isNull,
@@ -71,9 +71,9 @@ void main() {
 
       final result = await translator.translate(
         request([
-          [_wo],
-          [_syllable('m', 'ai', Tone.fourth)],
-          [_syllable('sh', 'u', Tone.first)],
+          Spoken([_wo]),
+          Spoken([_syllable('m', 'ai', Tone.fourth)]),
+          Spoken([_syllable('sh', 'u', Tone.first)]),
         ]),
       );
 
@@ -92,21 +92,57 @@ void main() {
     final buying = _Spy();
     await ModelTranslator(dictionary: dictionary, backend: buying).translate(
       request([
-        [_wo],
-        [_syllable('m', 'ai', Tone.third)],
+        Spoken([_wo]),
+        Spoken([_syllable('m', 'ai', Tone.third)]),
       ]),
     );
 
     final selling = _Spy();
     await ModelTranslator(dictionary: dictionary, backend: selling).translate(
       request([
-        [_wo],
-        [_syllable('m', 'ai', Tone.fourth)],
+        Spoken([_wo]),
+        Spoken([_syllable('m', 'ai', Tone.fourth)]),
       ]),
     );
 
     expect(buying.asked, '我买');
     expect(selling.asked, '我卖');
+  });
+
+  // The whole point of a literal: Chinese writes foreign names in Latin
+  // letters as a matter of course, so 我叫Steve is ordinary text and the model
+  // needs telling nothing. Measured against the real model, it answers "My
+  // name is Steve."
+  test('a name goes to the backend as written', () async {
+    final spy = _Spy('My name is Steve.');
+    final translator = ModelTranslator(dictionary: dictionary, backend: spy);
+
+    final result = await translator.translate(
+      request([
+        Spoken([_wo]),
+        const Literal('Steve'),
+      ]),
+    );
+
+    expect(spy.asked, '我Steve');
+    expect(result?.text, 'My name is Steve.');
+    // And it appears among the parts as itself, with nothing invented for it.
+    expect(result?.words.last.pinyin, 'Steve');
+  });
+
+  test('a name does not make the line unresolvable', () async {
+    final spy = _Spy('My name is Steve.');
+    final translator = ModelTranslator(dictionary: dictionary, backend: spy);
+
+    // mai2 is absent from the stand-in shard, so this would decline — but a
+    // name must not be what causes that.
+    final onlyName = await translator.translate(
+      request([
+        Spoken([_wo]),
+        const Literal('Steve'),
+      ]),
+    );
+    expect(onlyName, isNotNull);
   });
 
   // The invariant that used to be implicit. The screen once decided "this is
@@ -121,8 +157,8 @@ void main() {
 
     final result = await translator.translate(
       request([
-        [_wo],
-        [_syllable('m', 'ai', Tone.fourth)],
+        Spoken([_wo]),
+        Spoken([_syllable('m', 'ai', Tone.fourth)]),
       ]),
     );
 
@@ -140,8 +176,10 @@ void main() {
 
     final result = await translator.translate(
       request([
-        [_wo],
-        [_syllable('m', 'ai', Tone.second)], // mai2, not in the stand-in shard
+        Spoken([_wo]),
+        Spoken([
+          _syllable('m', 'ai', Tone.second),
+        ]), // mai2, not in the stand-in shard
       ]),
     );
 
@@ -159,8 +197,8 @@ void main() {
         );
         final result = await translator.translate(
           request([
-            [_wo],
-            [_syllable('m', 'ai', Tone.fourth)],
+            Spoken([_wo]),
+            Spoken([_syllable('m', 'ai', Tone.fourth)]),
           ]),
         );
         expect(

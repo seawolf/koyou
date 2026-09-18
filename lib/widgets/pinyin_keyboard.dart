@@ -29,6 +29,7 @@ class PinyinKeyboard extends StatelessWidget {
     required this.onBackTo,
     required this.onSpace,
     required this.onBackspace,
+    this.onAddWord,
     this.arrangement = KeyArrangement.articulatory,
     this.fillHeight = false,
   });
@@ -52,6 +53,10 @@ class PinyinKeyboard extends StatelessWidget {
   final VoidCallback onSpace;
   final VoidCallback onBackspace;
 
+  /// Opens the editor for a word that is not Mandarin. Null where there is
+  /// nowhere to put one.
+  final VoidCallback? onAddWord;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -64,7 +69,7 @@ class PinyinKeyboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
           children: [
-            _Trail(draft: draft, onBackTo: onBackTo),
+            _Trail(draft: draft, onBackTo: onBackTo, onAddWord: onAddWord),
             const Divider(height: 1),
             // Flexible rather than Expanded when shrinking: the bank takes the
             // height it needs and no more, but still scrolls if given less.
@@ -179,10 +184,15 @@ class PinyinKeyboard extends StatelessWidget {
 /// The pieces already chosen, tucked to the left of the prompt for the piece
 /// being chosen now. Each is a way back to that decision.
 class _Trail extends StatelessWidget {
-  const _Trail({required this.draft, required this.onBackTo});
+  const _Trail({
+    required this.draft,
+    required this.onBackTo,
+    required this.onAddWord,
+  });
 
   final Draft draft;
   final ValueChanged<ComposeStage> onBackTo;
+  final VoidCallback? onAddWord;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +231,22 @@ class _Trail extends StatelessWidget {
               ),
             ),
           ),
+          // Beside the prompt rather than down among the keys, because it is
+          // an answer to the same question: this is where you say what comes
+          // next, and sometimes what comes next is not a syllable at all.
+          // Offered only at the start of one — half a syllable is not a place
+          // to put a name.
+          if (draft.stage == ComposeStage.initial && onAddWord != null)
+            TextButton.icon(
+              key: const Key('add-word'),
+              onPressed: onAddWord,
+              icon: const Icon(Icons.keyboard_alt_outlined, size: 18),
+              label: const Text('or type a word'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: theme.colorScheme.tertiary,
+              ),
+            ),
         ],
       ),
     );

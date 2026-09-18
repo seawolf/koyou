@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../pinyin/syllable.dart';
+import '../pinyin/word.dart';
 
 /// What a [Translator] is asked about.
 ///
@@ -13,40 +13,53 @@ import '../pinyin/syllable.dart';
 class TranslationRequest {
   const TranslationRequest(this.words);
 
-  /// The words as typed, each a list of syllables. Word breaks are the ones the
-  /// learner entered, which is more than a page of Chinese text ever gives you.
-  final List<List<Syllable>> words;
+  /// The words as typed. Word breaks are the ones the learner entered, which
+  /// is more than a page of Chinese text ever gives you.
+  final List<Word> words;
 
   bool get isEmpty => words.every((word) => word.isEmpty);
 
   /// Everything typed, as written, tone marks included.
   String get written => words
-      .where((word) => word.isNotEmpty)
-      .map((word) => word.map((syllable) => syllable.written).join())
+      .where((word) => !word.isEmpty)
+      .map((word) => word.written)
       .join(' ');
 
-  /// Every syllable as a dictionary key: `ni3 hao3 shi4 jie4`.
+  /// The words that carry pinyin, in order, paired with where they sit in
+  /// [words] — so an answer about one can be put back in the right place.
+  Iterable<(int, Spoken)> get spoken sync* {
+    for (var index = 0; index < words.length; index++) {
+      final word = words[index];
+      if (word is Spoken && !word.isEmpty) yield (index, word);
+    }
+  }
+
+  /// Whether anything typed is not Mandarin.
+  ///
+  /// A line with a name in it cannot be one dictionary entry, however it is
+  /// spaced, so the whole-line lookup is not even attempted.
+  bool get hasLiteral => words.any((word) => word is Literal);
+
+  /// Everything typed as one dictionary key: `ni3 hao3 shi4 jie4`, or null
+  /// where that cannot mean anything.
   ///
   /// Word breaks are dropped, because a set phrase is one dictionary entry
-  /// whether or not the learner spaced it.
-  String get key => words
-      .expand((word) => word)
-      .map((syllable) => syllable.numbered)
-      .join(' ');
+  /// whether or not the learner spaced it — which is how 缘分 is found from
+  /// both `yuánfèn` and `yuán fèn`. Null once a name is in the line: no entry
+  /// covers `wǒ jiào Steve`, and asking would only waste the lookup.
+  String? get key => hasLiteral
+      ? null
+      : words
+            .whereType<Spoken>()
+            .expand((word) => word.syllables)
+            .map((syllable) => syllable.numbered)
+            .join(' ');
 
-  /// Each word as written, tone marks included: `[nǐ hǎo, shìjiè]`.
-  ///
-  /// Pairs with [wordKeys] index for index, so a per-word answer can be
-  /// labelled with the pinyin the learner actually typed.
+  /// Each word as written, tone marks included: `[nǐ hǎo, shìjiè]`. Names
+  /// included, as themselves.
   List<String> get writtenWords => [
     for (final word in words)
-      if (word.isNotEmpty) word.map((syllable) => syllable.written).join(),
-  ];
-
-  /// One dictionary key per word: `[ni3 hao3, shi4 jie4]`.
-  List<String> get wordKeys => [
-    for (final word in words)
-      if (word.isNotEmpty) word.map((syllable) => syllable.numbered).join(' '),
+      if (!word.isEmpty) word.written,
   ];
 }
 

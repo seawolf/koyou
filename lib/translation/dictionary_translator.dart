@@ -1,3 +1,4 @@
+import '../pinyin/word.dart';
 import 'dictionary.dart';
 import 'translator.dart';
 
@@ -22,7 +23,11 @@ class DictionaryTranslator implements Translator {
   Future<Translation?> translate(TranslationRequest request) async {
     if (request.isEmpty) return null;
 
-    final whole = await dictionary.lookUp(request.key);
+    // Null once a name is in the line: no entry covers `wǒ jiào Steve`.
+    final key = request.key;
+    final whole = key == null
+        ? const <DictionaryEntry>[]
+        : await dictionary.lookUp(key);
     if (whole.isNotEmpty) {
       return Translation(
         _describe(whole),
@@ -36,17 +41,25 @@ class DictionaryTranslator implements Translator {
       );
     }
 
-    final keys = request.wordKeys;
-    if (keys.length < 2) return null;
+    final typed = request.words.where((word) => !word.isEmpty).toList();
+    if (typed.length < 2) return null;
 
-    final written = request.writtenWords;
     final words = <WordGloss>[];
     var uncertain = false;
-    for (var index = 0; index < keys.length; index++) {
-      final entries = await dictionary.lookUp(keys[index]);
-      if (entries.isEmpty) return null;
-      words.add(WordGloss(pinyin: written[index], english: _describe(entries)));
-      uncertain |= _isAmbiguous(entries);
+    for (final word in typed) {
+      switch (word) {
+        case Literal():
+          // Nothing to look up, and nothing to correct: it goes through as
+          // the learner wrote it.
+          words.add(WordGloss(pinyin: word.text, english: 'as you typed it'));
+        case Spoken():
+          final entries = await dictionary.lookUp(word.key);
+          if (entries.isEmpty) return null;
+          words.add(
+            WordGloss(pinyin: word.written, english: _describe(entries)),
+          );
+          uncertain |= _isAmbiguous(entries);
+      }
     }
     // [text] stays filled for anything that wants one line of it — a test, a
     // log, a future share sheet. The screen reads [words] and lays them out

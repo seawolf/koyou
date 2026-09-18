@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/model_translator.dart';
@@ -107,6 +108,31 @@ void main() {
     available = await _ollamaIsRunning();
   });
 
+  // A name is carried, not translated: Chinese writes foreign names in Latin
+  // letters as a matter of course, so 我叫Steve needs nothing explaining.
+  test('carries a word that is not Chinese through untouched', () async {
+    if (!available) {
+      markTestSkipped('no Ollama on 127.0.0.1:11434');
+      return;
+    }
+
+    final translator = ModelTranslator(
+      dictionary: Dictionary.bundled(),
+      backend: OllamaBackend(),
+    );
+    final result = await translator.translate(
+      TranslationRequest([
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('j', 'iao', Tone.fourth)]),
+        const Literal('Steve'),
+      ]),
+    );
+
+    expect(result, isNotNull);
+    expect(result!.text, contains('Steve'));
+    expect(result.text.toLowerCase(), contains('name'));
+  });
+
   test('translates a phrase end to end through the real dictionary', () async {
     if (!available) {
       markTestSkipped('no Ollama on 127.0.0.1:11434');
@@ -121,9 +147,9 @@ void main() {
     // wǒ mài shū — the tone that a model reading pinyin gets wrong.
     final result = await translator.translate(
       TranslationRequest([
-        [_s('w', 'o', Tone.third)],
-        [_s('m', 'ai', Tone.fourth)],
-        [_s('sh', 'u', Tone.first)],
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('m', 'ai', Tone.fourth)]),
+        Spoken([_s('sh', 'u', Tone.first)]),
       ]),
     );
 

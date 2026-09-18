@@ -445,6 +445,38 @@ context — `wǒ shí` where `wǒ shì` was meant. That needs to know what the
 sentence is about, which is a model's job, and a job for a better model than
 fits on a phone.
 
+### Words that are not Chinese
+
+`Wǒ jiào Steve` is a sentence a learner needs on day one, and no amount of
+pinyin will spell a name. So a line can hold two kinds of word: `Spoken`, built
+from syllables on the app's keyboard, and `Literal`, a run of letters carried
+through as written.
+
+Adding one is the single place this app hands over to the phone's own keyboard.
+That is deliberate — the premise is that a phone IME fights you over *pinyin*,
+but a name is arbitrary letters with capitals in it, which is exactly what a
+phone keyboard is for. It sits beside the prompt, where the question "what
+comes next" is already being asked, and only at the start of a syllable:
+halfway through one is no place to put a name. Tapping a name already in the
+line reopens the editor on it, so `Steve` can become `Stephen` without retyping
+the sentence.
+
+Downstream it needs almost nothing, which is the point:
+
+- **The model** gets it verbatim. Chinese writes foreign names in Latin letters
+  as a matter of course, so `我叫Steve` is ordinary text — measured, and it
+  answers "My name is Steve." Nothing had to be explained to it.
+- **The dictionary** skips it, and a line containing one can no longer be a
+  single entry, so the whole-line lookup is not attempted at all.
+- **The tone suggester** ignores it. There is no tone in `Steve` to have got
+  wrong.
+- **The voice** is handed it as written, the same as it would be in any other
+  Chinese sentence with a name in it.
+
+The caret treats a name as one indivisible unit: it goes either side of
+`Steve`, never inside, and backspace takes the whole thing. A syllable typed
+against one starts its own word rather than running into it.
+
 ### Which tier answers
 
 The dictionary answers every keystroke; the model is asked once typing pauses,

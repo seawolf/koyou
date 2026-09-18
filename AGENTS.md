@@ -262,6 +262,20 @@ Two traps in there, both of which cost an afternoon:
   the spans are built. It has to be captured per recognizer: held in a field,
   every syllable read the last one's midpoint and only the final syllable
   worked. There is a test for the right half specifically.
+- **A word is not always syllables.** `Word` is sealed: `Spoken` has pinyin and
+  a dictionary key, `Literal` is a name carried as written. Anything walking a
+  line must handle both — switch on the type rather than reaching for
+  syllables. `TranslationRequest.key` is null once a literal is present,
+  because no entry covers `wǒ jiào Steve`.
+- **A literal needs nothing invented for it downstream.** It goes to the model
+  verbatim, because 我叫Steve is ordinary Chinese text and the model reads it
+  without being told anything — there is a test against the real model. Do not
+  add transliteration, a placeholder token, or a prompt explaining it.
+- **Raw `Syllable`s take the phonological initial, not the key label.** The `w`
+  key spells `w` but its initial is empty, so `Syllable(initial: 'w', rime:
+  'uo')` is `wuǒ`, not `wǒ`. Build `wǒ` as `('w', 'o')` or `('', 'uo')`. Going
+  through `withInitial(key('w')).withRime('uo')` does the right thing; a raw
+  constructor in a test does not.
 - **`inventory.dart` decides what can be typed.** The keyboard's banks are
   derived from it, so a syllable is made reachable by adding it there, never by
   adding a key to a widget. Anything the inventory omits is unreachable by

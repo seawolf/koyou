@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/phrasebook_translator.dart';
 import 'package:kouyu/translation/translator.dart';
@@ -12,9 +13,9 @@ void main() {
 
   // wǒ ài nǐ — three ordinary words, so no dictionary has an entry for it.
   final iLoveYou = TranslationRequest([
-    [syllable('', 'uo', Tone.third)],
-    [syllable('', 'ai', Tone.fourth)],
-    [syllable('n', 'i', Tone.third)],
+    Spoken([syllable('', 'uo', Tone.third)]),
+    Spoken([syllable('', 'ai', Tone.fourth)]),
+    Spoken([syllable('n', 'i', Tone.third)]),
   ]);
 
   test('matches a whole utterance the dictionary cannot have', () async {
@@ -27,7 +28,7 @@ void main() {
 
   test('leaves anything else to the dictionary behind it', () async {
     final justYou = TranslationRequest([
-      [syllable('n', 'i', Tone.third)],
+      Spoken([syllable('n', 'i', Tone.third)]),
     ]);
     expect(await translator.translate(justYou), isNull);
   });
@@ -35,9 +36,9 @@ void main() {
   // Tones distinguish words, so a phrasebook must not treat them as noise.
   test('does not match when the tones are wrong', () async {
     final wrongTone = TranslationRequest([
-      [syllable('', 'uo', Tone.third)],
-      [syllable('', 'ai', Tone.first)],
-      [syllable('n', 'i', Tone.third)],
+      Spoken([syllable('', 'uo', Tone.third)]),
+      Spoken([syllable('', 'ai', Tone.first)]),
+      Spoken([syllable('n', 'i', Tone.third)]),
     ]);
     expect(await translator.translate(wrongTone), isNull);
   });

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/inventory.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/dictionary_translator.dart';
@@ -51,7 +52,10 @@ void main() {
     () async {
       // shìjiè, built exactly as the keyboard builds it.
       final request = TranslationRequest([
-        [syllable('sh', 'i', Tone.fourth), syllable('j', 'ie', Tone.fourth)],
+        Spoken([
+          syllable('sh', 'i', Tone.fourth),
+          syllable('j', 'ie', Tone.fourth),
+        ]),
       ]);
       expect(request.key, 'shi4 jie4');
       expect(request.written, 'shìjiè');
@@ -176,11 +180,11 @@ void main() {
 
     for (final request in [
       TranslationRequest([
-        [yuan, fen],
+        Spoken([yuan, fen]),
       ]),
       TranslationRequest([
-        [yuan],
-        [fen],
+        Spoken([yuan]),
+        Spoken([fen]),
       ]),
     ]) {
       final found = await translator.translate(request);
@@ -204,7 +208,7 @@ void main() {
     setUp(() => suggester = DictionarySuggester(dictionary));
 
     Future<String?> check(String written) async {
-      final request = TranslationRequest([_parse(written)]);
+      final request = TranslationRequest([Spoken(_parse(written))]);
       return (await suggester.check(request))?.written;
     }
 

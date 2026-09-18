@@ -17,7 +17,9 @@ import 'package:kouyu/translation/tone_suggestion.dart';
 /// without depending on any translator's contents.
 class _RecordingTranslator implements Translator {
   final List<String> asked = [];
-  final List<String> keys = [];
+
+  /// Null once the line holds a name, since no entry can cover it.
+  final List<String?> keys = [];
   Translation? reply;
 
   @override
@@ -954,6 +956,97 @@ void main() {
       expect(tester.takeException(), isNull);
       final chip = tester.getRect(find.byKey(const Key('suggestion')));
       expect(chip.right, lessThanOrEqualTo(320));
+    });
+  });
+
+  group('a word that is not Chinese', () {
+    Future<void> addWord(WidgetTester tester, String text) async {
+      await tester.tap(find.byKey(const Key('add-word')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('literal-field')), text);
+      await tester.tap(find.byKey(const Key('literal-accept')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('is offered beside the prompt, at the start of a syllable', (
+      tester,
+    ) async {
+      await pump(tester);
+      expect(find.byKey(const Key('add-word')), findsOneWidget);
+
+      // Half a syllable is not a place to put a name, so it goes away.
+      await tap(tester, 'initial-w');
+      expect(find.byKey(const Key('add-word')), findsNothing);
+    });
+
+    testWidgets('goes into the line as typed', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await tap(tester, 'space');
+      await type(tester, 'j', 'iao', 4);
+      await addWord(tester, 'Steve');
+
+      expect(composed(tester), 'wǒ jiào Steve');
+    });
+
+    testWidgets('typing carries on after it', (tester) async {
+      await pump(tester);
+      await addWord(tester, 'Steve');
+      await type(tester, 'm', 'a', 5);
+
+      expect(composed(tester), 'Steve ma');
+    });
+
+    // Tapping a name is not a request to move the caret — it is a request to
+    // correct the name.
+    testWidgets('tapping it reopens the editor with it in', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await addWord(tester, 'Steve');
+      expect(composed(tester), 'wǒ Steve');
+
+      final line = tester.getRect(find.byKey(const Key('composed')));
+      // Past the pinyin, on the name.
+      await tester.tapAt(Offset(line.right - 6, line.center.dy));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('literal-field')), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('literal-field')))
+            .controller
+            ?.text,
+        'Steve',
+        reason: 'opens on what is there, to be corrected',
+      );
+
+      await tester.enterText(find.byKey(const Key('literal-field')), 'Stephen');
+      await tester.tap(find.byKey(const Key('literal-accept')));
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'wǒ Stephen');
+    });
+
+    testWidgets('cancelling changes nothing', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await tester.tap(find.byKey(const Key('add-word')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('literal-field')), 'Steve');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'wǒ');
+    });
+
+    testWidgets('backspace takes the whole name', (tester) async {
+      await pump(tester);
+      await type(tester, 'w', 'o', 3);
+      await addWord(tester, 'Steve');
+      await tap(tester, 'backspace');
+      await tester.pumpAndSettle();
+
+      expect(composed(tester), 'wǒ');
     });
   });
 

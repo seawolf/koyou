@@ -1,5 +1,6 @@
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../pinyin/word.dart';
 import '../translation/dictionary.dart';
 import '../translation/translator.dart';
 import 'speech.dart';
@@ -75,17 +76,26 @@ class MandarinSpeech implements Speech {
   /// All or nothing, as with translation: dropping a word the dictionary
   /// cannot place would teach a sentence the learner did not write.
   Future<String?> _resolve(TranslationRequest request) async {
-    final keys = request.wordKeys;
-    if (keys.isEmpty) return null;
+    final typed = request.words.where((word) => !word.isEmpty).toList();
+    if (typed.isEmpty) return null;
 
     final characters = StringBuffer();
-    for (final key in keys) {
-      final entries = await dictionary.lookUp(key);
-      if (entries.isEmpty) return null;
-      // Any candidate would do for sound. The key carries the tone, so every
-      // word matching it is pronounced identically — 前 and 钱 are both qián.
-      // Audio is therefore immune to the ambiguity that spoils a translation.
-      characters.write(entries.first.simplified);
+    for (final word in typed) {
+      switch (word) {
+        case Literal():
+          // Handed to the voice as written. What a Mandarin voice makes of
+          // `Steve` is the platform's business, and it is the same thing it
+          // does with a name in any other Chinese sentence.
+          characters.write(word.text);
+        case Spoken():
+          final entries = await dictionary.lookUp(word.key);
+          if (entries.isEmpty) return null;
+          // Any candidate would do for sound. The key carries the tone, so
+          // every word matching it is pronounced identically — 前 and 钱 are
+          // both qián. Audio is therefore immune to the ambiguity that spoils
+          // a translation.
+          characters.write(entries.first.simplified);
+      }
     }
     return characters.toString();
   }

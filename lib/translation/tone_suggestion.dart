@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../pinyin/syllable.dart';
+import '../pinyin/word.dart';
 import '../pinyin/tone.dart';
 import 'dictionary.dart';
 import 'translator.dart';
@@ -69,11 +70,13 @@ class DictionarySuggester implements Suggester {
 
   @override
   Future<ToneSuggestion?> check(TranslationRequest request) async {
-    final words = request.words.where((word) => word.isNotEmpty).toList();
-    var index = -1;
+    // Names are skipped: there is no tone in `Steve` to have got wrong.
+    final words = [
+      for (final word in request.words)
+        if (word is Spoken && !word.isEmpty) word,
+    ];
     for (final word in words) {
-      index++;
-      final typed = await dictionary.lookUp(_key(word));
+      final typed = await dictionary.lookUp(word.key);
       final isWord = typed.isNotEmpty;
       if (isWord) {
         // A word the learner may well have meant.
@@ -86,23 +89,28 @@ class DictionarySuggester implements Suggester {
       // obvious answer to `nǐ hāo`. Where what was typed *is* a word, only a
       // ranked neighbour is worth offering: swapping one obscure word for
       // another helps nobody.
-      final better = await _bestNeighbour(word, requireRanked: isWord);
+      final better = await _bestNeighbour(
+        word.syllables,
+        requireRanked: isWord,
+      );
       if (better == null) continue;
 
       final corrected = [
-        for (var position = 0; position < word.length; position++)
+        for (var position = 0; position < word.syllables.length; position++)
           position == better.syllable
-              ? _retone(word[position], better.tone)
-              : word[position],
+              ? _retone(word.syllables[position], better.tone)
+              : word.syllables[position],
       ];
-      // The whole line, with this one word corrected in place.
-      final written = [
-        for (var other = 0; other < words.length; other++)
-          _write(other == index ? corrected : words[other]),
+      // The whole line, with this one word corrected in place. Names included,
+      // as themselves, so the learner compares it to what is on screen.
+      final shown = [
+        for (final other in request.words)
+          if (!other.isEmpty)
+            identical(other, word) ? _write(corrected) : other.written,
       ].join(' ');
 
       return ToneSuggestion(
-        written: written,
+        written: shown,
         gloss: better.gloss,
         word: request.words.indexOf(word),
         syllable: better.syllable,
@@ -125,7 +133,7 @@ class DictionarySuggester implements Suggester {
           for (var other = 0; other < word.length; other++)
             other == position ? _retone(word[other], tone) : word[other],
         ];
-        final entries = await dictionary.lookUp(_key(candidate));
+        final entries = await dictionary.lookUp(Spoken(candidate).key);
         if (entries.isEmpty) continue;
         final rank = entries.first.rank;
         if (rank == null && requireRanked) continue;
@@ -147,9 +155,6 @@ class DictionarySuggester implements Suggester {
 
   static Syllable _retone(Syllable syllable, Tone tone) =>
       Syllable(initial: syllable.initial, rime: syllable.rime, tone: tone);
-
-  static String _key(List<Syllable> word) =>
-      word.map((syllable) => syllable.numbered).join(' ');
 
   static String _write(List<Syllable> word) =>
       word.map((syllable) => syllable.written).join();

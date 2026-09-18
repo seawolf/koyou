@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'keyboard_layout.dart';
 import 'syllable.dart';
 import 'tone.dart';
+import 'word.dart';
 
 /// Which piece of a syllable the learner is choosing.
 ///
@@ -78,8 +79,9 @@ class Caret {
   /// Index into [Composition.words].
   final int word;
 
-  /// How many syllables of that word are before the caret, so 0 is the start
-  /// of the word and the word's length is its end.
+  /// How many of that word's units are before the caret, so 0 is the start of
+  /// the word and the word's length is its end. A [Literal] has one unit, so
+  /// the caret goes either side of `Steve` and never into it.
   final int syllable;
 
   @override
@@ -93,24 +95,25 @@ class Caret {
   String toString() => 'Caret($word:$syllable)';
 }
 
-/// A line of pinyin being composed: the words entered so far, plus the syllable
-/// in progress.
+/// A line being composed: the words entered so far, plus the syllable in
+/// progress.
 ///
 /// Immutable, and holds every editing rule. The keyboard and screen are views
 /// over this, so the rules can be tested without pumping a widget.
 class Composition {
   const Composition({
-    this.words = const <List<Syllable>>[<Syllable>[]],
+    this.words = const <Word>[Spoken()],
     this.draft = const Draft(),
     this.caret = const Caret(word: 0, syllable: 0),
   });
 
-  /// Words, each a list of syllables. Always at least one, possibly empty.
+  /// The words. Always at least one, possibly empty.
   ///
-  /// Nested because pinyin runs syllables together inside a word and separates
-  /// words with spaces: `shìjiè` is one word of two syllables, `nǐ hǎo` is two
-  /// words of one.
-  final List<List<Syllable>> words;
+  /// A [Spoken] word runs its syllables together — `shìjiè` is one word of two
+  /// — and words are separated by spaces. A [Literal] is a word too, so
+  /// `wǒ jiào Steve` is three of them, and the one that is not Mandarin is
+  /// carried rather than looked up.
+  final List<Word> words;
 
   final Draft draft;
 
@@ -123,10 +126,10 @@ class Composition {
 
   bool get isEmpty => draft.isEmpty && words.every((word) => word.isEmpty);
 
-  /// The committed text: syllables joined within a word, words space-separated.
+  /// The committed text, words space-separated.
   String get text => words
-      .where((word) => word.isNotEmpty)
-      .map((word) => word.map((syllable) => syllable.written).join())
+      .where((word) => !word.isEmpty)
+      .map((word) => word.written)
       .join(' ');
 
   /// Everything before the caret, as written.
@@ -136,21 +139,21 @@ class Composition {
   String get textBefore {
     final earlier = [
       for (var index = 0; index < caret.word; index++)
-        if (words[index].isNotEmpty) _write(words[index]),
+        if (!words[index].isEmpty) words[index].written,
     ].join(' ');
-    final head = _write(words[caret.word].take(caret.syllable));
+    final head = words[caret.word].writtenTake(caret.syllable);
     return earlier.isEmpty ? head : '$earlier $head';
   }
 
   /// Everything from the caret onwards, as written.
   String get textAfter {
-    final rest = StringBuffer(_write(words[caret.word].skip(caret.syllable)));
+    final rest = StringBuffer(words[caret.word].writtenSkip(caret.syllable));
     for (var index = caret.word + 1; index < words.length; index++) {
       if (words[index].isEmpty) continue;
       // The space goes here rather than at the end of [textBefore], so a caret
       // sitting at the end of a word does not push the gap behind it.
       rest.write(' ');
-      rest.write(_write(words[index]));
+      rest.write(words[index].written);
     }
     return rest.toString();
   }
@@ -175,15 +178,69 @@ class Composition {
   /// committable, so a tone key is safe to press at any time.
   Composition commit(Tone tone) {
     if (!draft.isCommittable) return this;
-    final next = _mutableWords();
-    next[caret.word].insert(
-      caret.syllable,
-      Syllable(initial: draft.initial!.initial, rime: draft.rime!, tone: tone),
+    final syllable = Syllable(
+      initial: draft.initial!.initial,
+      rime: draft.rime!,
+      tone: tone,
     );
+    final next = [...words];
+    final here = next[caret.word];
+
+    if (here is Spoken) {
+      next[caret.word] = Spoken(
+        [...here.syllables]..insert(caret.syllable, syllable),
+      );
+      return Composition(
+        words: next,
+        caret: Caret(word: caret.word, syllable: caret.syllable + 1),
+      );
+    }
+    // Nothing goes inside a name. A syllable typed against one starts its own
+    // word on whichever side of it the caret was.
+    final at = caret.syllable == 0 ? caret.word : caret.word + 1;
+    next.insert(at, Spoken([syllable]));
     return Composition(
       words: next,
-      caret: Caret(word: caret.word, syllable: caret.syllable + 1),
+      caret: Caret(word: at, syllable: 1),
     );
+  }
+
+  /// Puts a word that is not Mandarin at the caret — a name, a brand.
+  ///
+  /// Replaces the word the caret is in if that is already a literal, which is
+  /// what tapping `Steve` in the line and correcting it does. Otherwise it is
+  /// inserted as a word of its own, because a name does not run together with
+  /// the syllables around it.
+  Composition withLiteral(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return this;
+
+    final next = [...words];
+    if (next[caret.word] is Literal) {
+      next[caret.word] = Literal(trimmed);
+      return Composition(
+        words: next,
+        caret: Caret(word: caret.word, syllable: 1),
+        draft: draft,
+      );
+    }
+    // A half-typed syllable has no tone and so is not a syllable; it would be
+    // silently committed or silently dropped, and neither is honest.
+    final at = caret.syllable == 0 ? caret.word : caret.word + 1;
+    next.insert(at, Literal(trimmed));
+    return Composition(
+      words: next,
+      caret: Caret(word: at, syllable: 1),
+    );
+  }
+
+  /// The literal at [word], or null if that word is not one.
+  ///
+  /// What the screen asks before opening the editor on a tapped word.
+  Literal? literalAt(int word) {
+    if (word < 0 || word >= words.length) return null;
+    final found = words[word];
+    return found is Literal ? found : null;
   }
 
   /// Starts a new word.
@@ -194,15 +251,14 @@ class Composition {
   Composition space() {
     if (!draft.isEmpty) return this;
     final word = words[caret.word];
-    // Nothing to break off: either the word is empty, or the caret is already
-    // at its start. Both would leave an empty word, which renders as nothing
-    // and lets space be pressed forever.
-    if (word.isEmpty || caret.syllable == 0) return this;
+    // Nothing to break off: the word is empty, the caret is at its start, or
+    // it is a name, which is already a word of its own.
+    if (word.isEmpty || caret.syllable == 0 || word is! Spoken) return this;
 
-    final next = _mutableWords();
-    final after = word.sublist(caret.syllable);
-    next[caret.word] = word.sublist(0, caret.syllable);
-    next.insert(caret.word + 1, after);
+    final next = [...words];
+    final after = word.syllables.sublist(caret.syllable);
+    next[caret.word] = Spoken(word.syllables.sublist(0, caret.syllable));
+    next.insert(caret.word + 1, Spoken(after));
     return Composition(
       words: next,
       caret: Caret(word: caret.word + 1, syllable: 0),
@@ -227,20 +283,47 @@ class Composition {
     }
     if (draft.initial != null) return _copy(draft: const Draft());
 
-    final next = _mutableWords();
+    final next = [...words];
     if (caret.syllable > 0) {
-      next[caret.word].removeAt(caret.syllable - 1);
+      final here = next[caret.word];
+      if (here is Spoken) {
+        next[caret.word] = Spoken(
+          [...here.syllables]..removeAt(caret.syllable - 1),
+        );
+        return Composition(
+          words: next,
+          caret: Caret(word: caret.word, syllable: caret.syllable - 1),
+        );
+      }
+      // A name goes whole: there is nothing inside it to take one piece off.
+      next.removeAt(caret.word);
+      if (next.isEmpty) return const Composition();
+      final landing = caret.word == 0 ? 0 : caret.word - 1;
       return Composition(
         words: next,
-        caret: Caret(word: caret.word, syllable: caret.syllable - 1),
+        caret: Caret(
+          word: landing,
+          syllable: caret.word == 0 ? 0 : next[landing].length,
+        ),
       );
     }
     if (caret.word > 0) {
       // At the start of a word, what is behind the caret is the word break, so
-      // that is what goes: the two words become one and the caret sits at the
-      // join.
-      final previous = next.removeAt(caret.word - 1);
-      next[caret.word - 1] = [...previous, ...next[caret.word - 1]];
+      // that is what goes — unless one of the two is a name, which cannot be
+      // run together with syllables. Then the break is all there is to remove.
+      final previous = next[caret.word - 1];
+      final here = next[caret.word];
+      if (previous is Spoken && here is Spoken) {
+        next.removeAt(caret.word - 1);
+        next[caret.word - 1] = Spoken([
+          ...previous.syllables,
+          ...here.syllables,
+        ]);
+        return Composition(
+          words: next,
+          caret: Caret(word: caret.word - 1, syllable: previous.length),
+        );
+      }
       return Composition(
         words: next,
         caret: Caret(word: caret.word - 1, syllable: previous.length),
@@ -270,14 +353,19 @@ class Composition {
   /// is nothing to re-parse: the letters the learner chose are still theirs.
   Composition retoned(int word, int syllable, Tone tone) {
     if (word < 0 || word >= words.length) return this;
-    if (syllable < 0 || syllable >= words[word].length) return this;
-    final next = _mutableWords();
-    final old = next[word][syllable];
-    next[word][syllable] = Syllable(
+    final here = words[word];
+    if (here is! Spoken) return this;
+    if (syllable < 0 || syllable >= here.syllables.length) return this;
+
+    final syllables = [...here.syllables];
+    final old = syllables[syllable];
+    syllables[syllable] = Syllable(
       initial: old.initial,
       rime: old.rime,
       tone: tone,
     );
+    final next = [...words];
+    next[word] = Spoken(syllables);
     return Composition(words: next, caret: caret);
   }
 
@@ -286,13 +374,7 @@ class Composition {
 
   Composition cleared() => const Composition();
 
-  static String _write(Iterable<Syllable> syllables) =>
-      syllables.map((syllable) => syllable.written).join();
-
-  List<List<Syllable>> _mutableWords() =>
-      words.map((word) => [...word]).toList();
-
-  Composition _copy({List<List<Syllable>>? words, Draft? draft}) => Composition(
+  Composition _copy({List<Word>? words, Draft? draft}) => Composition(
     words: words ?? this.words,
     draft: draft ?? this.draft,
     caret: caret,

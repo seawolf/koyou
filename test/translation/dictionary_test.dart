@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/dictionary_translator.dart';
@@ -136,7 +137,10 @@ void main() {
     test('translates a word, spacing or none', () async {
       // shìjiè typed as one word.
       final oneWord = TranslationRequest([
-        [syllable('sh', 'i', Tone.fourth), syllable('j', 'ie', Tone.fourth)],
+        Spoken([
+          syllable('sh', 'i', Tone.fourth),
+          syllable('j', 'ie', Tone.fourth),
+        ]),
       ]);
       final asOneWord = await translator.translate(oneWord);
       expect(asOneWord!.text, 'world');
@@ -144,8 +148,8 @@ void main() {
 
       // And typed as two, which is still one dictionary entry.
       final twoWords = TranslationRequest([
-        [syllable('sh', 'i', Tone.fourth)],
-        [syllable('j', 'ie', Tone.fourth)],
+        Spoken([syllable('sh', 'i', Tone.fourth)]),
+        Spoken([syllable('j', 'ie', Tone.fourth)]),
       ]);
       expect((await translator.translate(twoWords))!.text, 'world');
     });
@@ -154,8 +158,8 @@ void main() {
       'glosses word by word when the whole phrase is not an entry',
       () async {
         final request = TranslationRequest([
-          [syllable('h', 'ao', Tone.third)],
-          [syllable('h', 'ao', Tone.third)],
+          Spoken([syllable('h', 'ao', Tone.third)]),
+          Spoken([syllable('h', 'ao', Tone.third)]),
         ]);
         final result = await translator.translate(request);
         expect(result!.text, 'good · good');
@@ -169,7 +173,7 @@ void main() {
       'offers candidates, and admits to it, when the pinyin is ambiguous',
       () async {
         final request = TranslationRequest([
-          [syllable('sh', 'i', Tone.fourth)],
+          Spoken([syllable('sh', 'i', Tone.fourth)]),
         ]);
         final result = await translator.translate(request);
         expect(result!.uncertain, isTrue);
@@ -182,7 +186,7 @@ void main() {
     // "you / you / to plan to" reads as three answers when it is two.
     test('offers each word once, however many entries it has', () async {
       final request = TranslationRequest([
-        [syllable('n', 'i', Tone.third)],
+        Spoken([syllable('n', 'i', Tone.third)]),
       ]);
       final result = await translator.translate(request);
       expect(result!.text, 'you / to plan to / (tree)');
@@ -190,15 +194,18 @@ void main() {
 
     test('is certain when the pinyin is unambiguous', () async {
       final request = TranslationRequest([
-        [syllable('sh', 'i', Tone.fourth), syllable('j', 'ie', Tone.fourth)],
+        Spoken([
+          syllable('sh', 'i', Tone.fourth),
+          syllable('j', 'ie', Tone.fourth),
+        ]),
       ]);
       expect((await translator.translate(request))!.uncertain, isFalse);
     });
 
     test('gives up rather than glossing half a phrase', () async {
       final request = TranslationRequest([
-        [syllable('n', 'i', Tone.third)],
-        [syllable('z', 'ai', Tone.fourth)],
+        Spoken([syllable('n', 'i', Tone.third)]),
+        Spoken([syllable('z', 'ai', Tone.fourth)]),
       ]);
       expect(await translator.translate(request), isNull);
     });
@@ -211,7 +218,7 @@ void main() {
   group('the composite', () {
     test('takes the first answer offered', () async {
       final request = TranslationRequest([
-        [syllable('n', 'i', Tone.third)],
+        Spoken([syllable('n', 'i', Tone.third)]),
       ]);
       final chain = CompositeTranslator([
         DictionaryTranslator(fakeDictionary({})),
@@ -228,7 +235,7 @@ void main() {
       expect(
         await chain.translate(
           TranslationRequest([
-            [syllable('n', 'i', Tone.third)],
+            Spoken([syllable('n', 'i', Tone.third)]),
           ]),
         ),
         isNull,

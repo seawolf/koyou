@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/syllable.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/translation/dictionary.dart';
 import 'package:kouyu/translation/model_translator.dart';
@@ -121,6 +122,32 @@ void main() {
     expect(together, inTurn);
   });
 
+  // A name goes through untranslated, which is why a literal needs no special
+  // handling downstream: 我叫Steve is ordinary Chinese text.
+  test('carries a name through the whole chain', () async {
+    if (!ready) {
+      markTestSkipped('set KOUYU_LLAMA_LIB and KOUYU_LLAMA_MODEL');
+      return;
+    }
+
+    final translator = ModelTranslator(
+      dictionary: Dictionary.bundled(),
+      backend: backend,
+    );
+    // wǒ jiào Steve
+    final result = await translator.translate(
+      TranslationRequest([
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('j', 'iao', Tone.fourth)]),
+        const Literal('Steve'),
+      ]),
+    );
+
+    expect(result, isNotNull);
+    expect(result!.text, contains('Steve'));
+    expect(result.text.toLowerCase(), contains('name'));
+  });
+
   test('the whole chain resolves pinyin and translates it', () async {
     if (!ready) {
       markTestSkipped('set KOUYU_LLAMA_LIB and KOUYU_LLAMA_MODEL');
@@ -133,9 +160,9 @@ void main() {
     );
     final result = await translator.translate(
       TranslationRequest([
-        [_s('w', 'o', Tone.third)],
-        [_s('m', 'ai', Tone.fourth)],
-        [_s('sh', 'u', Tone.first)],
+        Spoken([_s('w', 'o', Tone.third)]),
+        Spoken([_s('m', 'ai', Tone.fourth)]),
+        Spoken([_s('sh', 'u', Tone.first)]),
       ]),
     );
 

@@ -1,3 +1,4 @@
+import '../pinyin/word.dart';
 import 'dictionary.dart';
 import 'translation_backend.dart';
 import 'translator.dart';
@@ -28,23 +29,35 @@ class ModelTranslator implements Translator {
     // one-syllable keys that are ambiguous; a model would pick one and sound
     // certain about it. This exists for what a dictionary cannot do — grammar,
     // word order, and anything idiomatic.
-    final words = request.wordKeys;
-    if (words.length < 2) return null;
+    final typed = request.words.where((word) => !word.isEmpty).toList();
+    if (typed.length < 2) return null;
 
-    final written = request.writtenWords;
     final chinese = StringBuffer();
     final parts = <WordGloss>[];
-    for (var index = 0; index < words.length; index++) {
-      final entries = await dictionary.lookUp(words[index]);
-      // One unresolvable word and the whole sentence would be guesswork, so
-      // hand back to the dictionary rather than translate around a hole.
-      if (entries.isEmpty) return null;
-      chinese.write(entries.first.simplified);
-      // Kept as the phrase is assembled, so the parts can be shown beside the
-      // whole. The lookups have happened anyway; this costs nothing.
-      parts.add(
-        WordGloss(pinyin: written[index], english: entries.first.glosses.first),
-      );
+    for (final word in typed) {
+      switch (word) {
+        case Literal():
+          // Straight through. Chinese writes foreign names in Latin letters as
+          // a matter of course, so 我叫Steve is ordinary text and the model
+          // reads it without being told anything — measured, not assumed.
+          chinese.write(word.text);
+          parts.add(WordGloss(pinyin: word.text, english: 'as you typed it'));
+        case Spoken():
+          final entries = await dictionary.lookUp(word.key);
+          // One unresolvable word and the whole sentence would be guesswork,
+          // so hand back to the dictionary rather than translate around a
+          // hole.
+          if (entries.isEmpty) return null;
+          chinese.write(entries.first.simplified);
+          // Kept as the phrase is assembled, so the parts can be shown beside
+          // the whole. The lookups have happened anyway; this costs nothing.
+          parts.add(
+            WordGloss(
+              pinyin: word.written,
+              english: entries.first.glosses.first,
+            ),
+          );
+      }
     }
 
     final english = await backend.translate(chinese.toString());
