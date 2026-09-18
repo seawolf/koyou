@@ -959,6 +959,56 @@ void main() {
     });
   });
 
+  group('the credits dialog', () {
+    Future<void> open(WidgetTester tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(const Key('credits')));
+      await tester.pumpAndSettle();
+    }
+
+    // Both folded away: anyone opening this wants one of the two, and showing
+    // both at once means reading past the one they did not want.
+    testWidgets('holds hints and credits, each collapsed', (tester) async {
+      await open(tester);
+
+      expect(find.byKey(const Key('about-hints')), findsOneWidget);
+      expect(find.byKey(const Key('about-credits')), findsOneWidget);
+      expect(find.textContaining('CC-CEDICT'), findsNothing);
+    });
+
+    testWidgets('opens the credits when asked', (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Credits and licences'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('CC-CEDICT'), findsOneWidget);
+      expect(find.textContaining('complete-hsk-vocabulary'), findsOneWidget);
+      expect(find.textContaining('Apache 2.0'), findsOneWidget);
+      // Two things are MIT licensed, so this is deliberately not "one".
+      expect(find.textContaining('MIT'), findsWidgets);
+    });
+
+    testWidgets('opens the hints when asked', (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Getting around'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Tap a syllable'), findsOneWidget);
+      expect(find.textContaining('Mandarin voice'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits a narrow screen with everything open', (tester) async {
+      await pump(tester, size: const Size(320, 568));
+      await tester.tap(find.byKey(const Key('credits')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Getting around'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('a word that is not Chinese', () {
     Future<void> addWord(WidgetTester tester, String text) async {
       await tester.tap(find.byKey(const Key('add-word')));
@@ -1011,6 +1061,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('literal-field')), findsOneWidget);
+      expect(find.text('Untranslated Word'), findsOneWidget);
       expect(
         tester
             .widget<TextField>(find.byKey(const Key('literal-field')))

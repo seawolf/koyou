@@ -318,18 +318,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
             onPressed: () => showAboutDialog(
               context: context,
               applicationName: 'Kǒuyǔ',
-              children: const [
-                Text(
-                  'Word meanings come from CC-CEDICT, a community maintained '
-                  'free Chinese-English dictionary published by MDBG.\n\n'
-                  'Used under the Creative Commons Attribution-ShareAlike 4.0 '
-                  'International licence.\n'
-                  'https://creativecommons.org/licenses/by-sa/4.0/\n\n'
-                  'Word frequency and HSK levels from '
-                  'complete-hsk-vocabulary, copyright Yanis Zafirópulos, used '
-                  'under the MIT licence.',
-                ),
-              ],
+              // Folded away rather than listed. There is more worth saying
+              // than fits a dialog, and a wall of it is read by nobody — so
+              // the hints and the licences each sit behind their own heading.
+              children: const [_Sections()],
             ),
             icon: const Icon(Icons.info_outline),
             tooltip: 'Credits',
@@ -1011,9 +1003,7 @@ class _WordDialogState extends State<_WordDialog> {
     final correcting = widget.existing.isNotEmpty;
 
     return AlertDialog(
-      title: Text(
-        correcting ? 'Correct the word' : 'A word that is not Chinese',
-      ),
+      title: const Text('Untranslated Word'),
       content: TextField(
         key: const Key('literal-field'),
         controller: _controller,
@@ -1027,7 +1017,7 @@ class _WordDialogState extends State<_WordDialog> {
         onSubmitted: (_) => _accept(),
         decoration: const InputDecoration(
           hintText: 'Steve',
-          helperText: 'Carried through as you type it, not translated',
+          helperText: 'Carried through as you type it',
         ),
       ),
       actions: [
@@ -1041,6 +1031,156 @@ class _WordDialogState extends State<_WordDialog> {
           child: Text(correcting ? 'Correct' : 'Add'),
         ),
       ],
+    );
+  }
+}
+
+/// What the ⓘ button opens: how to use the app, then who the data belongs to.
+///
+/// Collapsed by default. Anyone opening this is usually after one of the two,
+/// and showing both at once means reading past the one they did not want.
+class _Sections extends StatelessWidget {
+  const _Sections();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Section(
+          id: 'hints',
+          title: 'Getting around',
+          children: [
+            for (final hint in _hints) _Hint(icon: hint.$1, text: hint.$2),
+          ],
+        ),
+        _Section(
+          id: 'credits',
+          title: 'Credits and licences',
+          children: [
+            Text(
+              'Word meanings come from CC-CEDICT, a community maintained free '
+              'Chinese-English dictionary published by MDBG. Used under the '
+              'Creative Commons Attribution-ShareAlike 4.0 International '
+              'licence.\n'
+              'https://creativecommons.org/licenses/by-sa/4.0/',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Word frequency and HSK levels from complete-hsk-vocabulary, '
+              'copyright Yanis Zafirópulos, used under the MIT licence.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Whole-phrase translation runs Qwen3.5 0.8B on this device, '
+              'under the Apache 2.0 licence, through llama.cpp — wllama in a '
+              'browser — under the MIT licence.',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The things that are not obvious from looking at the screen.
+const _hints = <(IconData, String)>[
+  (
+    Icons.touch_app_outlined,
+    'Tap a syllable to put the caret before or after '
+        'it, or tap beside the line to jump to its start or end.',
+  ),
+  (
+    Icons.space_bar,
+    'Space starts a new word. Backspace steps back a piece at '
+        'a time, then a syllable, then a word break.',
+  ),
+  (
+    Icons.keyboard_alt_outlined,
+    'Beside the prompt, "or type a word" adds '
+        'something that is not Chinese — a name. Tap it later to correct it.',
+  ),
+  (
+    Icons.spellcheck,
+    'When a tone looks like a slip, a suggestion appears '
+        'under the line. Tap it to accept.',
+  ),
+  (
+    Icons.volume_up_outlined,
+    'The speaker reads the line aloud, slowly. It '
+        'only appears if this device has a Mandarin voice.',
+  ),
+  (
+    Icons.auto_awesome_outlined,
+    'Whole sentences need a model, downloaded '
+        'once from the ✨ button. Without it, words and set phrases still work.',
+  ),
+  (
+    Icons.keyboard_outlined,
+    'The keyboard button swaps between QWERTY order '
+        'and articulation order — how pinyin is taught.',
+  ),
+];
+
+/// One collapsible part of the ⓘ dialog.
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.id,
+    required this.title,
+    required this.children,
+  });
+
+  final String id;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Theme(
+      // The divider a Material expansion tile draws above and below itself is
+      // noise inside a dialog that is already bounded.
+      data: theme.copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        key: Key('about-$id'),
+        title: Text(title, style: theme.textTheme.titleSmall),
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _Hint extends StatelessWidget {
+  const _Hint({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2, right: 10),
+            child: Icon(icon, size: 18, color: theme.colorScheme.tertiary),
+          ),
+          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+        ],
+      ),
     );
   }
 }
