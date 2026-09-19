@@ -280,20 +280,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
       appBar: AppBar(
         title: const Text('Kǒuyǔ'),
         backgroundColor: theme.colorScheme.primaryContainer,
+        // Ordered by how often each is used, with the destructive one last
+        // and furthest from the thumb. Speaking happens once a line; the rest
+        // are set-up or rare.
         actions: [
-          IconButton(
-            key: const Key('arrangement'),
-            onPressed: () => setState(() {
-              _arrangement = _arrangement == KeyArrangement.articulatory
-                  ? KeyArrangement.qwerty
-                  : KeyArrangement.articulatory;
-            }),
-            icon: const Icon(Icons.keyboard_outlined),
-            tooltip: switch (_arrangement) {
-              KeyArrangement.articulatory => 'Switch to QWERTY order',
-              KeyArrangement.qwerty => 'Switch to articulation order',
-            },
-          ),
           if (_canSpeak)
             IconButton(
               key: const Key('speak'),
@@ -303,6 +293,22 @@ class _ComposeScreenState extends State<ComposeScreen> {
               icon: const Icon(Icons.volume_up_outlined),
               tooltip: 'Say it',
             ),
+          IconButton(
+            key: const Key('arrangement'),
+            onPressed: () => setState(() {
+              _arrangement = _arrangement == KeyArrangement.articulatory
+                  ? KeyArrangement.qwerty
+                  : KeyArrangement.articulatory;
+            }),
+            // Not a keyboard glyph: on every platform that means "show the
+            // keyboard", and this does not show anything — it swaps one
+            // arrangement for the other.
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: switch (_arrangement) {
+              KeyArrangement.articulatory => 'Switch to QWERTY order',
+              KeyArrangement.qwerty => 'Switch to articulation order',
+            },
+          ),
           IconButton(
             key: const Key('model'),
             onPressed: () => Navigator.of(context).push(
@@ -333,8 +339,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
             onPressed: _composition.isEmpty
                 ? null
                 : () => _edit(_composition.cleared()),
-            icon: const Icon(Icons.clear_all),
-            tooltip: 'Clear',
+            // `clear_all` is drawn as a stack of lines, which reads as a
+            // list or a menu rather than as throwing anything away. This is a
+            // reset: everything typed goes and the line starts again.
+            icon: const Icon(Icons.restart_alt),
+            tooltip: 'Start again',
           ),
         ],
       ),
@@ -495,20 +504,15 @@ class _Reading extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Keyed off the preview, not off whether anything has been chosen: the
-          // vowel keys spell nothing on their own, so choosing `a` used to
-          // blank this area instead of leaving the prompt up.
-          if (composition.preview.isEmpty)
-            Padding(
-              padding: _sides,
-              child: Text(
-                'Your pinyin appears here',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
+          // Nothing stands in for an empty line. "Your pinyin appears here"
+          // said the same thing as "Start a syllable" directly above the keys,
+          // and the keyboard's own prompt is where someone about to type is
+          // already looking.
+          //
+          // Still keyed off the preview rather than off whether anything has
+          // been chosen: the vowel keys spell nothing on their own, so
+          // choosing `a` would otherwise blank the line it is building.
+          if (composition.preview.isNotEmpty)
             _ComposedLine(
               composition: composition,
               onMoveCaret: onMoveCaret,

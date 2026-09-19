@@ -183,18 +183,21 @@ void main() {
     expect(composed(tester), 'ài');
   });
 
-  testWidgets('the prompt stays up while nothing is spelled yet', (
+  // Nothing stands in for an empty line: the keyboard's own "Start a syllable"
+  // is directly above the keys, which is where anyone about to type is
+  // already looking.
+  testWidgets('the line appears only once there is something in it', (
     tester,
   ) async {
     await pump(tester);
-    expect(find.text('Your pinyin appears here'), findsOneWidget);
+    expect(find.byKey(const Key('composed')), findsNothing);
 
-    // A vowel key contributes no letters, so there is still nothing to show.
+    // A vowel key contributes no letters, so there is still nothing to show —
+    // an empty line with a caret in it would be worse than no line.
     await tap(tester, 'initial-a');
-    expect(find.text('Your pinyin appears here'), findsOneWidget);
+    expect(find.byKey(const Key('composed')), findsNothing);
 
     await tap(tester, 'rime-ai');
-    expect(find.text('Your pinyin appears here'), findsNothing);
     expect(composed(tester), 'ai');
   });
 
@@ -956,6 +959,44 @@ void main() {
       expect(tester.takeException(), isNull);
       final chip = tester.getRect(find.byKey(const Key('suggestion')));
       expect(chip.right, lessThanOrEqualTo(320));
+    });
+  });
+
+  group('the app bar', () {
+    IconData iconOf(WidgetTester tester, String id) =>
+        (tester.widget<IconButton>(find.byKey(Key(id))).icon as Icon).icon!;
+
+    // Each of these was chosen against what the glyph already means
+    // elsewhere, so a later tidy-up should have to argue with it.
+    testWidgets('uses the icon that means what the action does', (
+      tester,
+    ) async {
+      await pump(tester, speech: _FakeSpeech());
+      await tester.pumpAndSettle();
+
+      // A keyboard glyph means "show the keyboard" on every platform, and
+      // this shows nothing — it swaps one arrangement for the other.
+      expect(iconOf(tester, 'arrangement'), Icons.swap_horiz);
+      // `clear_all` is drawn as a stack of lines, which reads as a list.
+      expect(iconOf(tester, 'clear'), Icons.restart_alt);
+      expect(iconOf(tester, 'speak'), Icons.volume_up_outlined);
+      expect(iconOf(tester, 'credits'), Icons.info_outline);
+      expect(iconOf(tester, 'model'), Icons.auto_awesome_outlined);
+    });
+
+    testWidgets('orders them by use, with the destructive one last', (
+      tester,
+    ) async {
+      await pump(tester, speech: _FakeSpeech());
+      await tester.pumpAndSettle();
+
+      const order = ['speak', 'arrangement', 'model', 'credits', 'clear'];
+      var previous = double.negativeInfinity;
+      for (final id in order) {
+        final left = tester.getRect(find.byKey(Key(id))).left;
+        expect(left, greaterThan(previous), reason: id);
+        previous = left;
+      }
     });
   });
 
