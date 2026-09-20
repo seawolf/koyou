@@ -72,6 +72,7 @@ Future<List<Word>?> _show(
   required EnglishTranslator translator,
   EnglishTranslator? phrases,
   ModelStore? store,
+  String? initial,
   ThemeData? theme,
 }) async {
   final popped = <List<Word>?>[];
@@ -90,6 +91,7 @@ Future<List<Word>?> _show(
                         translator: translator,
                         phraseTranslator: phrases,
                         modelStore: store,
+                        initial: initial,
                       ),
                     ),
                   ),
@@ -113,10 +115,18 @@ List<List<Word>?> _popped = [];
 
 List<Word>? get _answer => _popped.isEmpty ? null : _popped.single;
 
-/// Long enough for the settle timer to fire and the model to answer.
+/// Types something and asks for it, which is now two separate acts.
+Future<void> _askFor(WidgetTester tester, String text) async {
+  await tester.enterText(find.byKey(const Key('english')), text);
+  await tester.pump();
+  await tester.tap(find.byKey(const Key('translate-it')));
+  await _waitForTheModel(tester);
+}
+
+/// Long enough for a slow translator to answer.
 ///
 /// Explicit pumps rather than `pumpAndSettle`, which stops as soon as no
-/// frame is scheduled and so never reaches a pending timer.
+/// frame is scheduled and so never reaches a pending future.
 Future<void> _waitForTheModel(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));
@@ -139,27 +149,127 @@ void main() {
     );
   });
 
-  testWidgets('answers a word as it is typed', (tester) async {
+  testWidgets('looks nothing up until it is asked', (tester) async {
+    // The reason the button exists. A phone keyboard offers corrections and
+    // completions while a sentence is half written, and looking up every
+    // intermediate state both fights that and wakes the model for a sentence
+    // nobody has finished.
+    final dictionary = _Canned({
+      'tea': _word([_cha]),
+    });
+    final phrases = _Canned(const {});
+    await _show(tester, translator: dictionary, phrases: phrases);
+
+    await tester.enterText(find.byKey(const Key('english')), 't');
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('english')), 'te');
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('english')), 'tea');
+    await _waitForTheModel(tester);
+
+    expect(dictionary.asked, isEmpty);
+    expect(phrases.asked, isEmpty);
+    expect(find.byKey(const Key('pinyin')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('translate-it')));
+    await _waitForTheModel(tester);
+    expect(dictionary.asked, ['tea']);
+    expect(find.text('chá'), findsOne);
+  });
+
+  testWidgets('the button is off until there is something to ask', (
+    tester,
+  ) async {
+    await _show(
+      tester,
+      translator: _Canned({
+        'tea': _word([_cha]),
+      }),
+    );
+    Finder button() => find.byKey(const Key('translate-it'));
+    expect(tester.widget<FilledButton>(button()).onPressed, isNull);
+
+    await tester.enterText(find.byKey(const Key('english')), 'tea');
+    await tester.pump();
+    expect(tester.widget<FilledButton>(button()).onPressed, isNotNull);
+
+    // And off again once that question has been answered, so the model is not
+    // asked the same thing twice.
+    await tester.tap(button());
+    await _waitForTheModel(tester);
+    expect(tester.widget<FilledButton>(button()).onPressed, isNull);
+  });
+
+  testWidgets('the keyboard can ask, without reaching for the button', (
+    tester,
+  ) async {
+    final dictionary = _Canned({
+      'tea': _word([_cha]),
+    });
+    await _show(tester, translator: dictionary);
+    await tester.enterText(find.byKey(const Key('english')), 'tea');
+    await tester.testTextInput.receiveAction(TextInputAction.go);
+    await _waitForTheModel(tester);
+    expect(find.text('chá'), findsOne);
+  });
+
+  testWidgets('an answer does not outlive the question', (tester) async {
+    await _show(
+      tester,
+      translator: _Canned({
+        'tea': _word([_cha]),
+      }),
+    );
+    await _askFor(tester, 'tea');
+    expect(find.text('chá'), findsOne);
+
+    // Edit the box and what is on screen is about something else, which is
+    // worse than showing nothing.
+    await tester.enterText(find.byKey(const Key('english')), 'teapot');
+    await tester.pump();
+    expect(find.text('chá'), findsNothing);
+    expect(find.byKey(const Key('about')), findsOne);
+  });
+
+  testWidgets('opens with what it was handed, ready to be typed over', (
+    tester,
+  ) async {
+    await _show(
+      tester,
+      translator: _Canned({
+        'tea': _word([_cha]),
+      }),
+      initial: 'hello',
+    );
+    final field = tester.widget<TextField>(find.byKey(const Key('english')));
+    expect(field.controller!.text, 'hello');
+    // Selected, so replacing it is one keystroke rather than five backspaces.
+    expect(field.controller!.selection.baseOffset, 0);
+    expect(field.controller!.selection.extentOffset, 5);
+    // A suggestion, not a submission: nothing has been looked up.
+    expect(find.byKey(const Key('about')), findsOne);
+  });
+
+  testWidgets('answers a word when asked', (tester) async {
     final dictionary = _Canned({
       'tea': _word([_cha], meaning: 'the drink'),
     });
     await _show(tester, translator: dictionary);
-
-    await tester.enterText(find.byKey(const Key('english')), 'tea');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'tea');
 
     expect(find.text('chá'), findsOne);
     expect(find.text('the drink'), findsOne);
     expect(dictionary.asked, ['tea']);
   });
 
-  testWidgets('asks about the English, not the whitespace', (tester) async {
-    final dictionary = _Canned({
-      'tea': _word([_cha]),
-    });
-    await _show(tester, translator: dictionary);
-    await tester.enterText(find.byKey(const Key('english')), '  tea  ');
-    await tester.pumpAndSettle();
+  testWidgets('asks about the text, not the whitespace', (tester) async {
+    await _show(
+      tester,
+      translator: _Canned({
+        'tea': _word([_cha]),
+      }),
+    );
+    await _askFor(tester, '  tea  ');
     expect(find.text('chá'), findsOne);
   });
 
@@ -172,8 +282,7 @@ void main() {
       phrasing: Phrasing.entry,
     );
     await _show(tester, translator: _Canned({'hot': hot}));
-    await tester.enterText(find.byKey(const Key('english')), 'hot');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'hot');
 
     expect(find.byKey(const Key('pinyin')), findsExactly(2));
     expect(find.byKey(const Key('ambiguous')), findsOne);
@@ -190,8 +299,7 @@ void main() {
       phrasing: Phrasing.entry,
     );
     await _show(tester, translator: _Canned({'hot': hot}));
-    await tester.enterText(find.byKey(const Key('english')), 'hot');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'hot');
 
     await tester.tap(find.byKey(const Key('pinyin')).last);
     await tester.pumpAndSettle();
@@ -208,8 +316,7 @@ void main() {
         'tea': _word([_cha]),
       }),
     );
-    await tester.enterText(find.byKey(const Key('english')), 'tea');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'tea');
     await tester.tap(find.byKey(const Key('practise')));
     await tester.pumpAndSettle();
 
@@ -228,9 +335,7 @@ void main() {
       ),
     });
     await _show(tester, translator: _Canned(const {}), phrases: phrases);
-
-    await tester.enterText(find.byKey(const Key('english')), 'I love you');
-    await _waitForTheModel(tester);
+    await _askFor(tester, 'I love you');
 
     expect(find.text('wǒ ài nǐ'), findsOne);
     expect(
@@ -247,8 +352,7 @@ void main() {
       ),
     });
     await _show(tester, translator: _Canned(const {}), phrases: phrases);
-    await tester.enterText(find.byKey(const Key('english')), 'I love you');
-    await _waitForTheModel(tester);
+    await _askFor(tester, 'I love you');
     expect(
       tester.widget<Text>(find.byKey(const Key('reads-back'))).data,
       contains('not checked back'),
@@ -264,29 +368,10 @@ void main() {
       }),
       phrases: phrases,
     );
-    await tester.enterText(find.byKey(const Key('english')), 'tea');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'tea');
     // An entry beats a paraphrase of it, so there is nothing to gain by
     // spending a second of a phone's CPU on one.
     expect(phrases.asked, isEmpty);
-  });
-
-  testWidgets('waits for typing to stop before thinking', (tester) async {
-    final phrases = _Canned(const {});
-    await _show(tester, translator: _Canned(const {}), phrases: phrases);
-
-    await tester.enterText(find.byKey(const Key('english')), 'I');
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.enterText(find.byKey(const Key('english')), 'I love');
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.enterText(find.byKey(const Key('english')), 'I love you');
-    await tester.pump(const Duration(milliseconds: 200));
-    // Nothing yet: a model woken once a word would spend three seconds on a
-    // sentence nobody has finished.
-    expect(phrases.asked, isEmpty);
-
-    await _waitForTheModel(tester);
-    expect(phrases.asked, ['I love you']);
   });
 
   testWidgets('says it is working while the model is', (tester) async {
@@ -300,7 +385,9 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('english')), 'I love you');
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.tap(find.byKey(const Key('translate-it')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const Key('thinking')), findsOne);
 
     await _waitForTheModel(tester);
@@ -310,22 +397,24 @@ void main() {
 
   testWidgets('says plainly when there is no answer', (tester) async {
     await _show(tester, translator: _Canned(const {}));
-    await tester.enterText(find.byKey(const Key('english')), 'antidisestab');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'antidisestab');
     expect(find.byKey(const Key('nothing')), findsOne);
   });
 
   testWidgets('a slow answer cannot land on a later question', (tester) async {
-    // English is typed quickly and the model takes a second or two, so this
-    // happens to anybody who changes their mind mid-word.
+    // Asking, editing, and asking again while the first is still running.
     final slow = _Canned({
       'tea': _word([_cha]),
     }, delay: const Duration(seconds: 1));
     await _show(tester, translator: slow);
 
     await tester.enterText(find.byKey(const Key('english')), 'tea');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('translate-it')));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.enterText(find.byKey(const Key('english')), 'teapot');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('translate-it')));
     await _waitForTheModel(tester);
 
     expect(find.text('chá'), findsNothing);
@@ -339,33 +428,13 @@ void main() {
         'tea': _word([_cha]),
       }),
     );
-    await tester.enterText(find.byKey(const Key('english')), 'tea');
-    await tester.pumpAndSettle();
+    await _askFor(tester, 'tea');
     await tester.tap(find.byKey(const Key('clear-english')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('about')), findsOne);
     expect(find.byKey(const Key('pinyin')), findsNothing);
   });
 
-  testWidgets('renders in both light and dark themes', (tester) async {
-    for (final theme in [kLightTheme, kDarkTheme]) {
-      await tester.pumpWidget(
-        MaterialApp(
-          key: ValueKey(theme.brightness),
-          theme: theme,
-          home: TranslateScreen(
-            translator: _Canned({
-              'tea': _word([_cha], meaning: 'the drink'),
-            }),
-          ),
-        ),
-      );
-      await tester.enterText(find.byKey(const Key('english')), 'tea');
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(find.text('chá'), findsOne);
-    }
-  });
   // The model tier is always constructed and declines at run time, so a screen
   // that went by whether it exists would promise sentences to everybody,
   // including whoever has not downloaded 533MB.
@@ -395,5 +464,24 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('about'))).data,
       contains('Turn on whole phrases'),
     );
+  });
+
+  testWidgets('renders in both light and dark themes', (tester) async {
+    for (final theme in [kLightTheme, kDarkTheme]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey(theme.brightness),
+          theme: theme,
+          home: TranslateScreen(
+            translator: _Canned({
+              'tea': _word([_cha], meaning: 'the drink'),
+            }),
+          ),
+        ),
+      );
+      await _askFor(tester, 'tea');
+      expect(tester.takeException(), isNull);
+      expect(find.text('chá'), findsOne);
+    }
   });
 }

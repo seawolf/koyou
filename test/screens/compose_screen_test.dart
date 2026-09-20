@@ -138,6 +138,19 @@ void main() {
     );
   }
 
+  /// Opens the ⋮ group, where the three set-up actions live.
+  Future<void> openMore(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('more-button')));
+    await tester.pumpAndSettle();
+  }
+
+  /// Taps one of the grouped actions, opening the group first.
+  Future<void> tapInMore(WidgetTester tester, String id) async {
+    await openMore(tester);
+    await tester.tap(find.byKey(Key(id)));
+    await tester.pumpAndSettle();
+  }
+
   /// Taps a key by the key the widget carries, so a label appearing in two
   /// places cannot confuse it.
   Future<void> tap(WidgetTester tester, String id) async {
@@ -759,17 +772,21 @@ void main() {
       expect(find.byKey(const Key('no-audio')), findsOneWidget);
     });
 
-    // The speaker is a fifth app bar action, and four was already close.
-    testWidgets('five actions still fit a narrow screen', (tester) async {
-      await pump(tester, speech: _FakeSpeech(), size: const Size(320, 568));
+    // Speaking is a top-level action, and the set-up ones are behind ⋮.
+    testWidgets('the speaker fits a narrow screen', (tester) async {
+      await pump(
+        tester,
+        speech: _FakeSpeech(),
+        englishTranslator: _AlwaysTea(),
+        size: const Size(320, 568),
+      );
       await tester.pumpAndSettle();
 
-      for (final id in ['speak', 'model', 'arrangement', 'credits', 'clear']) {
+      for (final id in ['speak', 'translate', 'more-button', 'clear']) {
         final rect = tester.getRect(find.byKey(Key(id)));
         expect(rect.right, lessThanOrEqualTo(320), reason: id);
         expect(rect.left, greaterThanOrEqualTo(0), reason: id);
-        // Five of them fit by the title giving way, not by the buttons
-        // shrinking: 48pt is the smallest a thumb should be asked to hit.
+        // 48pt is the smallest a thumb should be asked to hit.
         expect(rect.width, greaterThanOrEqualTo(48), reason: id);
       }
       expect(find.text('Kǒuyǔ'), findsOneWidget);
@@ -987,31 +1004,47 @@ void main() {
     IconData iconOf(WidgetTester tester, String id) =>
         (tester.widget<IconButton>(find.byKey(Key(id))).icon as Icon).icon!;
 
+    IconData menuIconOf(WidgetTester tester, String id) =>
+        (tester.widget<MenuItemButton>(find.byKey(Key(id))).leadingIcon!
+                as Icon)
+            .icon!;
+
     // Each of these was chosen against what the glyph already means
     // elsewhere, so a later tidy-up should have to argue with it.
     testWidgets('uses the icon that means what the action does', (
       tester,
     ) async {
-      await pump(tester, speech: _FakeSpeech());
+      await pump(
+        tester,
+        speech: _FakeSpeech(),
+        englishTranslator: _AlwaysTea(),
+      );
       await tester.pumpAndSettle();
 
-      // A keyboard glyph means "show the keyboard" on every platform, and
-      // this shows nothing — it swaps one arrangement for the other.
-      expect(iconOf(tester, 'arrangement'), Icons.swap_horiz);
+      expect(iconOf(tester, 'speak'), Icons.volume_up_outlined);
+      expect(iconOf(tester, 'translate'), Icons.translate);
       // `clear_all` is drawn as a stack of lines, which reads as a list.
       expect(iconOf(tester, 'clear'), Icons.restart_alt);
-      expect(iconOf(tester, 'speak'), Icons.volume_up_outlined);
-      expect(iconOf(tester, 'credits'), Icons.info_outline);
-      expect(iconOf(tester, 'model'), Icons.auto_awesome_outlined);
+
+      await openMore(tester);
+      // A keyboard glyph means "show the keyboard" on every platform, and
+      // this shows nothing — it swaps one arrangement for the other.
+      expect(menuIconOf(tester, 'arrangement'), Icons.swap_horiz);
+      expect(menuIconOf(tester, 'credits'), Icons.info_outline);
+      expect(menuIconOf(tester, 'model'), Icons.auto_awesome_outlined);
     });
 
     testWidgets('orders them by use, with the destructive one last', (
       tester,
     ) async {
-      await pump(tester, speech: _FakeSpeech());
+      await pump(
+        tester,
+        speech: _FakeSpeech(),
+        englishTranslator: _AlwaysTea(),
+      );
       await tester.pumpAndSettle();
 
-      const order = ['speak', 'arrangement', 'model', 'credits', 'clear'];
+      const order = ['speak', 'translate', 'more-button', 'clear'];
       var previous = double.negativeInfinity;
       for (final id in order) {
         final left = tester.getRect(find.byKey(Key(id))).left;
@@ -1019,13 +1052,36 @@ void main() {
         previous = left;
       }
     });
+
+    // Material 3 allows a top app bar four trailing icons. Going over cost the
+    // title, which truncated; the three set-up actions — a layout preference,
+    // a 533MB download, the credits — are the ones nobody reaches for mid-line.
+    testWidgets('keeps to four, with the set-up ones grouped', (tester) async {
+      await pump(
+        tester,
+        speech: _FakeSpeech(),
+        englishTranslator: _AlwaysTea(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byType(IconButton),
+        ),
+        findsExactly(4),
+      );
+      // And they are shut away until asked for.
+      expect(find.byKey(const Key('model')), findsNothing);
+      await openMore(tester);
+      expect(find.byKey(const Key('model')), findsOne);
+    });
   });
 
   group('the credits dialog', () {
     Future<void> open(WidgetTester tester) async {
       await pump(tester);
-      await tester.tap(find.byKey(const Key('credits')));
-      await tester.pumpAndSettle();
+      await tapInMore(tester, 'credits');
     }
 
     // Both folded away: anyone opening this wants one of the two, and showing
@@ -1065,8 +1121,7 @@ void main() {
 
     testWidgets('fits a narrow screen with everything open', (tester) async {
       await pump(tester, size: const Size(320, 568));
-      await tester.tap(find.byKey(const Key('credits')));
-      await tester.pumpAndSettle();
+      await tapInMore(tester, 'credits');
       await tester.tap(find.text('Getting around'));
       await tester.pumpAndSettle();
 
@@ -1297,11 +1352,11 @@ void main() {
       expect(find.byKey(const Key('initial-zh')), findsOneWidget);
       final qwerty = tester.getRect(find.byKey(const Key('initial-b')));
 
-      await tap(tester, 'arrangement');
+      await tapInMore(tester, 'arrangement');
       final grouped = tester.getRect(find.byKey(const Key('initial-b')));
       expect(grouped, isNot(qwerty), reason: 'b did not move');
 
-      await tap(tester, 'arrangement');
+      await tapInMore(tester, 'arrangement');
       expect(tester.getRect(find.byKey(const Key('initial-b'))), qwerty);
     });
 
@@ -1334,7 +1389,7 @@ void main() {
             expect(rect.height, greaterThanOrEqualTo(44), reason: key.label);
           }
         }
-        await tap(tester, 'arrangement');
+        await tapInMore(tester, 'arrangement');
       }
     });
 
@@ -1368,7 +1423,7 @@ void main() {
       await pump(tester);
 
       await tap(tester, 'initial-n');
-      await tap(tester, 'arrangement');
+      await tapInMore(tester, 'arrangement');
       // Still on the rime bank, still under n.
       expect(find.text('then what follows it'), findsOneWidget);
       await tap(tester, 'rime-i');
@@ -1760,42 +1815,9 @@ void main() {
 
   // A fourth action went into the app bar for the model screen. Four buttons
   // plus the title is where an app bar starts to overflow on a small phone.
-  testWidgets('the app bar fits its actions on a narrow screen', (
-    tester,
-  ) async {
-    // Every action at once, including the speaker, which is the widest the
-    // bar ever gets. Material 3 advises up to four trailing icons; this is
-    // six, and what it costs is the title, which truncates.
-    await pump(
-      tester,
-      size: const Size(320, 568),
-      speech: _FakeSpeech(),
-      englishTranslator: _AlwaysTea(),
-    );
-    await tester.pumpAndSettle();
-
-    for (final id in [
-      'speak',
-      'translate',
-      'arrangement',
-      'model',
-      'credits',
-      'clear',
-    ]) {
-      final rect = tester.getRect(find.byKey(Key(id)));
-      expect(rect.right, lessThanOrEqualTo(320), reason: id);
-      expect(rect.left, greaterThanOrEqualTo(0), reason: id);
-      // A touch target stays a touch target however tight the bar gets.
-      expect(rect.width, greaterThanOrEqualTo(40), reason: id);
-    }
-    expect(find.text('Kǒuyǔ'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
   testWidgets('the model button opens the model screen', (tester) async {
     await pump(tester);
-    await tester.tap(find.byKey(const Key('model')));
-    await tester.pumpAndSettle();
+    await tapInMore(tester, 'model');
 
     expect(find.text('Whole phrases'), findsOneWidget);
     expect(find.byKey(const Key('model-status')), findsOneWidget);
@@ -1823,7 +1845,7 @@ void main() {
       await pump(tester, englishTranslator: english);
       await tester.tap(find.byKey(const Key('translate')));
       await tester.pumpAndSettle();
-      expect(find.text('Say it in Mandarin'), findsOneWidget);
+      expect(find.text('Translation into Mandarin Pinyin'), findsOneWidget);
     });
 
     testWidgets('lands the answer in the line, ready to edit', (tester) async {
@@ -1831,13 +1853,15 @@ void main() {
       await tester.tap(find.byKey(const Key('translate')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('english')), 'tea');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('translate-it')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('practise')));
       await tester.pumpAndSettle();
 
       // Back on the compose screen, with the answer in the input area as
       // syllables — so the keys carry on from it rather than starting again.
-      expect(find.text('Say it in Mandarin'), findsNothing);
+      expect(find.text('Translation into Mandarin Pinyin'), findsNothing);
       expect(find.byKey(const Key('composed')), findsOneWidget);
       await tap(tester, 'backspace');
       expect(find.byKey(const Key('composed')), findsNothing);
@@ -1849,6 +1873,8 @@ void main() {
       await tester.tap(find.byKey(const Key('translate')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('english')), 'tea');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('translate-it')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('practise')));
       await tester.pumpAndSettle();
@@ -1866,6 +1892,76 @@ void main() {
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.textContaining('nǐ'), findsOneWidget);
+    });
+  });
+  group('carrying the meaning across', () {
+    /// A dictionary that answers the whole line, as it does for a set phrase.
+    _RecordingTranslator knowing(String meaning) =>
+        _RecordingTranslator()
+          ..reply = Translation(meaning, matchedWhole: true);
+
+    testWidgets('opens the other direction on what is already showing', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        translator: knowing('hello'),
+        englishTranslator: _AlwaysTea(),
+      );
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+
+      // The two directions join up: from `nǐ` glossed "hello" the box opens
+      // on "hello", ready to be edited into the thing actually wanted.
+      final field = tester.widget<TextField>(find.byKey(const Key('english')));
+      expect(field.controller!.text, 'hello');
+    });
+
+    testWidgets('opens empty when there is nothing to carry', (tester) async {
+      await pump(tester, englishTranslator: _AlwaysTea());
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+      final field = tester.widget<TextField>(find.byKey(const Key('english')));
+      expect(field.controller!.text, isEmpty);
+    });
+
+    testWidgets('does not carry a list of candidates across', (tester) async {
+      // `nǐ` alone is answered "you / doubtful / you (used to address a
+      // deity)", which is the honest answer to an ambiguous syllable and is
+      // not a sentence anybody would type into a translator.
+      final unsure = _RecordingTranslator()
+        ..reply = const Translation(
+          'you / doubtful / you (used to address a deity)',
+          matchedWhole: true,
+          uncertain: true,
+        );
+      await pump(tester, translator: unsure, englishTranslator: _AlwaysTea());
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(find.byKey(const Key('english')));
+      expect(field.controller!.text, isEmpty);
+    });
+
+    testWidgets('does not carry a word-by-word answer across', (tester) async {
+      // "I; me · to love · you" is not something anyone would ask to have
+      // translated back, and joining it into a sentence is the misreading the
+      // list exists to avoid.
+      final wordByWord = _RecordingTranslator()
+        ..reply = const Translation('I; me · to love · you', wordByWord: true);
+      await pump(
+        tester,
+        translator: wordByWord,
+        englishTranslator: _AlwaysTea(),
+      );
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(find.byKey(const Key('english')));
+      expect(field.controller!.text, isEmpty);
     });
   });
 }

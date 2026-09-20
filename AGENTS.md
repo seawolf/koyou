@@ -231,6 +231,13 @@ assistant — measured, three phrases in twenty — and the two worked examples 
 `english_prompt.dart` are what stop it. They are load-bearing; taking them out
 brings the failure back.
 
+That prompt also says "translate the input" rather than "translate the
+English", which is deliberate and measured. Naming English rendered `Je
+voudrais deux bières` as 我想喝两杯咖啡 — *coffee* — and, on the English set,
+turned "my phone is broken" into 您的手机坏了，能帮我修一下吗？. Other languages
+are not promised on screen: they work because the model generalises, and the
+round-trip check reads back in English whatever was typed.
+
 ## Running the model tests
 
 Two suites are tagged off by default, because both need something the machine

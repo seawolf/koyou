@@ -523,8 +523,15 @@ for a learner to get wrong, and now it costs nothing.
 ### Starting from English
 
 The compose screen answers "what does this pinyin mean". The **translate
-screen** answers the other question — "how do I say this" — and is reached by
-the `translate` icon in the app bar.
+screen** — "Translation into Mandarin Pinyin" — answers the other question,
+and is reached by the `translate` icon in the app bar.
+
+Nothing is looked up until it is asked for. A phone keyboard offers
+corrections and completions while a sentence is half written, and translating
+every intermediate state both fights that and wakes the model for a sentence
+nobody has finished — a second of CPU and a sip of battery each time. So there
+is a **Translate** button, the keyboard's Go key does the same, and editing the
+box clears the answer rather than leaving one that belongs to different text.
 
 It is a screen of its own rather than a mode on the first, and that is the
 point: English is ordinary Latin text, so it wants a plain `TextField`, which
@@ -563,7 +570,23 @@ The tiers mirror the other direction, and for the same reasons:
    as 缘分 above: an entry beats a paraphrase of it.
 
 Without the model this is a word lookup, and the screen says so rather than
-declining sentences with no explanation.
+declining sentences with no explanation — going by whether the **weights are
+downloaded**, not by whether the tier exists, since it is always constructed
+and declines at run time.
+
+The box is not labelled "English", because only the dictionary half is
+English-only. The model takes whatever it is given and `Bonjour !` comes back
+as `nǐ hǎo`. That is not promised anywhere on screen: it works because the
+model generalises, it is not measured, and the round-trip check reads back in
+English whatever was typed. It did shape the prompt, though — saying "the
+input" rather than "the English" is measurably better, and not only for other
+languages. See [docs/local-model.md](docs/local-model.md).
+
+It goes both ways round. Opening it from a line that already has a meaning
+seeds the box with that meaning, selected, so `nǐ hǎo` glossed "hello" opens on
+"hello" — a starting point, not a submission. Only an answer worth asking about
+is carried: not a word-by-word list, and not a list of candidates, since `nǐ`
+alone is honestly answered "you / doubtful / you (used to address a deity)".
 
 **Practise this** hands the answer back to the compose screen as `Word`s rather
 than text, so it lands in the input area already broken into syllables — every
@@ -624,6 +647,14 @@ Reading characters back is not quite exact, and the gaps are worth naming:
 - **0.34% of entries cannot be spelled by this keyboard** — 359 of them keyed
   on the erhua suffix `r5`, the rest interjections like `hm` and `ng`. Those
   decline rather than come back with a hole in them.
+
+### The app bar
+
+Four trailing icons, which is what Material 3 allows, grouped by how often each
+is wanted: **speak**, **translate**, a **⋮ group**, and **start again** last and
+furthest from the thumb. Behind the ⋮ are the three that are set-up rather than
+use — a keyboard layout preference, a 533MB download, and the hints and credits
+— and they are there because going over four cost the title, which truncated.
 
 ### Saying it aloud
 

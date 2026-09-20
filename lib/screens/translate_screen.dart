@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../audio/speech.dart';
@@ -28,7 +26,15 @@ class TranslateScreen extends StatefulWidget {
     this.phraseTranslator,
     this.modelStore,
     this.speech,
+    this.initial,
   });
+
+  /// What the box starts with, selected so a keystroke replaces it.
+  ///
+  /// The compose screen sends the meaning it is already showing, so going to
+  /// this screen from `nǐ hǎo` opens on "hello" rather than on an empty box.
+  /// It is a starting point and not a submission: nothing is looked up until
+  /// somebody asks.
 
   /// Answers a word, from local data, as fast as it can be typed: the
   /// hand-written phrases first, then CC-CEDICT inverted.
@@ -53,21 +59,28 @@ class TranslateScreen extends StatefulWidget {
   /// Says the answer aloud. Null where nothing can.
   final Speech? speech;
 
+  final String? initial;
+
   @override
   State<TranslateScreen> createState() => _TranslateScreenState();
 }
 
 class _TranslateScreenState extends State<TranslateScreen> {
-  final TextEditingController _english = TextEditingController();
+  final TextEditingController _typed = TextEditingController();
+  final FocusNode _focus = FocusNode();
 
   Said? _said;
   bool _thinking = false;
 
+  /// The text the answer on screen belongs to.
+  ///
+  /// Kept so an answer cannot outlive the question: edit the box and what is
+  /// shown is about something else, which is worse than showing nothing.
+  String _answered = '';
+
   /// Which candidate is selected, for the words where English is vaguer than
   /// Chinese. Reset whenever a new answer arrives.
   int _chosen = 0;
-
-  Timer? _settling;
 
   /// Counts the asks so a slow answer to an earlier question cannot land on a
   /// later one. The model takes a second or two and English is typed quickly,
@@ -79,7 +92,16 @@ class _TranslateScreenState extends State<TranslateScreen> {
   @override
   void initState() {
     super.initState();
-    _english.addListener(_onTyped);
+    final initial = widget.initial?.trim() ?? '';
+    if (initial.isNotEmpty) {
+      _typed.value = TextEditingValue(
+        text: initial,
+        // Selected rather than left with the caret at the end: it is a
+        // suggestion, and typing over it should be one keystroke.
+        selection: TextSelection(baseOffset: 0, extentOffset: initial.length),
+      );
+    }
+    _typed.addListener(_onTyped);
     widget.speech?.available().then((can) {
       if (mounted) setState(() => _canSpeak = can);
     });
@@ -87,65 +109,79 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   @override
   void dispose() {
-    _settling?.cancel();
-    _english
+    _typed
       ..removeListener(_onTyped)
       ..dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  void _onTyped() {
-    _settling?.cancel();
-    final english = _english.text.trim();
-    final asked = ++_asked;
+  /// Whether there is a question on screen that has not been asked yet.
+  bool get _askable =>
+      _typed.text.trim().isNotEmpty && _typed.text.trim() != _answered;
 
-    if (english.isEmpty) {
-      setState(() {
-        _said = null;
-        _thinking = false;
-        _chosen = 0;
-      });
+  /// Editing invalidates the answer and nothing else.
+  ///
+  /// Nothing is looked up as it is typed. A phone keyboard offers corrections
+  /// and completions while a sentence is half written, and translating every
+  /// intermediate state both fights that and spends a second of CPU on each
+  /// one — see [_ask].
+  void _onTyped() {
+    if (_said == null && !_thinking && _answered.isEmpty) {
+      // Nothing to throw away, so only the button's enabled state changes.
+      setState(() {});
       return;
     }
-
-    // The quick tier reads local data, so it answers as fast as anyone can
-    // type and needs no debounce.
-    widget.translator.say(english).then((said) {
-      if (!mounted || asked != _asked) return;
-      setState(() {
-        _said = said;
-        _chosen = 0;
-      });
-      // An entry beats a paraphrase of it, so the model is not asked about
-      // English the dictionary already answered — the same hierarchy the
-      // other direction settled over 缘分. It is asked about everything else,
-      // once typing has stopped, because it costs a second of CPU and there
-      // is no point spending it on half a sentence.
-      if (said != null) {
-        setState(() => _thinking = false);
-        return;
-      }
-      final phrases = widget.phraseTranslator;
-      if (phrases == null) return;
-      _settling = Timer(_settle, () => _think(phrases, english, asked));
+    if (_typed.text.trim() == _answered) {
+      setState(() {});
+      return;
+    }
+    _asked++;
+    setState(() {
+      _said = null;
+      _thinking = false;
+      _answered = '';
+      _chosen = 0;
     });
   }
 
-  /// Long enough that typing a sentence wakes the model once, not once a word.
-  static const _settle = Duration(milliseconds: 700);
+  /// Looks up what is in the box, when somebody asks.
+  Future<void> _ask() async {
+    final asked = ++_asked;
+    final typed = _typed.text.trim();
+    if (typed.isEmpty) return;
+    _focus.unfocus();
+
+    final said = await widget.translator.say(typed);
+    if (!mounted || asked != _asked) return;
+    setState(() {
+      _said = said;
+      _answered = typed;
+      _chosen = 0;
+    });
+
+    // An entry beats a paraphrase of it, so the model is not asked about
+    // anything the dictionary already answered — the same hierarchy the other
+    // direction settled over 缘分.
+    if (said != null) return;
+    final phrases = widget.phraseTranslator;
+    if (phrases == null) return;
+    await _think(phrases, typed, asked);
+  }
 
   Future<void> _think(
     EnglishTranslator phrases,
-    String english,
+    String typed,
     int asked,
   ) async {
     if (!mounted || asked != _asked) return;
     setState(() => _thinking = true);
-    final said = await phrases.say(english);
+    final said = await phrases.say(typed);
     if (!mounted || asked != _asked) return;
     setState(() {
       _thinking = false;
       _said = said;
+      _answered = typed;
       _chosen = 0;
     });
   }
@@ -188,7 +224,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Say it in Mandarin'),
+        // Scaled down rather than cut off. The name says what the screen
+        // does — both directions and the form the answer takes — and it is
+        // wider than a phone app bar at full size, so it shrinks to fit
+        // instead of becoming "Translation into Mandarin P…".
+        title: const FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text('Translation into Mandarin Pinyin'),
+        ),
         backgroundColor: theme.colorScheme.primaryContainer,
         actions: [
           if (_canSpeak)
@@ -205,25 +249,47 @@ class _TranslateScreenState extends State<TranslateScreen> {
         children: [
           TextField(
             key: const Key('english'),
-            controller: _english,
+            controller: _typed,
+            focusNode: _focus,
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
-            // Plain English, so the platform keyboard does the work and
-            // selection, copy and paste come with it.
+            // Ordinary text, so the platform keyboard does the work and
+            // selection, copy and paste come with it. Its Go key asks, which
+            // is where a thumb already is.
+            textInputAction: TextInputAction.go,
+            onSubmitted: (_) => _ask(),
             decoration: InputDecoration(
-              labelText: 'English',
+              // Not "English". Only the dictionary half is English-only; the
+              // model takes whatever it is given, and `Bonjour !` comes back
+              // as `nǐ hǎo`.
+              labelText: 'What you want to say',
               hintText: hasModel
                   ? 'a word or a sentence'
                   : 'a word — tea, tomorrow, thank you',
               border: const OutlineInputBorder(),
-              suffixIcon: _english.text.isEmpty
+              suffixIcon: _typed.text.isEmpty
                   ? null
                   : IconButton(
                       key: const Key('clear-english'),
-                      onPressed: _english.clear,
+                      onPressed: _typed.clear,
                       icon: const Icon(Icons.close),
                       tooltip: 'Clear',
                     ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Asked for, not guessed at. A phone keyboard offers corrections and
+          // completions while a sentence is half typed, and looking up every
+          // intermediate state fights that — as well as waking the model, at a
+          // second of CPU and a sip of battery, for a sentence nobody has
+          // finished.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              key: const Key('translate-it'),
+              onPressed: _askable && !_thinking ? _ask : null,
+              icon: const Icon(Icons.search),
+              label: const Text('Translate'),
             ),
           ),
           const SizedBox(height: 24),
@@ -242,7 +308,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             )
-          else if (_english.text.trim().isNotEmpty)
+          else if (_answered.isNotEmpty)
             _Nothing(hasModel: hasModel)
           else
             _About(hasModel: hasModel),

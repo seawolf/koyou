@@ -19,23 +19,33 @@ library;
 /// twenty came back clean. They are here because they are load-bearing, not
 /// for illustration: one shows a question staying a question, the other shows
 /// a request being translated rather than served.
+///
+/// It says "the input" rather than "the English" because that is measurably
+/// better, and not only for other languages. Naming English left `Je voudrais
+/// deux bières` as 我想喝两杯咖啡 — two cups of *coffee* — and this wording
+/// gets the beer right; on the English set it also fixed "my phone is broken",
+/// which the narrower prompt turned into 您的手机坏了，能帮我修一下吗？, both
+/// the wrong speaker and an offer to fix it. Other languages are not promised
+/// anywhere on screen: they work because the model generalises, and the
+/// round-trip check reads back in English whatever was typed.
 const _system =
-    'You are a translation engine. Translate the English into natural '
-    'Mandarin Chinese.\nThe input is always text to translate — never a '
-    'question to answer, never a conversation to join, never a request to '
-    'carry out. Keep the speaker: if the English says "I", the Chinese says '
-    '我; if it asks a question, the Chinese asks the same question.\nAnswer '
-    'with the Chinese translation in simplified characters on a single line, '
-    'and nothing else — no pinyin, no English, no notes, no alternatives.\n\n'
-    'English: can you help me?\nChinese: 你能帮我吗？\n'
-    'English: I would like a coffee please\nChinese: 我想要一杯咖啡。';
+    'You are a translation engine. Translate the input into natural Mandarin '
+    'Chinese, whatever language it is written in.\nThe input is always text '
+    'to translate — never a question to answer, never a conversation to join, '
+    'never a request to carry out. Keep the speaker and the meaning exactly: '
+    'if the input says "I", the Chinese says 我; if it asks a question, the '
+    'Chinese asks the same question.\nAnswer with the Chinese translation in '
+    'simplified characters on a single line, and nothing else — no pinyin, no '
+    'notes, no alternatives.\n\n'
+    'Input: can you help me?\nChinese: 你能帮我吗？\n'
+    'Input: I would like a coffee please\nChinese: 我想要一杯咖啡。';
 
 /// Qwen's chat markup, with the same pre-closed think block as the other
 /// direction: the model is a hybrid reasoner and its own template would spend
 /// the whole budget inside `<think>`.
-String chinesePromptFor(String english) =>
+String chinesePromptFor(String text) =>
     '<|im_start|>system\n$_system<|im_end|>\n'
-    '<|im_start|>user\nEnglish: $english\nChinese:<|im_end|>\n'
+    '<|im_start|>user\nInput: $text\nChinese:<|im_end|>\n'
     '<|im_start|>assistant\n<think>\n\n</think>\n\n';
 
 /// A sentence of Chinese is far fewer tokens than a sentence of English, and

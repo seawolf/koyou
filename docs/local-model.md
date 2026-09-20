@@ -368,6 +368,26 @@ cases, and all three failures above now translate:
 Those three are measured end to end through the app's own pipeline, not through
 curl — see the `ollama` tag in `test/translation/ollama_backend_test.dart`.
 
+### Naming the source language costs accuracy
+
+The prompt says "translate the input", not "translate the English". That began
+as a tidy-up after `Bonjour !` turned out to come back as `nǐ hǎo`, and turned
+into a measured improvement in both directions.
+
+Naming English left `Je voudrais deux bières` as 我想喝两杯**咖啡** — two cups of
+*coffee*. The neutral wording gets the beer right. On the twenty English
+phrases it is also no worse and in one place better: "my phone is broken" had
+been coming back as 您的手机坏了，能帮我修一下吗？ — "*your* phone is broken, can
+you fix it for me?" — the assistant drift again, and with the speaker flipped.
+The neutral prompt answers 我的手机坏了.
+
+Six of eight non-English phrases came back right, across French, German,
+Spanish, Italian and Czech. The two failures were Italian: `Dove è la
+stazione?` picked up a stray 不 or 是的. None of this is promised on screen.
+It works because the model generalises, it is measured only as far as the table
+above, and the round-trip check reads back in **English** whatever was typed —
+so it is a weaker check for a learner working from another language.
+
 ### Why this direction needs a check the other does not
 
 Going into English, a bad answer is visibly bad English and the learner spots

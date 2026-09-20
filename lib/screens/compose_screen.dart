@@ -289,7 +289,13 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   /// Opens the other direction, and takes whatever comes back.
   ///
-  /// The answer arrives as words rather than text, so it lands in the line
+  /// Seeded with the meaning already on screen, so the two directions join up:
+  /// from `nǐ hǎo` glossed "hello" the box opens on "hello", ready to be
+  /// edited into the thing actually wanted. It arrives selected, and nothing
+  /// is looked up until it is asked for, so a seed nobody wants costs one
+  /// keystroke. Not every answer is worth carrying — see [seedFrom].
+  ///
+  /// The answer comes back as words rather than text, so it lands in the line
   /// already broken into syllables — ready to be retoned, corrected or spoken,
   /// with nothing to parse.
   Future<void> _startFromEnglish(EnglishTranslator english) async {
@@ -300,6 +306,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
           phraseTranslator: widget.englishPhraseTranslator,
           modelStore: widget.modelStore,
           speech: widget.speech,
+          initial: seedFrom(_translation, _phrase),
         ),
       ),
     );
@@ -315,9 +322,12 @@ class _ComposeScreenState extends State<ComposeScreen> {
       appBar: AppBar(
         title: const Text('Kǒuyǔ'),
         backgroundColor: theme.colorScheme.primaryContainer,
-        // Ordered by how often each is used, with the destructive one last
-        // and furthest from the thumb. Speaking happens once a line; the rest
-        // are set-up or rare.
+        // Four, which is what Material 3 allows a top app bar, and grouped
+        // by how often each is wanted. Speaking and translating happen once a
+        // line; the three behind ⋮ are set-up — a layout preference, a 533MB
+        // download, and the credits — and belong out of the way rather than
+        // competing with them. Clearing stays last, on its own, furthest from
+        // the thumb.
         actions: [
           if (_canSpeak)
             IconButton(
@@ -336,47 +346,63 @@ class _ComposeScreenState extends State<ComposeScreen> {
               // `translate`: there is no arguing with a convention this
               // settled.
               icon: const Icon(Icons.translate),
-              tooltip: 'Say it in Mandarin',
+              tooltip: 'Translate into pinyin',
             ),
-          IconButton(
-            key: const Key('arrangement'),
-            onPressed: () => setState(() {
-              _arrangement = _arrangement == KeyArrangement.articulatory
-                  ? KeyArrangement.qwerty
-                  : KeyArrangement.articulatory;
-            }),
-            // Not a keyboard glyph: on every platform that means "show the
-            // keyboard", and this does not show anything — it swaps one
-            // arrangement for the other.
-            icon: const Icon(Icons.swap_horiz),
-            tooltip: switch (_arrangement) {
-              KeyArrangement.articulatory => 'Switch to QWERTY order',
-              KeyArrangement.qwerty => 'Switch to articulation order',
-            },
-          ),
-          IconButton(
-            key: const Key('model'),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => ModelScreen(store: widget.modelStore),
+          MenuAnchor(
+            key: const Key('more'),
+            builder: (context, controller, _) => IconButton(
+              key: const Key('more-button'),
+              onPressed: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More',
+            ),
+            menuChildren: [
+              MenuItemButton(
+                key: const Key('model'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => ModelScreen(store: widget.modelStore),
+                  ),
+                ),
+                leadingIcon: const Icon(Icons.auto_awesome_outlined),
+                child: const Text('Whole phrases'),
               ),
-            ),
-            icon: const Icon(Icons.auto_awesome_outlined),
-            tooltip: 'Whole phrases',
-          ),
-          // CC-CEDICT asks for attribution under CC BY-SA 4.0. This is it.
-          IconButton(
-            key: const Key('credits'),
-            onPressed: () => showAboutDialog(
-              context: context,
-              applicationName: 'Kǒuyǔ',
-              // Folded away rather than listed. There is more worth saying
-              // than fits a dialog, and a wall of it is read by nobody — so
-              // the hints and the licences each sit behind their own heading.
-              children: const [_Sections()],
-            ),
-            icon: const Icon(Icons.info_outline),
-            tooltip: 'Credits',
+              MenuItemButton(
+                key: const Key('arrangement'),
+                onPressed: () => setState(() {
+                  _arrangement = _arrangement == KeyArrangement.articulatory
+                      ? KeyArrangement.qwerty
+                      : KeyArrangement.articulatory;
+                }),
+                // Not a keyboard glyph: on every platform that means "show the
+                // keyboard", and this does not show anything — it swaps one
+                // arrangement for the other.
+                leadingIcon: const Icon(Icons.swap_horiz),
+                // Named as the act, not the state: a menu lists things to
+                // do, and "Articulation order" on its own could as easily be
+                // the setting you are already on.
+                child: Text(switch (_arrangement) {
+                  KeyArrangement.articulatory => 'Switch to QWERTY',
+                  KeyArrangement.qwerty => 'Switch to articulation',
+                }),
+              ),
+              // CC-CEDICT asks for attribution under CC BY-SA 4.0. This is it.
+              MenuItemButton(
+                key: const Key('credits'),
+                onPressed: () => showAboutDialog(
+                  context: context,
+                  applicationName: 'Kǒuyǔ',
+                  // Folded away rather than listed. There is more worth saying
+                  // than fits a dialog, and a wall of it is read by nobody —
+                  // so the hints and the licences each sit behind their own
+                  // heading.
+                  children: const [_Sections()],
+                ),
+                leadingIcon: const Icon(Icons.info_outline),
+                child: const Text('Hints and credits'),
+              ),
+            ],
           ),
           // Away from the thumb: rare, and it throws away everything typed.
           IconButton(
@@ -483,6 +509,31 @@ double _panelWidth(BoxConstraints constraints) {
   return math
       .max(constraints.maxWidth * 0.25, needed)
       .clamp(0.0, constraints.maxWidth * 0.5);
+}
+
+/// Whichever answer stands as the meaning of everything typed, or null where
+/// none does.
+///
+/// An exact match for the whole line beats a model's paraphrase of it, so a
+/// late answer about words the dictionary already knew cannot displace them —
+/// see `_dictionaryHasTheWhole`.
+///
+/// A word-by-word answer is not one of these: the list is the answer, and
+/// joining it into a sentence is exactly the misreading to avoid.
+Translation? meaningOf(Translation? quick, Translation? whole) =>
+    (quick?.matchedWhole ?? false) ? quick : whole;
+
+/// The meaning as something worth asking to have translated back, or null.
+///
+/// Stricter than [meaningOf], and it has to be. `nǐ` on its own is answered
+/// "you / doubtful / you (used to address a deity)" — three candidates, which
+/// is the honest answer to an ambiguous syllable and is not a sentence anybody
+/// would type into a translator. Only an answer the dictionary was sure of, or
+/// one a model wrote, is worth carrying to the other screen.
+String? seedFrom(Translation? quick, Translation? whole) {
+  final meaning = meaningOf(quick, whole);
+  if (meaning == null || meaning.uncertain) return null;
+  return meaning.text;
 }
 
 /// What has been typed, and what it means.
@@ -1282,8 +1333,8 @@ const _hints = <(IconData, String)>[
   ),
   (
     Icons.translate,
-    'Going the other way: type English and get the pinyin, '
-        'then bring it back here to practise or correct it.',
+    'Going the other way: type what you want to say, get '
+        'the pinyin, then bring it back here to practise or correct it.',
   ),
   (
     Icons.auto_awesome_outlined,
