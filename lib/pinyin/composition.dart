@@ -405,6 +405,25 @@ class Composition {
     return Composition(words: next, caret: caret);
   }
 
+  /// A line already worked out elsewhere, ready to be edited.
+  ///
+  /// How an answer from the translate screen arrives: the words are already
+  /// syllables, so every gesture the keyboard offers works on them at once —
+  /// retone one, correct a rime, backspace off the end. The caret goes to the
+  /// end, where typing would have left it.
+  ///
+  /// Empty words are dropped. A caller assembling a line from a dictionary
+  /// answer has no reason to think about them, and a line with a gap in it
+  /// would put a stray space on the screen.
+  factory Composition.of(List<Word> words) {
+    final kept = words.where((word) => !word.isEmpty).toList();
+    if (kept.isEmpty) return const Composition();
+    return Composition(
+      words: kept,
+      caret: Caret(word: kept.length - 1, syllable: kept.last.length),
+    );
+  }
+
   /// The caret at the very end, which is where typing leaves it.
   Caret get end => Caret(word: words.length - 1, syllable: words.last.length);
 

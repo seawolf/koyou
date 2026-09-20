@@ -11,6 +11,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'english_prompt.dart';
 import 'model_asset.dart';
 import 'model_prompt.dart';
 import 'model_store.dart';
@@ -27,7 +28,24 @@ class WllamaBackend implements TranslationBackend {
   bool _unavailable = false;
 
   @override
-  Future<String?> translate(String chinese) async {
+  Future<String?> intoEnglish(String chinese) => _run(
+    prompt: promptFor(chinese),
+    maxTokens: maxReplyTokens,
+    keep: usableReply,
+  );
+
+  @override
+  Future<String?> intoChinese(String english) => _run(
+    prompt: chinesePromptFor(english),
+    maxTokens: maxChineseTokens,
+    keep: usableChinese,
+  );
+
+  Future<String?> _run({
+    required String prompt,
+    required int maxTokens,
+    required String? Function(String) keep,
+  }) async {
     if (_unavailable) return null;
 
     if (!engine.ready) {
@@ -41,8 +59,8 @@ class WllamaBackend implements TranslationBackend {
       }
     }
 
-    final reply = await engine.translate(promptFor(chinese), maxReplyTokens);
-    return reply == null ? null : usableReply(reply);
+    final reply = await engine.translate(prompt, maxTokens);
+    return reply == null ? null : keep(reply);
   }
 }
 
@@ -64,7 +82,8 @@ abstract interface class WebModelEngine {
 
   Future<bool> load(String url, int contextTokens);
 
-  /// The raw reply, for [usableReply] to judge.
+  /// Runs [prompt] and gives back the raw reply, for the caller to judge.
+  /// Direction-agnostic: the prompt already says which way round it is.
   Future<String?> translate(String prompt, int maxTokens);
 
   double get progress;

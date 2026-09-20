@@ -16,10 +16,17 @@ class _Spy implements TranslationBackend {
   String? asked;
 
   @override
-  Future<String?> translate(String chinese) async {
+  Future<String?> intoEnglish(String chinese) async {
     asked = chinese;
     return reply;
   }
+
+  /// Never called here: this is the pinyin-in direction. Throwing rather than
+  /// answering is what would catch a mix-up, which is the one mistake in this
+  /// pair nothing on screen would reveal.
+  @override
+  Future<String?> intoChinese(String english) =>
+      throw StateError('asked for Chinese in the Chinese-to-English direction');
 }
 
 Syllable _syllable(String initial, String rime, Tone tone) =>

@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/keyboard_layout.dart';
+import 'package:kouyu/pinyin/syllable.dart';
 import 'package:kouyu/pinyin/tone.dart';
+import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/screens/compose_screen.dart';
 import 'package:kouyu/theme.dart';
+import 'package:kouyu/translation/english_translator.dart';
 import 'package:kouyu/translation/translator.dart';
 import 'package:kouyu/widgets/blinking_cursor.dart';
 import 'package:kouyu/widgets/pinyin_keyboard.dart';
@@ -80,6 +83,22 @@ class _SlowTranslator implements Translator {
   }
 }
 
+/// Answers `chá` to anything, which is all the compose side needs to check
+/// that an answer makes the journey back.
+class _AlwaysTea implements EnglishTranslator {
+  @override
+  Future<Said?> say(String english) async => Said(
+    options: [
+      Rendering(
+        words: [
+          Spoken([const Syllable(initial: 'ch', rime: 'a', tone: Tone.second)]),
+        ],
+      ),
+    ],
+    phrasing: Phrasing.entry,
+  );
+}
+
 void main() {
   // A repeating animation means pumpAndSettle never returns, so the caret is
   // held still for every test except the one that checks it blinks.
@@ -94,6 +113,7 @@ void main() {
     Translator? phraseTranslator,
     Speech? speech,
     Suggester? suggester,
+    EnglishTranslator? englishTranslator,
     Brightness brightness = Brightness.light,
     Size size = const Size(375, 812),
   }) async {
@@ -108,6 +128,7 @@ void main() {
           phraseTranslator: phraseTranslator,
           speech: speech,
           suggester: suggester,
+          englishTranslator: englishTranslator,
           // The web implementation, imported directly: it reports
           // "no model on this platform" and touches no plugin, which
           // is what a widget test wants.
@@ -1742,12 +1763,30 @@ void main() {
   testWidgets('the app bar fits its actions on a narrow screen', (
     tester,
   ) async {
-    await pump(tester, size: const Size(320, 568));
+    // Every action at once, including the speaker, which is the widest the
+    // bar ever gets. Material 3 advises up to four trailing icons; this is
+    // six, and what it costs is the title, which truncates.
+    await pump(
+      tester,
+      size: const Size(320, 568),
+      speech: _FakeSpeech(),
+      englishTranslator: _AlwaysTea(),
+    );
+    await tester.pumpAndSettle();
 
-    for (final id in ['model', 'arrangement', 'credits', 'clear']) {
+    for (final id in [
+      'speak',
+      'translate',
+      'arrangement',
+      'model',
+      'credits',
+      'clear',
+    ]) {
       final rect = tester.getRect(find.byKey(Key(id)));
       expect(rect.right, lessThanOrEqualTo(320), reason: id);
       expect(rect.left, greaterThanOrEqualTo(0), reason: id);
+      // A touch target stays a touch target however tight the bar gets.
+      expect(rect.width, greaterThanOrEqualTo(40), reason: id);
     }
     expect(find.text('Kǒuyǔ'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -1768,5 +1807,65 @@ void main() {
       await type(tester, 'n', 'i', 3);
       expect(tester.takeException(), isNull);
     }
+  });
+  group('starting from English', () {
+    /// Answers `chá` to anything, which is all this side needs.
+    final english = _AlwaysTea();
+
+    testWidgets('the button is absent when there is no way there', (
+      tester,
+    ) async {
+      await pump(tester);
+      expect(find.byKey(const Key('translate')), findsNothing);
+    });
+
+    testWidgets('opens the other direction', (tester) async {
+      await pump(tester, englishTranslator: english);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+      expect(find.text('Say it in Mandarin'), findsOneWidget);
+    });
+
+    testWidgets('lands the answer in the line, ready to edit', (tester) async {
+      await pump(tester, englishTranslator: english);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('english')), 'tea');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('practise')));
+      await tester.pumpAndSettle();
+
+      // Back on the compose screen, with the answer in the input area as
+      // syllables — so the keys carry on from it rather than starting again.
+      expect(find.text('Say it in Mandarin'), findsNothing);
+      expect(find.byKey(const Key('composed')), findsOneWidget);
+      await tap(tester, 'backspace');
+      expect(find.byKey(const Key('composed')), findsNothing);
+    });
+
+    testWidgets('replaces whatever was there', (tester) async {
+      await pump(tester, englishTranslator: english);
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('english')), 'tea');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('practise')));
+      await tester.pumpAndSettle();
+
+      // One answer, not the answer appended to the old line: what came back
+      // is a whole phrase, not a continuation of one.
+      expect(find.textContaining('nǐ'), findsNothing);
+    });
+
+    testWidgets('leaves the line alone when nothing is taken', (tester) async {
+      await pump(tester, englishTranslator: english);
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('translate')));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.textContaining('nǐ'), findsOneWidget);
+    });
   });
 }

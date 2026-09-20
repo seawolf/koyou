@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/composition.dart';
 import 'package:kouyu/pinyin/keyboard_layout.dart';
+import 'package:kouyu/pinyin/syllable.dart';
 import 'package:kouyu/pinyin/tone.dart';
+import 'package:kouyu/pinyin/word.dart';
 
 void main() {
   InitialKey key(String label) =>
@@ -399,5 +401,56 @@ void main() {
     final second = type(first, 'h', 'ao', Tone.third);
     expect(first.text, 'nǐ');
     expect(second.text, 'nǐhǎo');
+  });
+  group('a line worked out elsewhere', () {
+    test('arrives ready to be edited, caret at the end', () {
+      final composition = Composition.of([
+        Spoken([Syllable(initial: 'w', rime: 'o', tone: Tone.third)]),
+        Spoken([Syllable(rime: 'ai', tone: Tone.fourth)]),
+      ]);
+      expect(composition.preview, 'wǒ ài');
+      // Where typing would have left it, so the next key carries on rather
+      // than inserting into the middle.
+      expect(composition.caret, composition.end);
+      expect(composition.stage, ComposeStage.initial);
+    });
+
+    test('drops empty words rather than showing a stray space', () {
+      final composition = Composition.of([
+        const Spoken(),
+        Spoken([Syllable(initial: 'w', rime: 'o', tone: Tone.third)]),
+        const Spoken(),
+      ]);
+      expect(composition.words, hasLength(1));
+      expect(composition.preview, 'wǒ');
+    });
+
+    test('nothing at all is just an empty line', () {
+      expect(Composition.of(const []).isEmpty, isTrue);
+      expect(Composition.of(const [Spoken()]).isEmpty, isTrue);
+    });
+
+    test('carries a word that is not Mandarin', () {
+      final composition = Composition.of([
+        Spoken([Syllable(initial: 'w', rime: 'o', tone: Tone.third)]),
+        const Literal('Steve'),
+      ]);
+      expect(composition.preview, 'wǒ Steve');
+      expect(composition.words.last, const Literal('Steve'));
+    });
+
+    test('can be edited the moment it lands', () {
+      // The reason an answer is words and not text. Every rule already
+      // written applies to it: retone one syllable, backspace off the end.
+      final composition = Composition.of([
+        Spoken([Syllable(initial: 'w', rime: 'o', tone: Tone.third)]),
+        Spoken([Syllable(rime: 'ai', tone: Tone.fourth)]),
+      ]);
+      expect(composition.retoned(0, 0, Tone.first).preview, 'wō ài');
+      // Two presses, as for a line that was typed: the syllable goes, then
+      // the word break.
+      expect(composition.backspace().preview, 'wǒ ');
+      expect(composition.backspace().backspace().preview, 'wǒ');
+    });
   });
 }

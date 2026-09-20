@@ -234,7 +234,7 @@ hai3 jiu4	海鹫	-	-	-	sea eagle/CL:
 hai3 jun1	海军	-	3234	6	navy
 hai3 jun1 da4 xiao4	海军大校	-	-	-	commodore (= US Navy equivalent)
 hai3 jun1 lan2	海军蓝	-	-	-	navy blue
-hai3 jun1 lu4 zhan4 dui4	海军陆战队	-	-	-	marine corps/marines
+hai3 jun1 lu4 zhan4 dui4	海军陆战队	-	-	-	marines; marine corps
 hai3 jun1 shang4 xiao4	海军上校	-	-	-	captain (= UK and US Navy equivalent)
 hai3 jun1 shao4 xiao4	海军少校	-	-	-	lieutenant commander
 hai3 jun1 zhong1 xiao4	海军中校	-	-	-	commander (= UK and US Navy equivalent)
@@ -595,6 +595,7 @@ han2 shi4 pao4 cai4	韩式泡菜	p	-	-	kimchi
 han2 shou4	函授	-	32146	7	to teach by correspondence
 han2 shou4 da4 xue2	函授大学	-	-	-	correspondence university
 han2 shou4 ke4 cheng2	函授课程	-	-	-	correspondence course
+han2 shu3 jia4	寒暑假	-	-	-	winter and summer vacations
 han2 shu4	函数	-	-	-	function (math.)
 han2 shui3	含水	-	-	-	watery
 han2 shui3 ceng2	含水层	-	-	-	aquifer
@@ -2045,6 +2046,7 @@ hei1 ji2 yuan1 hun2	黑籍冤魂	p	-	-	Victims of Opium, novel by Peng Yangou, p
 hei1 jia1 lun2	黑加仑	-	-	-	blackcurrant
 hei1 jiao1	黑椒	-	-	-	black pepper
 hei1 jiao1	黑胶	-	-	-	vinyl
+hei1 jiao1 chang4 pian4	黑胶唱片	-	-	-	vinyl record
 hei1 jiao3 xin4 tian1 weng1	黑脚信天翁	-	-	-	(bird species of China) black-footed albatross (Phoebastria nigripes)
 hei1 jing3 chang2 wei3 zhi4	黑颈长尾雉	-	-	-	(bird species of China) Mrs. Hume's pheasant (Syrmaticus humiae)
 hei1 jing3 dong1	黑颈鸫	-	-	-	(bird species of China) black-throated thrush (Turdus atrogularis)
@@ -2094,6 +2096,7 @@ hei1 ming4 gui4	黑命贵	p	-	-	Black Lives Matter (social movement)
 hei1 mu4	黑幕	-	-	-	hidden details/dirty tricks/dark secrets
 hei1 mu4 er3	黑木耳	-	-	-	Auricularia auricula-judae, an edible fungus
 hei1 niao4 zheng4	黑尿症	-	-	-	alkaponuria
+hei1 nu2	黑奴	-	-	-	black slave
 hei1 nu2 yu4 tian1 lu4	黑奴吁天录	p	-	-	Uncle Tom's Cabin, translated and adapted by Lin Shu
 hei1 pi2 nuo4	黑皮诺	p	-	-	Pinot noir (grape type)
 hei1 pi4	黑屁	-	-	-	(slang) bullshit
@@ -4522,6 +4525,7 @@ huan3 pin4	缓聘	-	-	-	to defer employment/to put off hiring
 huan3 qi1	缓期	-	-	-	to defer/to put off (until later)/to postpone
 huan3 qi1 fu4 kuan3	缓期付款	-	-	-	to defer payment
 huan3 qi4	缓气	-	-	-	to get one's breath back/to take a breather
+huan3 shi4 fei2	缓释肥	-	-	-	slow-release fertilizer
 huan3 xing2	缓刑	-	-	-	suspended sentence/probation
 huan3 zheng1	缓征	-	-	-	to suspend taxes momentarily/to postpone military draft
 huan4	唤	-	8997	-	to call
@@ -4899,6 +4903,7 @@ huang2 lian3 po2	黄脸婆	-	-	-	faded old woman
 huang2 liang2	皇粮	-	-	-	lit. imperial funding for troops/funds or items supplied by the government
 huang2 liang2 mei3 meng4	黄粱美梦	-	-	-	dream of golden millet/fig. illusions of wealth and power/pipe dream
 huang2 liang2 meng4	黄粱梦	-	-	-	dream of golden millet/fig. illusions of wealth and glory/pipe dream
+huang2 ling2	皇陵	-	-	-	imperial tomb (of a Chinese emperor)
 huang2 ling2	黄陵	p	-	-	mausoleum of the Yellow Emperor/Huangling county in Yan'an, Shaanxi
 huang2 ling2 xian4	黄陵县	p	-	-	Huangling, a county in Yan'an City, Shaanxi
 huang2 liu3 shuang1	黄柳霜	p	-	-	Anna May Wong (1905-1961), Chinese American Hollywood actress
@@ -4941,7 +4946,7 @@ huang2 qi2	黄耆	-	-	-	milk vetch/plant genus Astragalus/huangqi, Astragalus me
 huang2 qi2	黄芪	-	-	-	huangqi/milk vetch root (used in TCM)/Astragalus membranaceus or Astragalus mongholicus
 huang2 qiang1	黄腔	-	-	-	lewd comment; vulgar joke
 huang2 qin1 guo2 qi1	皇亲国戚	-	-	-	the emperor relatives (idiom); person with powerful connections
-huang2 qiu1 kui2	黄秋葵	-	-	-	okra (Hibiscus esculentus)/lady's fingers
+huang2 qiu1 kui2	黄秋葵	-	-	-	okra (Abelmoschus esculentus)
 huang2 qu1 mei2	黄曲霉	-	-	-	Aspergillus flavus (fungus typically found on crops)
 huang2 qu1 mei2 du2 su4	黄曲霉毒素	-	-	-	aflatoxin
 huang2 qu1 mei2 jun1	黄曲霉菌	-	-	-	Aspergillus flavus (fungus typically found on crops)
@@ -5605,7 +5610,6 @@ hui4 nong2	溃脓	-	-	-	(of a sore etc) to fester; to ulcerate
 hui4 nong2 qu1	惠农区	p	-	-	Huinong, a district of Shizuishan City, Ningxia
 hui4 piao4	汇票	-	-	-	bill of exchange/bank draft
 hui4 pu3	惠普	p	-	-	Hewlett-Packard
-hui4 pu3 gong1 si1	惠普公司	p	-	-	Hewlett-Packard/HP
 hui4 qi1	会期	-	-	-	the duration of a conference/the period over which a conference (or expo etc) is held/session/the date of a meeting
 hui4 qi4	晦气	-	-	-	bad luck/unlucky/calamitous/wretched
 hui4 r5	会儿	-	-	-	(coll.) a short while; a moment
@@ -5802,7 +5806,6 @@ hun2 tun5	馄饨	-	-	-	wonton; Chinese ravioli (served in soup)/Taiwan pr. [hun2
 hun2 tuo1	浑脱	-	-	-	leather float/inflatable raft
 hun2 xiao3 zi5	浑小子	-	-	-	(derog.) young hooligan (sometimes said in jest)
 hun2 xing2	混行	-	-	-	mixed use (e.g. pedestrians and vehicles)/joint operation (e.g. trains and buses)
-hun2 yi2 zhu4	浑仪注	-	-	-	book by Han dynasty astronomer Zhang Heng
 hun2 yuan2	浑圆	-	-	-	perfectly round/(fig.) accommodating/considerate/smooth (way of doing things)
 hun2 yuan2 xian4	浑源县	p	-	-	Hunyuan, a county in Datong City, Shanxi
 hun2 zhuo2	浑浊	-	-	-	muddy/turbid
@@ -6264,6 +6267,7 @@ huo4 luan4 du2 su4	霍乱毒素	-	-	-	cholera toxin
 huo4 luan4 hu2 jun1	霍乱弧菌	-	-	-	cholera bacterium (Vibrio cholerae)
 huo4 lun2	货轮	-	-	-	freighter/cargo ship/CL:
 huo4 luo4 wei2 ci2	霍洛维茨	p	-	-	Horowitz (name)
+huo4 ma2	藿麻	-	-	-	(Sichuan dialect) nettle
 huo4 men2	或门	-	-	-	OR gate (electronics)
 huo4 mian3	豁免	-	-	-	to exempt/exemption
 huo4 mian3 quan2	豁免权	-	-	-	immunity from prosecution

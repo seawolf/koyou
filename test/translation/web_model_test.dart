@@ -76,7 +76,7 @@ void main() {
       final engine = _FakeEngine();
       final backend = WllamaBackend(engine);
 
-      expect(await backend.translate('我卖书'), isNull);
+      expect(await backend.intoEnglish('我卖书'), isNull);
       expect(engine.loadCalls, 0, reason: 'nothing may be fetched');
       expect(engine.translateCalls, 0);
     });
@@ -85,7 +85,7 @@ void main() {
       final engine = _FakeEngine(cached: ModelAsset.qwen08b.bytes);
       final backend = WllamaBackend(engine);
 
-      expect(await backend.translate('我卖书'), 'I sell books.');
+      expect(await backend.intoEnglish('我卖书'), 'I sell books.');
       expect(engine.loadCalls, 1);
       // The prompt is the shared one, with the closed think block that stops
       // Qwen reasoning instead of answering.
@@ -98,8 +98,8 @@ void main() {
       final engine = _FakeEngine(cached: ModelAsset.qwen08b.bytes);
       final backend = WllamaBackend(engine);
 
-      await backend.translate('我卖书');
-      await backend.translate('我买书');
+      await backend.intoEnglish('我卖书');
+      await backend.intoEnglish('我买书');
       expect(engine.loadCalls, 1);
       expect(engine.translateCalls, 2);
     });
@@ -113,8 +113,8 @@ void main() {
       );
       final backend = WllamaBackend(engine);
 
-      expect(await backend.translate('我卖书'), isNull);
-      expect(await backend.translate('我买书'), isNull);
+      expect(await backend.intoEnglish('我卖书'), isNull);
+      expect(await backend.intoEnglish('我买书'), isNull);
       expect(engine.loadCalls, 1);
     });
 
@@ -125,16 +125,16 @@ void main() {
         final backend = WllamaBackend(engine);
 
         engine.reply = 'I sell books.\n10. 11. 12.';
-        expect(await backend.translate('我卖书'), 'I sell books.');
+        expect(await backend.intoEnglish('我卖书'), 'I sell books.');
 
         engine.reply = '10. 1.1.1. 2011.';
-        expect(await backend.translate('我卖书'), isNull);
+        expect(await backend.intoEnglish('我卖书'), isNull);
 
         engine.reply = 'console.log("hi");';
-        expect(await backend.translate('我卖书'), isNull);
+        expect(await backend.intoEnglish('我卖书'), isNull);
 
         engine.reply = null;
-        expect(await backend.translate('我卖书'), isNull);
+        expect(await backend.intoEnglish('我卖书'), isNull);
       },
     );
   });

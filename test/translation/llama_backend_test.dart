@@ -57,8 +57,8 @@ void main() {
 
     // 卖 and 买 differ by tone alone in pinyin, which is what the dictionary
     // in front of this backend exists to settle.
-    final selling = await backend.translate('我卖书');
-    final buying = await backend.translate('我买书');
+    final selling = await backend.intoEnglish('我卖书');
+    final buying = await backend.intoEnglish('我买书');
 
     expect(selling?.toLowerCase(), contains('sell'));
     expect(buying?.toLowerCase(), anyOf(contains('buy'), contains('bought')));
@@ -72,7 +72,7 @@ void main() {
       return;
     }
 
-    final answer = await backend.translate('你叫什么名字');
+    final answer = await backend.intoEnglish('你叫什么名字');
     expect(answer, isNotNull);
     expect(answer, isNot(contains('<think>')));
     // A question translated, not answered.
@@ -90,7 +90,7 @@ void main() {
     }
 
     const typing = ['我是', '我是他', '我是他的', '我是他的老', '我是他的老公'];
-    final answers = await Future.wait(typing.map(backend.translate));
+    final answers = await Future.wait(typing.map(backend.intoEnglish));
 
     for (var i = 0; i < typing.length; i++) {
       final answer = answers[i];
@@ -114,10 +114,10 @@ void main() {
     }
 
     const typing = ['我是他', '我是他的老公'];
-    final together = await Future.wait(typing.map(backend.translate));
+    final together = await Future.wait(typing.map(backend.intoEnglish));
     final inTurn = <String?>[];
     for (final chinese in typing) {
-      inTurn.add(await backend.translate(chinese));
+      inTurn.add(await backend.intoEnglish(chinese));
     }
     expect(together, inTurn);
   });

@@ -323,6 +323,96 @@ sudo gem install cocoapods
 `sdkmanager` is also missing, but nothing above needs it; it only matters for
 managing SDK packages from the command line.
 
+## The other direction: English in
+
+Added later, and measured on its own rather than assumed to be symmetrical. It
+is not.
+
+The architecture inverts cleanly. The model writes **characters**, which is
+what it was trained for, and `CharacterIndex` reads those back into tone-marked
+pinyin by longest match, deterministically. So the model never produces a tone
+mark in either direction, which is the whole reason a model this small works.
+
+Reading characters back was checked on twelve sentences: eleven were exact. The
+one error was 得 rendered `dé` where the particle is neutral `de`, which turned
+out not to be a limit of the approach but an equal-rank tie being settled by
+CC-CEDICT's own ordering — both readings are rank 58. On a tie the neutral tone
+now wins, and 说得慢 comes back `shuō de màn`. What remains is tone sandhi: 一
+and 不 come back in their dictionary tones.
+
+### Generating Chinese is harder than reading it
+
+Twenty learner phrases, Qwen3.5-0.8B, the same temperature-zero settings as the
+other direction. Seventeen were good. The three failures were all the same
+shape, and it is not mistranslation — **the model stops translating and starts
+being a polite Chinese assistant**:
+
+| asked for | came back as | which means |
+| --- | --- | --- |
+| I would like two beers please | 您好，请问您想要两瓶啤酒吗？ | "hello, would you like two beers?" |
+| can you speak more slowly? | 您说得对，我说话确实有点快。 | "you're right, I do speak fast" |
+| do you have any tea? | 请问您是否需要喝茶？ | "would you like some tea?" |
+
+The prompt already forbade exactly this, in the sentence that works in the
+other direction. Instruction was not enough; **two worked examples were** — one
+showing a question staying a question, one showing a request translated rather
+than served. The same twenty came back clean, 12/12 on a re-run of the hard
+cases, and all three failures above now translate:
+
+| asked for | now |
+| --- | --- |
+| can you speak more slowly? | `nín shuō de màn yīxiē kěyǐ ma` |
+| do you have any tea? | `nín yǒu chá ma` |
+| I would like two beers please | `wǒ xiǎng qǐng liǎng bēi píjiǔ` |
+
+Those three are measured end to end through the app's own pipeline, not through
+curl — see the `ollama` tag in `test/translation/ollama_backend_test.dart`.
+
+### Why this direction needs a check the other does not
+
+Going into English, a bad answer is visibly bad English and the learner spots
+it. Going into Chinese they cannot read the characters, and the pinyin comes
+back fluent whether the sentence is right or wrong. **Nothing on screen would
+give it away.**
+
+So the answer is translated straight back into English and shown as "reads back
+as…". It costs one more generation, and it goes through the direction that is
+measured and reliable. "Would you like two beers?" is obviously not "I would
+like two beers please" once it is written down.
+
+### Inverting a dictionary is not a translation resource
+
+The English index is CC-CEDICT read backwards: 93,339 headwords, 3.7MB. It
+answers words and set phrases and declines sentences, which is what sends them
+to the model.
+
+Scoring took three signals, and each is wrong alone:
+
+| score | answers "eat" | answers "thank you" | answers "beer" |
+| --- | --- | --- | --- |
+| rank | 用 ✗ | 谢谢 ✓ | 啤 ✗ |
+| sense position | 吃 ✓ | 三克油 ✗ | 啤酒 ✓ |
+| `rank × (1 + sense)` | 吃 ✓ | 谢谢 ✓ | 啤 ✗ |
+| …doubled outside HSK | 吃 ✓ | 谢谢 ✓ | 啤酒 ✓ |
+
+The last tie-break is the same bug class as the rank leak above: a compound's
+rank lands on its first character, so 啤 and 啤酒 are both 2622 and 朋 and 朋友
+are both 280. Only the compound is in the syllabus.
+
+Two more things had to be trimmed once it was on screen. An alternative
+scoring more than ten times worse than the best is dropped — "thank you" was
+offering 谢谢 beside 三克油, a joke transliteration, with nothing to tell a
+beginner not to pick it — and the gloss shown is the **sense that was asked
+about** rather than the entry's first, because 热 leads with "to warm up" and
+a learner choosing between "hot (spicy)" and "to warm up" is not being offered
+a choice.
+
+One word it cannot answer at all: **"hello"**. 你好 is absent from
+complete-hsk-vocabulary — genuinely absent, checked, the syllabus counts 你 and
+好 separately — so it has no rank and loses to 好, whose eighth sense is
+"(after a form of address) hello". That is what the hand-written phrase list is
+for.
+
 ## Suggested tiers
 
 The dictionary is tier zero and always on: it is what makes the tones survive,
@@ -348,4 +438,10 @@ worth pursuing until 0.8B is shown to fail at something.
   default tags, which are higher precision than the weights an app would ship.
 - What does it cost on an actual phone rather than an M4 Pro?
 - Nineteen sentences is a small set, chosen by me. It should grow before any of
-  this is taken as settled.
+  this is taken as settled. Twenty in the other direction is no better.
+- **Tone sandhi, both ways.** 一 and 不 come back in their dictionary tones,
+  and the spoken output has the same limit. It is a rule rather than a lookup,
+  so it belongs in one place that both could use.
+- **How often does the round-trip check actually fire?** It is there because
+  the failure was measured, but nothing yet counts how many answers it would
+  flag, or whether a learner reads it.

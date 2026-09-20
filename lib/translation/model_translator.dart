@@ -60,7 +60,7 @@ class ModelTranslator implements Translator {
       }
     }
 
-    final english = await backend.translate(chinese.toString());
+    final english = await backend.intoEnglish(chinese.toString());
     if (english == null || english.trim().isEmpty) return null;
 
     // Not word by word, and not the "several words sound like this" kind of

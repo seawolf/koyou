@@ -27,6 +27,22 @@ const hskSource =
 
 const outputDirectory = 'assets/dictionary';
 
+/// English headword to the Chinese words that mean it.
+///
+/// The same data read the other way round. CC-CEDICT is a Chinese-to-English
+/// dictionary, so this is an inversion of it rather than a translation
+/// resource in its own right, and it inherits that: it is good on words and
+/// silent on sentences.
+const englishDirectory = '$outputDirectory/english';
+
+/// Simplified characters to the pinyin they are read with.
+///
+/// The bridge back. A model asked for Chinese answers in characters — which
+/// is what it is good at — and this is what turns those characters into
+/// tone-marked pinyin, deterministically, so the model never has to produce a
+/// tone mark. See `docs/local-model.md`.
+const charactersDirectory = '$outputDirectory/characters';
+
 /// One CC-CEDICT line: traditional, simplified, [pinyin], then /glosses/.
 final entryPattern = RegExp(r'^(\S+) (\S+) \[([^\]]*)\] /(.*)/$');
 
@@ -156,9 +172,38 @@ Future<void> main(List<String> arguments) async {
 
   hsk.resolveDominance(cedictUses);
 
+  // The two inversions of the same data, collected as the entries are
+  // emitted so nothing is parsed twice.
+  final english = <String, List<_Meaning>>{};
+  final characters = <String, _Reading>{};
+
   for (final entry in usable) {
     final rank = hsk.rankOf(entry.simplified, entry.key);
+    final level = hsk.levelOf(entry.simplified, entry.key);
     if (rank != null) ranked++;
+
+    // Names are kept out of the English index and kept in the character one.
+    // Looking up "hope" should not offer a county in Arkansas; rendering
+    // 史蒂夫 back to `shǐdìfū` has to work, because a model writing a foreign
+    // name is the commonest reason it emits one.
+    if (entry.proper != 'p') {
+      final meanings = _meanings(
+        glosses: entry.glosses,
+        key: entry.key,
+        simplified: entry.simplified,
+        rank: rank,
+        syllabus: level != null,
+      );
+      for (final meaning in meanings) {
+        english.putIfAbsent(meaning.headword, () => <_Meaning>[]).add(meaning);
+      }
+    }
+
+    final reading = _Reading(key: entry.key, rank: rank);
+    final known = characters[entry.simplified];
+    if (known == null || reading.beats(known)) {
+      characters[entry.simplified] = reading;
+    }
 
     shards
         .putIfAbsent(entry.key[0], () => <String>[])
@@ -168,7 +213,7 @@ Future<void> main(List<String> arguments) async {
             entry.simplified,
             entry.proper,
             rank?.toString() ?? '-',
-            hsk.levelOf(entry.simplified, entry.key)?.toString() ?? '-',
+            level?.toString() ?? '-',
             entry.glosses.join('/'),
           ].join('\t'),
         );
@@ -202,6 +247,12 @@ Future<void> main(List<String> arguments) async {
     bytes += file.lengthSync();
   }
 
+  final englishBytes = _writeShards(englishDirectory, _englishRows(english));
+  final characterBytes = _writeShards(
+    charactersDirectory,
+    _characterRows(characters),
+  );
+
   File('$outputDirectory/LICENCE').writeAsStringSync(
     'The files in this directory are generated from CC-CEDICT by\n'
     'tool/build_dictionary.dart, and carry its licence.\n\n'
@@ -225,7 +276,28 @@ Future<void> main(List<String> arguments) async {
     ..writeln(
       '  ${(bytes / 1048576).toStringAsFixed(2)} MB total, '
       'largest ${_largest(shards)}',
+    )
+    ..writeln(
+      'Wrote ${english.length} English headwords '
+      '(${(englishBytes / 1048576).toStringAsFixed(2)} MB)',
+    )
+    ..writeln(
+      'Wrote ${characters.length} character readings '
+      '(${(characterBytes / 1048576).toStringAsFixed(2)} MB)',
     );
+}
+
+/// Writes one row per key into shards named by [rows]' own grouping.
+int _writeShards(String into, Map<String, List<String>> rows) {
+  final directory = Directory(into);
+  directory.createSync(recursive: true);
+  var bytes = 0;
+  for (final shard in rows.keys.toList()..sort()) {
+    final file = File('$into/$shard.tsv');
+    file.writeAsStringSync('${(rows[shard]!..sort()).join('\n')}\n');
+    bytes += file.lengthSync();
+  }
+  return bytes;
 }
 
 String _largest(Map<String, List<String>> shards) {
@@ -490,3 +562,214 @@ Future<String> _fetch(String url) async {
     client.close();
   }
 }
+
+/// Stands in for "no rank at all" when scoring.
+///
+/// Larger than any rank the build can produce, which is not simply larger
+/// than the HSK list: an unattributable reading is stored as its word rank
+/// plus `_Hsk._unattributable`, and those run past a million.
+const unranked = 1 << 30;
+
+/// One English headword an entry offers, and how good an answer it is.
+class _Meaning {
+  _Meaning({
+    required this.headword,
+    required this.key,
+    required this.simplified,
+    required this.score,
+  });
+
+  final String headword;
+  final String key;
+  final String simplified;
+
+  /// Lower is a better answer to that headword. Measured, not guessed: see
+  /// [_meanings].
+  final int score;
+}
+
+/// The reading a character or compound is pronounced with.
+class _Reading {
+  _Reading({required this.key, required this.rank});
+
+  final String key;
+  final int? rank;
+
+  /// Whether this is the reading to render these characters with.
+  ///
+  /// Commonest wins, and a ranked reading always beats an unranked one. This
+  /// is the 多音字 decision, and it is the same one [_Hsk.rankOf] has already
+  /// settled per entry — this only picks between entries that share the
+  /// characters.
+  ///
+  /// On a tie, the neutral tone wins. Ties are common and were being settled
+  /// by whichever entry the export happened to list first, which is how 得
+  /// came out `dé`: its particle reading `de` and its verb reading `dé` are
+  /// both rank 58, so 说得慢 read back as `shuō dé màn`. The rule is not a
+  /// patch for that one character. A full-tone reading of a character this
+  /// common almost always occurs inside a compound — 得到, 地球 — which
+  /// longest-match has already taken as a word, so a character left standing
+  /// on its own between other words is far likelier to be the particle. It
+  /// settles 地 the same way, and correctly.
+  bool beats(_Reading other) {
+    final mine = rank ?? unranked;
+    final theirs = other.rank ?? unranked;
+    if (mine != theirs) return mine < theirs;
+    return _neutral && !other._neutral;
+  }
+
+  bool get _neutral => key.endsWith('5');
+}
+
+/// Every English headword an entry's glosses offer.
+///
+/// Two separators, not one. CC-CEDICT divides senses with `/` and synonyms
+/// within a sense with `; `, so 你好 is glossed `hello; hi` and 我 is
+/// `I; me; my` — splitting only on `/` finds neither "hello" nor "I".
+///
+/// The score is `rank × (1 + sense) + synonym`, which is the product of two
+/// signals that are each wrong alone. Rank by itself answers "eat" with 用,
+/// a very common word with "to eat" as a minor sense. Sense position by
+/// itself answers "thank you" with 三克油, an unranked transliteration that
+/// happens to lead with it. Multiplying them puts 吃 and 谢谢 first.
+///
+/// A word outside the HSK syllabus is then doubled, which only decides near
+/// ties — and one kind of tie in particular. A compound's rank leaks onto its
+/// first character, so 啤 and 啤酒 are both rank 2622 and 朋 and 朋友 are both
+/// 280, leaving "beer" and "friend" answered with a character nobody says on
+/// its own. Only the compound is in the syllabus, and that settles it.
+Iterable<_Meaning> _meanings({
+  required List<String> glosses,
+  required String key,
+  required String simplified,
+  required int? rank,
+  required bool syllabus,
+}) sync* {
+  for (var sense = 0; sense < glosses.length; sense++) {
+    final synonyms = glosses[sense].split('; ');
+    for (var synonym = 0; synonym < synonyms.length; synonym++) {
+      final headword = _headword(synonyms[synonym]);
+      if (headword == null) continue;
+      yield _Meaning(
+        headword: headword,
+        key: key,
+        simplified: simplified,
+        score: (rank ?? unranked) * (1 + sense) * (syllabus ? 1 : 2) + synonym,
+      );
+    }
+  }
+}
+
+/// A gloss reduced to something a learner would actually type, or null if
+/// what is left is a definition rather than a word.
+String? _headword(String gloss) {
+  var word = gloss
+      .replaceAll(parenthetical, ' ')
+      .toLowerCase()
+      .replaceAll(classifier, ' ')
+      .replaceAll(notAHeadword, ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  // CC-CEDICT writes verbs with their infinitive marker, and nobody looking
+  // for 吃 types "to eat". Stripped here so the index is keyed on the bare
+  // verb, and stripped again from the query — see `EnglishIndex`.
+  if (word.startsWith('to ')) word = word.substring(3);
+  if (word.isEmpty) return null;
+  // Past this length a gloss is CC-CEDICT explaining something, and indexing
+  // the explanation matches nothing anyone types.
+  if (word.length > 40 || word.split(' ').length > 5) return null;
+  return word;
+}
+
+/// A bracketed aside: `(bound form)`, `(of a person)`, `(dialect)`.
+final parenthetical = RegExp(r'\([^)]*\)');
+
+/// CC-CEDICT's measure-word note and everything after it.
+final classifier = RegExp(r'\bcl:.*');
+
+/// Anything that is not a letter, a digit, an apostrophe or a hyphen.
+final notAHeadword = RegExp(r"[^a-z0-9'\- ]");
+
+/// The English index, sharded by the headword's first letter, as the pinyin
+/// shards are — so a lookup reads one file of about 160KB.
+Map<String, List<String>> _englishRows(Map<String, List<_Meaning>> english) {
+  final rows = <String, List<String>>{};
+  for (final headword in english.keys) {
+    final meanings = english[headword]!
+      ..sort((a, b) => a.score.compareTo(b.score));
+    final seen = <String>{};
+    final best = <_Meaning>[];
+    for (final meaning in meanings) {
+      // One row per Chinese word. CC-CEDICT splits a word's senses across
+      // entries, and offering 你 twice reads as two answers when it is one.
+      if (!seen.add(meaning.simplified)) continue;
+      // And only alternatives in the same league as the best one. Candidates
+      // are for where English is genuinely vaguer than Chinese — "hot" is 热
+      // or 辣 — not for everything CC-CEDICT happens to gloss the same way.
+      // Unfiltered, "thank you" offered 谢谢 alongside 三克油, a joke
+      // transliteration, and 雅教, archaic formal: a beginner has no way to
+      // tell and might pick one.
+      if (best.isNotEmpty && meaning.score > best.first.score * sameLeague) {
+        break;
+      }
+      best.add(meaning);
+      if (best.length == englishCandidates) break;
+    }
+    final letter = headword[0];
+    final shard = RegExp('[a-z]').hasMatch(letter) ? letter : '0';
+    rows
+        .putIfAbsent(shard, () => <String>[])
+        .add(
+          [
+            headword,
+            for (final meaning in best) '${meaning.key}|${meaning.simplified}',
+          ].join('\t'),
+        );
+  }
+  return rows;
+}
+
+/// How many Chinese words one English headword offers.
+///
+/// Three, for the same reason the forward direction offers three candidates:
+/// "hot" is 热 or 辣 and a learner should be told so, but a list of every
+/// word CC-CEDICT glosses "hot" is not an answer.
+const englishCandidates = 3;
+
+/// How much worse than the best answer an alternative may score and still be
+/// offered.
+///
+/// The score is rank-led and rank is roughly frequency order, so ten times
+/// worse is roughly a tenth as common — which is about where an alternative
+/// stops being a choice and starts being a curiosity. It leaves "hot" with
+/// all three of 辣, 热 and 热门, whose scores are within a hair of each other,
+/// and leaves "thank you", "water", "sorry" and "goodbye" with one answer
+/// each. 8,451 of 93,339 headwords lose at least one candidate to it.
+const sameLeague = 10;
+
+/// The character index, sharded by where the first character sits in Unicode.
+///
+/// Sharded on the high byte of its code unit, which splits the CJK block into
+/// about eighty files of ~30KB. Sharding by the character itself would mean
+/// ten thousand files; not sharding at all would mean parsing 2.5MB and
+/// holding 115,000 strings to read one sentence back.
+Map<String, List<String>> _characterRows(Map<String, _Reading> characters) {
+  final rows = <String, List<String>>{};
+  for (final simplified in characters.keys) {
+    final reading = characters[simplified]!;
+    rows
+        .putIfAbsent(charactersShardFor(simplified), () => <String>[])
+        .add(
+          [simplified, reading.key, reading.rank?.toString() ?? '-'].join('\t'),
+        );
+  }
+  return rows;
+}
+
+/// Which character shard [word] would be found in.
+///
+/// Duplicated in `CharacterIndex`, which has to agree with it exactly. Kept
+/// short enough that the two copies can be read side by side, and pinned by a
+/// test that builds a shard name from both.
+String charactersShardFor(String word) =>
+    (word.codeUnitAt(0) >> 8).toRadixString(16).padLeft(2, '0');

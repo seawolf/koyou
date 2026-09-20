@@ -9,12 +9,14 @@ import '../audio/speech.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../pinyin/word.dart';
+import '../translation/english_translator.dart';
 import '../translation/model_store.dart';
 import '../translation/tone_suggestion.dart';
 import '../translation/translator.dart';
 import '../widgets/blinking_cursor.dart';
 import '../widgets/pinyin_keyboard.dart';
 import 'model_screen.dart';
+import 'translate_screen.dart';
 
 /// Compose Mandarin as pinyin with tone marks, and see what it means.
 ///
@@ -27,6 +29,8 @@ class ComposeScreen extends StatefulWidget {
     required this.translator,
     required this.modelStore,
     this.phraseTranslator,
+    this.englishTranslator,
+    this.englishPhraseTranslator,
     this.speech,
     this.suggester,
   });
@@ -54,6 +58,17 @@ class ComposeScreen extends StatefulWidget {
   /// Still just a [Translator]: this screen knows there is a considered tier,
   /// not what is in it. Null where there is none.
   final Translator? phraseTranslator;
+
+  /// Answers the other direction, on its own screen: English in, pinyin out.
+  ///
+  /// Null leaves the screen unreachable and its button off the app bar, which
+  /// is what the widget tests of this screen get — they are about composing,
+  /// and a translator they never use would be a fixture to maintain.
+  final EnglishTranslator? englishTranslator;
+
+  /// The model tier of that screen, passed straight through. Null where there
+  /// is none, and the screen then says it does words only.
+  final EnglishTranslator? englishPhraseTranslator;
 
   /// Says the pinyin aloud, on demand. Null where nothing can.
   final Speech? speech;
@@ -272,6 +287,26 @@ class _ComposeScreenState extends State<ComposeScreen> {
     });
   }
 
+  /// Opens the other direction, and takes whatever comes back.
+  ///
+  /// The answer arrives as words rather than text, so it lands in the line
+  /// already broken into syllables — ready to be retoned, corrected or spoken,
+  /// with nothing to parse.
+  Future<void> _startFromEnglish(EnglishTranslator english) async {
+    final words = await Navigator.of(context).push<List<Word>>(
+      MaterialPageRoute<List<Word>>(
+        builder: (context) => TranslateScreen(
+          translator: english,
+          phraseTranslator: widget.englishPhraseTranslator,
+          modelStore: widget.modelStore,
+          speech: widget.speech,
+        ),
+      ),
+    );
+    if (words == null || !mounted) return;
+    _edit(Composition.of(words));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -292,6 +327,16 @@ class _ComposeScreenState extends State<ComposeScreen> {
               onPressed: _composition.text.isEmpty ? null : _speak,
               icon: const Icon(Icons.volume_up_outlined),
               tooltip: 'Say it',
+            ),
+          if (widget.englishTranslator case final english?)
+            IconButton(
+              key: const Key('translate'),
+              onPressed: () => _startFromEnglish(english),
+              // The standard glyph for it, and the one Material names
+              // `translate`: there is no arguing with a convention this
+              // settled.
+              icon: const Icon(Icons.translate),
+              tooltip: 'Say it in Mandarin',
             ),
           IconButton(
             key: const Key('arrangement'),
@@ -1234,6 +1279,11 @@ const _hints = <(IconData, String)>[
     Icons.volume_up_outlined,
     'The speaker reads the line aloud, slowly. It '
         'only appears if this device has a Mandarin voice.',
+  ),
+  (
+    Icons.translate,
+    'Going the other way: type English and get the pinyin, '
+        'then bring it back here to practise or correct it.',
   ),
   (
     Icons.auto_awesome_outlined,

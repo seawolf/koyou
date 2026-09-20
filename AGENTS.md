@@ -155,9 +155,14 @@ add the asset.
 All of the above come from `tool/generate_icons.sh`. Change the geometry
 variables at the top of that script and re-run it.
 
-- `assets/dictionary/*.tsv` and `assets/dictionary/LICENCE` come from
-  `tool/build_dictionary.dart`, which joins the CC-CEDICT export with HSK
-  frequency data. Change the filtering there and re-run it; never edit a shard.
+- `assets/dictionary/*.tsv`, `assets/dictionary/english/*.tsv`,
+  `assets/dictionary/characters/*.tsv` and `assets/dictionary/LICENCE` all come
+  from `tool/build_dictionary.dart`, which joins the CC-CEDICT export with HSK
+  frequency data and writes it out three ways — pinyin to meaning, English to
+  Chinese words, and characters to the pinyin they read as. Change the
+  filtering there and re-run it; never edit a shard, and remember that all
+  three listings are needed in `pubspec.yaml` because Flutter's asset
+  directories are not recursive.
 
 CC-CEDICT is CC BY-SA 4.0 and the HSK data is MIT. The generated shards carry
 both notices and the app credits them under the ⓘ button. Keep that credit if
@@ -185,6 +190,46 @@ Two traps in that tool, both of which cost a common word once:
   and a reading keeps the rank if either supports it. Both are needed: alone,
   the first loses 喝 "to drink" to "to shout", and the second loses the adverb
   readings of 都 and 还. Do not simplify it to one.
+- **Do not break an equal-rank tie by file order.** Two readings of the same
+  characters often share a rank, and the character index used to take whichever
+  CC-CEDICT listed first. 得 is rank 58 as both the particle `de` and the verb
+  `dé`, so 说得慢 read back as `shuō dé màn`. The neutral tone now wins a tie,
+  which is right for a general reason rather than for that one character: a
+  full-tone reading of a character this common almost always sits inside a
+  compound, and longest match has already taken the compound as a word.
+- **The English index needs both of its signals, and a third for the ties.**
+  `rank × (1 + sense position)`, doubled outside the syllabus. Rank alone
+  answers "eat" with 用 (a common word with "to eat" as a minor sense); sense
+  position alone answers "thank you" with 三克油 (an unranked transliteration
+  that leads with it). The syllabus tie-break is there because a compound's
+  rank leaks onto its first character — 啤 and 啤酒 are both 2622, 朋 and 朋友
+  both 280 — which left "beer" and "friend" answered with a character nobody
+  says on its own.
+- **Two gloss separators, not one.** CC-CEDICT divides senses with `/` and
+  synonyms within a sense with `; `, so 你好 is glossed `hello; hi` and 我 is
+  `I; me; my`. Splitting only on `/` finds neither "hello" nor "I", which is
+  exactly what the first cut of the English index did.
+
+## The direction a translation goes in
+
+`TranslationBackend` has two methods, `intoEnglish` and `intoChinese`, rather
+than one with a flag. That is on purpose. **A model is never asked to read a
+tone mark or to write one**: the dictionary resolves pinyin to characters on
+the way in and reads characters back to pinyin on the way out, and that
+indirection is the only reason an 0.8B model is good enough at all.
+
+Passing the directions the wrong way round is the one mistake in this app that
+nothing on screen would reveal — going into English a bad answer is visibly bad
+English, but coming back the learner cannot read the characters and the pinyin
+is fluent either way. Which is also why `EnglishModelTranslator` translates its
+own answer straight back and shows it as "reads back as…", and why the fake
+backend in `model_translator_test.dart` throws if asked the wrong direction.
+
+The two prompts are separate files and neither is a mirror of the other. Going
+into Chinese, the model stops translating and starts being a polite Chinese
+assistant — measured, three phrases in twenty — and the two worked examples in
+`english_prompt.dart` are what stop it. They are load-bearing; taking them out
+brings the failure back.
 
 ## Running the model tests
 
@@ -192,7 +237,7 @@ Two suites are tagged off by default, because both need something the machine
 may not have. Neither is part of `flutter test`:
 
 ```bash
-# the Ollama harness — a laptop check against a real model
+# the Ollama harness — a laptop check against a real model, both directions
 ollama serve & ollama pull qwen3.5:0.8b
 flutter test --tags ollama
 

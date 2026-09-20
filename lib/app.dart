@@ -4,8 +4,13 @@ import 'audio/mandarin_speech.dart';
 import 'audio/speech.dart';
 import 'screens/compose_screen.dart';
 import 'theme.dart';
+import 'translation/character_index.dart';
 import 'translation/dictionary.dart';
 import 'translation/dictionary_translator.dart';
+import 'translation/english_dictionary_translator.dart';
+import 'translation/english_index.dart';
+import 'translation/english_model_translator.dart';
+import 'translation/english_translator.dart';
 import 'translation/model_store.dart';
 import 'translation/model_translator.dart';
 import 'translation/on_device_backend.dart';
@@ -68,6 +73,21 @@ class _KouyuAppState extends State<KouyuApp> {
         ]),
         phraseTranslator: ModelTranslator(
           dictionary: Dictionary.bundled(),
+          backend: onDeviceBackend(),
+        ),
+        // The same two tiers the other way round, and the same reasoning: a
+        // word is the dictionary's job and a sentence is the model's. The
+        // hand-written phrases go first here too, because inverting a
+        // dictionary cannot answer "hello" — see `EnglishPhrasebook`.
+        englishTranslator: CompositeEnglishTranslator([
+          const EnglishPhrasebook(),
+          EnglishDictionaryTranslator(
+            index: EnglishIndex.bundled(),
+            dictionary: Dictionary.bundled(),
+          ),
+        ]),
+        englishPhraseTranslator: EnglishModelTranslator(
+          characters: CharacterIndex.bundled(),
           backend: onDeviceBackend(),
         ),
       ),

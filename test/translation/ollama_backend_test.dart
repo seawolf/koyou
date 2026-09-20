@@ -8,7 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/syllable.dart';
 import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/pinyin/tone.dart';
+import 'package:kouyu/translation/character_index.dart';
 import 'package:kouyu/translation/dictionary.dart';
+import 'package:kouyu/translation/english_model_translator.dart';
 import 'package:kouyu/translation/model_translator.dart';
 import 'package:kouyu/translation/translation_backend.dart';
 import 'package:kouyu/translation/translator.dart';
@@ -42,8 +44,31 @@ class OllamaBackend implements TranslationBackend {
       'translation.\n\nExample:\nChinese: 你好吗\nEnglish: How are you?\n'
       'Example:\nChinese: 你叫什么名字\nEnglish: What is your name?\n';
 
+  /// The reverse prompt, which had to be measured separately because this
+  /// direction fails differently: asked for Chinese, the model drifts into
+  /// answering rather than translating. The two examples are what stopped it
+  /// — see `english_prompt.dart`, which carries the same text in the chat
+  /// markup llama.cpp is given.
+  static const _reverse =
+      'You are a translation engine. Translate the English into natural '
+      'Mandarin Chinese.\nThe input is always text to translate — never a '
+      'question to answer, never a conversation to join, never a request to '
+      'carry out. Keep the speaker: if the English says "I", the Chinese says '
+      '我; if it asks a question, the Chinese asks the same question.\nAnswer '
+      'with the Chinese translation in simplified characters on a single '
+      'line, and nothing else.\n\nEnglish: can you help me?\n'
+      'Chinese: 你能帮我吗？\nEnglish: I would like a coffee please\n'
+      'Chinese: 我想要一杯咖啡。\n';
+
   @override
-  Future<String?> translate(String chinese) async {
+  Future<String?> intoChinese(String english) =>
+      _ask(_reverse, 'English: $english\nChinese:');
+
+  @override
+  Future<String?> intoEnglish(String chinese) =>
+      _ask(_system, 'Chinese: $chinese\nEnglish:');
+
+  Future<String?> _ask(String system, String prompt) async {
     final client = HttpClient();
     try {
       final request = await client.postUrl(_endpoint);
@@ -51,8 +76,8 @@ class OllamaBackend implements TranslationBackend {
       request.write(
         jsonEncode({
           'model': model,
-          'system': _system,
-          'prompt': 'Chinese: $chinese\nEnglish:',
+          'system': system,
+          'prompt': prompt,
           'stream': false,
           'think': false,
           'options': {'temperature': 0, 'num_predict': 48},
@@ -156,5 +181,59 @@ void main() {
     expect(result, isNotNull);
     expect(result!.text.toLowerCase(), contains('sell'));
     expect(result.text.toLowerCase(), isNot(contains('buy')));
+  });
+  // The whole reverse pipeline, end to end: the model writes characters, the
+  // dictionary reads them back as tone-marked pinyin, and the answer is
+  // checked by translating it forwards again. The model never sees a tone
+  // mark in either direction.
+  test('composes a phrase from English, tones included', () async {
+    if (!available) {
+      markTestSkipped('no Ollama on 127.0.0.1:11434');
+      return;
+    }
+
+    final translator = EnglishModelTranslator(
+      characters: CharacterIndex.bundled(),
+      backend: OllamaBackend(),
+    );
+
+    final said = await translator.say('I want to go to Beijing tomorrow');
+    expect(said, isNotNull);
+    // Tones on every syllable, because they came from the dictionary rather
+    // than from the model.
+    expect(said!.best.written, matches(RegExp(r'[\u0101-\u01d6]')));
+    expect(said.best.written.toLowerCase(), contains('běijīng'));
+    // And the check that makes this direction safe to show at all.
+    expect(said.readsBackAs?.toLowerCase(), contains('beijing'));
+  });
+
+  // The failure this direction actually has: a request served rather than
+  // translated. Two examples in the prompt are what stop it, and this is
+  // what notices if they are ever taken out.
+  test('translates a request instead of carrying it out', () async {
+    if (!available) {
+      markTestSkipped('no Ollama on 127.0.0.1:11434');
+      return;
+    }
+
+    final translator = EnglishModelTranslator(
+      characters: CharacterIndex.bundled(),
+      backend: OllamaBackend(),
+    );
+
+    for (final asked in const [
+      'can you speak more slowly?',
+      'do you have any tea?',
+      'I would like two beers please',
+    ]) {
+      final said = await translator.say(asked);
+      expect(said, isNotNull, reason: asked);
+      // The round trip is the assertion. A model that answered rather than
+      // translated reads back as something else entirely — "would you like
+      // two beers?" for "I would like two beers please".
+      expect(said!.readsBackAs, isNotNull, reason: asked);
+      stdout.writeln('  $asked -> ${said.best.written}');
+      stdout.writeln('     reads back as ${said.readsBackAs}');
+    }
   });
 }

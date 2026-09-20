@@ -1,5 +1,6 @@
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
+import 'english_prompt.dart';
 import 'model_asset.dart';
 import 'model_prompt.dart';
 import 'model_store_native.dart';
@@ -11,11 +12,12 @@ import 'translation_backend.dart';
 /// start: the directory lookup happens on the first phrase anybody types.
 TranslationBackend onDeviceBackend() => LlamaBackend();
 
-/// Translates Chinese with a local llama.cpp model.
+/// Translates with a local llama.cpp model.
 ///
-/// Only ever asked for Chinese, never pinyin: the dictionary resolves what was
-/// typed into characters first. That is what lets a model this small work at
-/// all — see `docs/local-model.md` for the measurements behind it.
+/// Never asked about pinyin in either direction: the dictionary resolves what
+/// was typed into characters on the way in, and reads characters back into
+/// pinyin on the way out. That is what lets a model this small work at all —
+/// see `docs/local-model.md` for the measurements behind it.
 class LlamaBackend implements TranslationBackend {
   /// [modelPath] is for tests and desktop; left out, the weights are looked
   /// for in the app's support directory.
@@ -112,15 +114,38 @@ class LlamaBackend implements TranslationBackend {
   }
 
   @override
-  Future<String?> translate(String chinese) {
-    final result = _queue.then((_) => _generate(chinese));
+  Future<String?> intoEnglish(String chinese) => _queued(
+    prompt: promptFor(chinese),
+    maxTokens: _maxReplyTokens,
+    keep: usableReply,
+  );
+
+  @override
+  Future<String?> intoChinese(String english) => _queued(
+    prompt: chinesePromptFor(english),
+    maxTokens: maxChineseTokens,
+    keep: usableChinese,
+  );
+
+  Future<String?> _queued({
+    required String prompt,
+    required int maxTokens,
+    required String? Function(String) keep,
+  }) {
+    final result = _queue.then(
+      (_) => _generate(prompt: prompt, maxTokens: maxTokens, keep: keep),
+    );
     // The queue must survive a failed generation, so swallow the error here;
     // [_generate] has already turned it into a null for the caller.
     _queue = result.then((_) {}, onError: (_) {});
     return result;
   }
 
-  Future<String?> _generate(String chinese) async {
+  Future<String?> _generate({
+    required String prompt,
+    required int maxTokens,
+    required String? Function(String) keep,
+  }) async {
     final engine = await _ensureEngine();
     if (engine == null) return null;
 
@@ -129,9 +154,9 @@ class LlamaBackend implements TranslationBackend {
       session = await engine.createSession();
       final reply = StringBuffer();
       await for (final event in session.generate(
-        prompt: promptFor(chinese),
+        prompt: prompt,
         sampler: _sampler,
-        maxTokens: _maxReplyTokens,
+        maxTokens: maxTokens,
       )) {
         if (event is! TokenEvent) continue;
         reply.write(event.text);
@@ -141,7 +166,7 @@ class LlamaBackend implements TranslationBackend {
         // own." and "I am his own.\n10.1.1.1.1.1. 2011."
         if (reply.toString().contains('\n')) break;
       }
-      return usableReply(reply.toString());
+      return keep(reply.toString());
     } on Object {
       // Anything the engine throws mid-generation. The dictionary is behind
       // this, so a failure costs a better answer rather than any answer.

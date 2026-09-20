@@ -246,6 +246,12 @@ the one-syllable keys that need it.
    whole input as one entry first, since a set phrase is one word whether or
    not it was spaced, then word by word.
 
+[`english_translator.dart`](lib/translation/english_translator.dart) is the
+matching seam for the other direction, with `CompositeEnglishTranslator` and
+the same shape of chain — see [Starting from English](#starting-from-english).
+It is deliberately a separate seam rather than a flag on the first: the two
+share their data and nothing else, and they fail in different ways.
+
 A `Translator` receives the **syllables**, not a string. Every backend keys on
 something derived from them, and the app already knows what it built: splitting
 written pinyin into syllables is genuinely ambiguous (`wanan` splits two ways),
@@ -253,9 +259,21 @@ while `Syllable.numbered` hands over `wan3 an1` for free.
 
 ### The dictionary
 
-CC-CEDICT, 115,304 entries over 23 shards by first letter, about 7.5MB. Shards
+CC-CEDICT, 115,380 entries over 23 shards by first letter, about 7.5MB. Shards
 are parsed on demand and kept, so a lookup touches one file of at most 650KB
 rather than holding the lot in memory.
+
+The same source is written out three ways, because the app reads it in three
+directions:
+
+| | | |
+| --- | --- | --- |
+| `assets/dictionary/` | pinyin key → word and glosses | 7.5MB, 23 shards |
+| `assets/dictionary/english/` | English headword → Chinese words | 3.7MB, 27 shards |
+| `assets/dictionary/characters/` | characters → the pinyin they read as | 2.7MB, 110 shards |
+
+All three are sharded and parsed on demand for the same reason, and all three
+carry CC-CEDICT's licence.
 
 Regenerate with:
 
@@ -264,7 +282,7 @@ dart run tool/build_dictionary.dart
 ```
 
 The build drops what this app cannot use: 758 entries keyed on something the
-keyboard cannot type, and 8,923 left with no usable gloss once pure
+keyboard cannot type, and 8,945 left with no usable gloss once pure
 cross-references are removed. Characters are kept in the data even though
 nothing displays them, because they are the bridge to any translation service
 worth calling.
@@ -501,6 +519,111 @@ character per *word*, so the spaced spelling reached it as 元份 — not a word
 and its paraphrase, "A portion", displaced "fate or chance that brings people
 together" which the dictionary already had. Spacing a compound is an easy thing
 for a learner to get wrong, and now it costs nothing.
+
+### Starting from English
+
+The compose screen answers "what does this pinyin mean". The **translate
+screen** answers the other question — "how do I say this" — and is reached by
+the `translate` icon in the app bar.
+
+It is a screen of its own rather than a mode on the first, and that is the
+point: English is ordinary Latin text, so it wants a plain `TextField`, which
+brings selection, copy and paste with it for nothing. The composed line cannot
+offer those, because it is painted a syllable at a time so that it can be
+tapped. Finding a middle ground between the two would have made both worse.
+
+The same bridge, run backwards:
+
+```
+"I want to go to Beijing tomorrow"  →  明天我要去北京  →  míngtiān wǒ yào qù běijīng
+                            the model                 the dictionary
+```
+
+**The model writes characters and never a tone mark.** Generating Chinese is
+what it was trained for; the tones come from
+[`CharacterIndex`](lib/translation/character_index.dart), deterministically, by
+longest match. The word breaks come free with it — a model writes 明天我要去北京
+with no spaces at all, and what comes back is five words a learner can edit one
+at a time.
+
+The tiers mirror the other direction, and for the same reasons:
+
+1. [`EnglishPhrasebook`](lib/translation/phrasebook_translator.dart) — the same
+   hand-written list, read the other way. It also covers the one thing
+   inverting a dictionary cannot: "hello". CC-CEDICT glosses 你好 "hello; hi",
+   but 你好 is **absent from the HSK vocabulary** the ranking comes from —
+   genuinely absent, the syllabus counts 你 and 好 separately — so it has no
+   rank to sort by and loses to 好, whose eighth sense is "(after a form of
+   address) hello".
+2. [`EnglishDictionaryTranslator`](lib/translation/english_dictionary_translator.dart)
+   — CC-CEDICT inverted. Words and set phrases; it declines sentences.
+3. [`EnglishModelTranslator`](lib/translation/english_model_translator.dart) —
+   sentences, and only when the model is switched on. Asked once typing stops,
+   and only about English the dictionary could not answer, for the same reason
+   as 缘分 above: an entry beats a paraphrase of it.
+
+Without the model this is a word lookup, and the screen says so rather than
+declining sentences with no explanation.
+
+**Practise this** hands the answer back to the compose screen as `Word`s rather
+than text, so it lands in the input area already broken into syllables — every
+gesture the keyboard offers works on it at once, with nothing to parse.
+
+#### Why a wrong answer here is the dangerous kind
+
+Going the other way, a bad translation is visibly bad English. Going this way
+the learner cannot read the characters and the pinyin comes back perfectly
+fluent either way, so **nothing on screen would give it away**.
+
+And this direction has a failure of its own. Asked for Chinese, an 0.8B model
+drifts into being a polite Chinese assistant:
+
+| typed | came back as | which means |
+| --- | --- | --- |
+| I would like two beers please | 您好，请问您想要两瓶啤酒吗？ | "hello, would you like two beers?" |
+| can you speak more slowly? | 您说得对，我说话确实有点快。 | "you're right, I do speak fast" |
+
+Three of twenty phrases went that way, and the instruction forbidding it was
+already in the prompt. Two worked examples fixed all three, and the same twenty
+came back clean — so the examples in
+[`english_prompt.dart`](lib/translation/english_prompt.dart) are load-bearing,
+not illustrative.
+
+Belt and braces, the answer is then **translated straight back into English**
+and shown as "reads back as…". It costs one more generation and it is the only
+thing that can catch a fluent answer to the wrong question, because it goes
+through the direction that is measured and reliable.
+
+#### The residue
+
+Reading characters back is not quite exact, and the gaps are worth naming:
+
+- **Equal-rank readings** used to be settled by whichever entry CC-CEDICT
+  listed first, which is how 得 came out `dé`: its particle reading `de` and
+  its verb reading `dé` are both rank 58, so 说得慢 read back as `shuō dé màn`.
+  On a tie the neutral tone now wins — a full-tone reading of a character that
+  common almost always sits inside a compound, which longest match has already
+  taken as a word.
+- **Tone sandhi** is not applied: 一 and 不 come back in their dictionary
+  tones, so `yī diǎn` where a speaker says `yì diǎn`. The same limit as the
+  spoken output below.
+- **Inverting a dictionary offers candidates, not answers.** "hot" is 热 or 辣
+  and nothing in the English says which, so both are shown with what each
+  means. The score is `rank × (1 + sense position)`, doubled for a word outside
+  the syllabus: rank alone answers "eat" with 用, sense position alone answers
+  "thank you" with 三克油, and the syllabus tie-break is what separates 啤酒
+  from 啤 and 朋友 from 朋 — a compound's rank leaks onto its first character,
+  leaving both on 2622 and 280 respectively. An alternative scoring more than
+  ten times worse than the best is dropped, which is about where a choice
+  stops being a choice: "thank you" ends up with only 谢谢, where before it
+  offered 三克油 (a joke transliteration) beside it.
+- **The gloss shown is the sense that was asked about**, not the entry's
+  first. 热 leads with "to warm up", so somebody typing "hot" was choosing
+  between 辣 "hot (spicy)" and 热 "to warm up" — one answer and one
+  non-answer.
+- **0.34% of entries cannot be spelled by this keyboard** — 359 of them keyed
+  on the erhua suffix `r5`, the rest interjections like `hm` and `ng`. Those
+  decline rather than come back with a hole in them.
 
 ### Saying it aloud
 

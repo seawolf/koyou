@@ -1,0 +1,136 @@
+import 'package:flutter/foundation.dart';
+
+import '../pinyin/word.dart';
+
+/// One way of saying what was asked for, as pinyin the keyboard could have
+/// built.
+///
+/// [Word]s rather than a string, because the point of an answer here is that
+/// it can be taken into the input area and worked on — retoned, corrected,
+/// spoken. A string would have to be split back into syllables, and splitting
+/// written pinyin is ambiguous.
+@immutable
+class Rendering {
+  const Rendering({required this.words, this.meaning, this.hskLevel});
+
+  final List<Word> words;
+
+  /// What this actually means, back in English.
+  ///
+  /// Not the English that was asked for — the gloss of the Chinese word being
+  /// offered. That is the difference between "hot" answered with 热 and with
+  /// 辣, and a learner who cannot read the characters has nothing else to
+  /// choose by.
+  final String? meaning;
+
+  /// The HSK band of the word, 1 being the most elementary, or null where it
+  /// is outside the syllabus or the answer spans several words.
+  final int? hskLevel;
+
+  /// The pinyin, as written, with a space between words.
+  String get written => words
+      .where((word) => !word.isEmpty)
+      .map((word) => word.written)
+      .join(' ');
+
+  @override
+  bool operator ==(Object other) =>
+      other is Rendering &&
+      listEquals(other.words, words) &&
+      other.meaning == meaning &&
+      other.hskLevel == hskLevel;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(words), meaning, hskLevel);
+
+  @override
+  String toString() => meaning == null ? written : '$written ($meaning)';
+}
+
+/// Where an answer came from.
+///
+/// Stated rather than deduced. The screen needs to know whether it is showing
+/// a dictionary's candidates or a model's sentence, and the two are not
+/// reliably told apart by shape: a dictionary answer can have one candidate
+/// and a generated one can be a single word.
+enum Phrasing {
+  /// A dictionary entry, or a phrase from the hand-written list.
+  ///
+  /// Exact and repeatable. Ambiguous where English is vaguer than Chinese,
+  /// which is what the extra candidates are for.
+  entry,
+
+  /// Written by a model.
+  ///
+  /// The only thing that can answer a sentence, and the only thing here that
+  /// can be confidently wrong — see [Said.readsBackAs].
+  generated,
+}
+
+/// What an [EnglishTranslator] came back with.
+@immutable
+class Said {
+  const Said({required this.options, required this.phrasing, this.readsBackAs});
+
+  /// Best first. One for a sentence; up to three for a word, because English
+  /// is often vaguer than Chinese and picking silently would be worse than
+  /// offering the choice.
+  final List<Rendering> options;
+
+  final Phrasing phrasing;
+
+  /// The answer translated straight back into English, where that check was
+  /// made.
+  ///
+  /// The reason this exists: going this way round, a wrong answer is invisible.
+  /// Asked for Chinese, an 0.8B model sometimes stops translating and starts
+  /// being a polite Chinese assistant — "I would like two beers please" came
+  /// back as 您好，请问您想要两瓶啤酒吗？, which is "hello, would you like two
+  /// beers?". A learner cannot read the characters and the pinyin is perfectly
+  /// fluent, so nothing on screen would give it away. Reading it back through
+  /// the direction that is measured and reliable is what does.
+  final String? readsBackAs;
+
+  Rendering get best => options.first;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Said &&
+      listEquals(other.options, options) &&
+      other.phrasing == phrasing &&
+      other.readsBackAs == readsBackAs;
+
+  @override
+  int get hashCode =>
+      Object.hash(Object.hashAll(options), phrasing, readsBackAs);
+
+  @override
+  String toString() => options.join(' / ');
+}
+
+/// Turns English into pinyin a learner can say.
+///
+/// The other direction from [Translator], and deliberately a separate seam
+/// rather than a flag on it. The two share their data and nothing else: one
+/// resolves pinyin the learner typed, the other has to choose the Chinese in
+/// the first place, which is a different problem with different failure modes.
+abstract interface class EnglishTranslator {
+  /// Pinyin for [english], or null if this translator has none to offer.
+  Future<Said?> say(String english);
+}
+
+/// Asks each translator in turn and takes the first answer.
+class CompositeEnglishTranslator implements EnglishTranslator {
+  const CompositeEnglishTranslator(this.translators);
+
+  final List<EnglishTranslator> translators;
+
+  @override
+  Future<Said?> say(String english) async {
+    for (final translator in translators) {
+      final said = await translator.say(english);
+      if (said != null) return said;
+    }
+    return null;
+  }
+}
