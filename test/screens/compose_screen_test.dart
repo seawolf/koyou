@@ -1086,12 +1086,26 @@ void main() {
 
     // Both folded away: anyone opening this wants one of the two, and showing
     // both at once means reading past the one they did not want.
-    testWidgets('holds hints and credits, each collapsed', (tester) async {
+    testWidgets('holds its sections, each collapsed', (tester) async {
       await open(tester);
 
       expect(find.byKey(const Key('about-hints')), findsOneWidget);
+      expect(find.byKey(const Key('about-languages')), findsOneWidget);
       expect(find.byKey(const Key('about-credits')), findsOneWidget);
       expect(find.textContaining('CC-CEDICT'), findsNothing);
+    });
+
+    // Why typing "eau" finds nothing, which is a property of the dictionary
+    // rather than a gap in the vocabulary, and nothing else on screen says so.
+    testWidgets('explains what language it works in', (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Why it is in English'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('"water", not "eau"'), findsOneWidget);
+      expect(find.textContaining('"Bonjour !"'), findsOneWidget);
+      // Markdown in a Text widget is just punctuation on screen.
+      expect(find.textContaining('`'), findsNothing);
     });
 
     testWidgets('opens the credits when asked', (tester) async {
@@ -1122,8 +1136,14 @@ void main() {
     testWidgets('fits a narrow screen with everything open', (tester) async {
       await pump(tester, size: const Size(320, 568));
       await tapInMore(tester, 'credits');
-      await tester.tap(find.text('Getting around'));
-      await tester.pumpAndSettle();
+      for (final section in const [
+        'Getting around',
+        'Why it is in English',
+        'Credits and licences',
+      ]) {
+        await tester.tap(find.text(section));
+        await tester.pumpAndSettle();
+      }
 
       expect(tester.takeException(), isNull);
     });

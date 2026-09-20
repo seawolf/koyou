@@ -1268,6 +1268,28 @@ class _Sections extends StatelessWidget {
           ],
         ),
         _Section(
+          id: 'languages',
+          title: 'Why it is in English',
+          children: [
+            Text(
+              'Meanings come back in English because the dictionary behind '
+              'them is a Chinese-English one. The same dictionary read '
+              'backwards is what turns a word into pinyin, so looking a word '
+              'up means typing it in English: "water", not "eau".',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'A whole sentence is different. That goes to the model, which '
+              'works out for itself what it is reading, so "Bonjour !" comes '
+              'back as nǐ hǎo. It is not something this app promises — it '
+              'is the model being good at languages — and the check under a '
+              'sentence reads back in English whatever you typed.',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+        _Section(
           id: 'credits',
           title: 'Credits and licences',
           children: [
@@ -1342,9 +1364,9 @@ const _hints = <(IconData, String)>[
         'once from the ✨ button. Without it, words and set phrases still work.',
   ),
   (
-    Icons.keyboard_outlined,
-    'The keyboard button swaps between QWERTY order '
-        'and articulation order — how pinyin is taught.',
+    Icons.swap_horiz,
+    'Under ⋮, the keys can be laid out in QWERTY order '
+        'or in articulation order — the way pinyin is taught.',
   ),
 ];
 

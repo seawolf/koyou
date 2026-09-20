@@ -656,6 +656,36 @@ furthest from the thumb. Behind the ⋮ are the three that are set-up rather tha
 use — a keyboard layout preference, a 533MB download, and the hints and credits
 — and they are there because going over four cost the title, which truncated.
 
+### Which language the app works in, and why
+
+English, and not as a default that localisation would lift. The content is
+English all the way down, because **CC-CEDICT is a Chinese-English
+dictionary**:
+
+- Meanings come back in English, since that is what the glosses are.
+- The reverse index is built from those same glosses, so looking a word up
+  means typing English. "water" resolves; "eau" does not, and would not
+  whatever language the interface were in.
+
+Translating the interface is an ordinary Flutter job — there is no
+`flutter_localizations` here and every string is hardcoded, but that is
+mechanical. It would give a French interface wrapped around an English
+dictionary, which is worse than it sounds: the one part that would genuinely
+serve a French speaker is the model, and that needs no help.
+
+The model works out for itself what it is reading, so a *sentence* in another
+language usually does work — `Bonjour !` comes back as `nǐ hǎo`. Nothing on
+screen promises it. It is the model being good at languages rather than a
+feature, it is measured only as far as the table in
+[docs/local-model.md](docs/local-model.md), and the round-trip check reads back
+in English whatever was typed, so it is a weaker safety net from another
+language. The ⓘ dialog says as much, under "Why it is in English".
+
+Properly supporting another language means a different dictionary source for
+it — CFDICT for French, HanDeDict for German, both much smaller and patchier
+than CC-CEDICT — plus its own reverse index and its own ranking work. That is
+a project, not an l10n pass.
+
 ### Saying it aloud
 
 The speaker in the app bar reads the line back, in Mandarin, on request. It

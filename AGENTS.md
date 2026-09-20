@@ -144,6 +144,26 @@ anyway. Bundling Noto Sans SC (full, or subset to the ~3,500 standard
 characters) is the fix if that ever changes. Raise it as a decision; don't just
 add the asset.
 
+## English is structural here, not a missing translation
+
+Every string is hardcoded English and there is no `flutter_localizations`.
+Before adding one: **translating the interface would not translate the app.**
+CC-CEDICT is a Chinese-English dictionary, so the glosses are English, and the
+reverse index is built from those same glosses — looking a word up means typing
+"water", never "eau", whatever locale the phone is in. A localised build would
+be a French interface wrapped around an English dictionary.
+
+The exception is the model, which works out for itself what it is reading;
+`Bonjour !` comes back as `nǐ hǎo`. Do not turn that into a promise on screen.
+It is not measured beyond the table in `docs/local-model.md`, and the
+round-trip check reads back in English whatever was typed, so it is a weaker
+check for anyone not working from English. The ⓘ dialog explains this under
+"Why it is in English"; keep that section if you touch the dialog.
+
+Supporting another language properly means a second dictionary source for it
+(CFDICT, HanDeDict), its own reverse index and its own ranking work. Raise it
+as a decision; it is not an l10n pass.
+
 ## Generated files — do not hand-edit
 
 - `assets/icon/kouyu_icon.svg`, `kouyu_icon.png`, `kouyu_icon_foreground.png`
