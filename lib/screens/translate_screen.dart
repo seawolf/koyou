@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../audio/speech.dart';
+import '../favourites/favourites.dart';
 import '../pinyin/word.dart';
 import '../translation/english_translator.dart';
 import '../translation/model_asset.dart';
 import '../translation/model_store.dart';
 import '../translation/translator.dart';
+import '../widgets/favourite_star.dart';
+import 'favourites_screen.dart';
 
 /// Work out how to say something, starting from English.
 ///
@@ -27,7 +30,12 @@ class TranslateScreen extends StatefulWidget {
     this.modelStore,
     this.speech,
     this.initial,
+    this.favourites,
   });
+
+  /// The learner's saved lines, shared with the compose screen. A phrase
+  /// looked up on purpose is the likeliest thing to want again.
+  final Favourites? favourites;
 
   /// What the box starts with, selected so a keystroke replaces it.
   ///
@@ -192,6 +200,21 @@ class _TranslateScreenState extends State<TranslateScreen> {
     return said.options[_chosen.clamp(0, said.options.length - 1)];
   }
 
+  /// Opens the saved lines. One that is tapped goes straight to the compose
+  /// screen, as "Practise this" would send it, since that is where a line is
+  /// worked on.
+  Future<void> _openFavourites() async {
+    final favourites = widget.favourites;
+    if (favourites == null) return;
+    final chosen = await Navigator.of(context).push<Favourite>(
+      MaterialPageRoute<Favourite>(
+        builder: (context) => FavouritesScreen(favourites: favourites),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    Navigator.of(context).pop(chosen.words);
+  }
+
   Future<void> _speak() async {
     final speech = widget.speech;
     final rendering = _rendering;
@@ -235,6 +258,18 @@ class _TranslateScreenState extends State<TranslateScreen> {
         ),
         backgroundColor: theme.colorScheme.primaryContainer,
         actions: [
+          if (widget.favourites case final favourites?)
+            FavouriteStar(
+              favourites: favourites,
+              line: rendering?.words,
+              // The gloss where there is one, since it tells two candidates
+              // for the same English apart — "hot (spicy)" and "hot (of
+              // weather)" — and otherwise what was asked.
+              meaning: rendering == null
+                  ? null
+                  : rendering.meaning ?? _answered,
+              onView: _openFavourites,
+            ),
           if (_canSpeak)
             IconButton(
               key: const Key('speak'),

@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../audio/speech.dart';
+import '../favourites/favourites.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../pinyin/word.dart';
@@ -14,7 +15,9 @@ import '../translation/model_store.dart';
 import '../translation/tone_suggestion.dart';
 import '../translation/translator.dart';
 import '../widgets/blinking_cursor.dart';
+import '../widgets/favourite_star.dart';
 import '../widgets/pinyin_keyboard.dart';
+import 'favourites_screen.dart';
 import 'model_screen.dart';
 import 'translate_screen.dart';
 
@@ -33,7 +36,12 @@ class ComposeScreen extends StatefulWidget {
     this.englishPhraseTranslator,
     this.speech,
     this.suggester,
+    this.favourites,
   });
+
+  /// The learner's saved lines. Null leaves the star and the list off the
+  /// screen, which is what the tests of composing get.
+  final Favourites? favourites;
 
   /// Passed through to the model screen. Owned above this screen so a download
   /// carries on when the learner navigates away from it.
@@ -287,6 +295,29 @@ class _ComposeScreenState extends State<ComposeScreen> {
     });
   }
 
+  /// Opens the saved lines, and puts whichever is tapped in the input area.
+  ///
+  /// Replaces the line rather than appending to it, for the same reason an
+  /// answer from the translate screen does: a favourite is a whole line.
+  Future<void> _openFavourites() async {
+    final favourites = widget.favourites;
+    if (favourites == null) return;
+    final chosen = await Navigator.of(context).push<Favourite>(
+      MaterialPageRoute<Favourite>(
+        builder: (context) => FavouritesScreen(favourites: favourites),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    _edit(Composition.of(chosen.words));
+  }
+
+  /// What is kept beside a saved line: whatever meaning is showing for it.
+  ///
+  /// The headline where there is one, and otherwise the word-by-word gloss —
+  /// less than a translation, but more use in a list than nothing.
+  String? get _meaningToKeep =>
+      meaningOf(_translation, _phrase)?.text ?? _translation?.text;
+
   /// Opens the other direction, and takes whatever comes back.
   ///
   /// Seeded with the meaning already on screen, so the two directions join up:
@@ -306,6 +337,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
           phraseTranslator: widget.englishPhraseTranslator,
           modelStore: widget.modelStore,
           speech: widget.speech,
+          favourites: widget.favourites,
           initial: seedFrom(_translation, _phrase),
         ),
       ),
@@ -322,12 +354,13 @@ class _ComposeScreenState extends State<ComposeScreen> {
       appBar: AppBar(
         title: const Text('Kǒuyǔ'),
         backgroundColor: theme.colorScheme.primaryContainer,
-        // Four, which is what Material 3 allows a top app bar, and grouped
-        // by how often each is wanted. Speaking and translating happen once a
-        // line; the three behind ⋮ are set-up — a layout preference, a 533MB
-        // download, and the credits — and belong out of the way rather than
-        // competing with them. Clearing stays last, on its own, furthest from
-        // the thumb.
+        // Five, one more than Material 3 advises, and chosen: the star earns
+        // its place beside the speaker, because saving happens once a line and
+        // tucking it away would hide it. The cost is the title, which gives
+        // way on the narrowest phones; the buttons keep their full 48pt. The
+        // three behind ⋮ are set-up rather than use — the list of favourites,
+        // a layout preference and a 533MB download — with the credits.
+        // Clearing stays last, on its own, furthest from the thumb.
         actions: [
           if (_canSpeak)
             IconButton(
@@ -337,6 +370,13 @@ class _ComposeScreenState extends State<ComposeScreen> {
               onPressed: _composition.text.isEmpty ? null : _speak,
               icon: const Icon(Icons.volume_up_outlined),
               tooltip: 'Say it',
+            ),
+          if (widget.favourites case final favourites?)
+            FavouriteStar(
+              favourites: favourites,
+              line: _composition.text.isEmpty ? null : _composition.words,
+              meaning: _meaningToKeep,
+              onView: _openFavourites,
             ),
           if (widget.englishTranslator case final english?)
             IconButton(
@@ -358,6 +398,13 @@ class _ComposeScreenState extends State<ComposeScreen> {
               tooltip: 'More',
             ),
             menuChildren: [
+              if (widget.favourites != null)
+                MenuItemButton(
+                  key: const Key('favourites'),
+                  onPressed: _openFavourites,
+                  leadingIcon: const Icon(Icons.star_border),
+                  child: const Text('Favourites'),
+                ),
               MenuItemButton(
                 key: const Key('model'),
                 onPressed: () => Navigator.of(context).push(
@@ -1352,6 +1399,11 @@ const _hints = <(IconData, String)>[
     Icons.volume_up_outlined,
     'The speaker reads the line aloud, slowly. It '
         'only appears if this device has a Mandarin voice.',
+  ),
+  (
+    Icons.star_border,
+    'The star keeps the line and its meaning. The list is under ⋮ — tap one '
+        'to open it, swipe one away to remove it.',
   ),
   (
     Icons.translate,

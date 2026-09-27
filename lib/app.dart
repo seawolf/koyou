@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'audio/mandarin_speech.dart';
 import 'audio/speech.dart';
+import 'favourites/favourites.dart';
+import 'favourites/stored_favourites.dart';
 import 'screens/compose_screen.dart';
 import 'theme.dart';
 import 'translation/character_index.dart';
@@ -35,8 +37,13 @@ class _KouyuAppState extends State<KouyuApp> {
   /// — so it is wired separately and fails separately.
   final Speech _speech = MandarinSpeech(Dictionary.bundled());
 
+  /// Owned here, above both screens that save to it, so the star on one and
+  /// the list reached from the other are the same list.
+  final Favourites _favourites = StoredFavourites.preferences();
+
   @override
   void dispose() {
+    _favourites.dispose();
     _modelStore.dispose();
     super.dispose();
   }
@@ -64,6 +71,7 @@ class _KouyuAppState extends State<KouyuApp> {
       home: ComposeScreen(
         modelStore: _modelStore,
         speech: _speech,
+        favourites: _favourites,
         // A dictionary question, not a model's: it stays quiet on correct
         // pinyin because frequency data is not an opinion.
         suggester: DictionarySuggester(Dictionary.bundled()),

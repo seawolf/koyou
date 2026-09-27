@@ -13,6 +13,8 @@ import 'package:kouyu/translation/translator.dart';
 import 'package:kouyu/widgets/blinking_cursor.dart';
 import 'package:kouyu/widgets/pinyin_keyboard.dart';
 import 'package:kouyu/audio/speech.dart';
+import 'package:kouyu/favourites/favourites.dart';
+import 'package:kouyu/favourites/stored_favourites.dart';
 import 'package:kouyu/translation/model_store_absent.dart';
 import 'package:kouyu/translation/tone_suggestion.dart';
 
@@ -83,6 +85,17 @@ class _SlowTranslator implements Translator {
   }
 }
 
+/// A store over a string in memory, with a clock that moves a minute a save.
+StoredFavourites _favourites() {
+  String? stored;
+  var minute = 0;
+  return StoredFavourites(
+    read: () async => stored,
+    write: (json) async => stored = json,
+    clock: () => DateTime.utc(2026, 9, 27, 10, minute++),
+  );
+}
+
 /// Answers `chá` to anything, which is all the compose side needs to check
 /// that an answer makes the journey back.
 class _AlwaysTea implements EnglishTranslator {
@@ -99,6 +112,8 @@ class _AlwaysTea implements EnglishTranslator {
   );
 }
 
+typedef StarState = ({bool enabled, bool filled});
+
 void main() {
   // A repeating animation means pumpAndSettle never returns, so the caret is
   // held still for every test except the one that checks it blinks.
@@ -114,6 +129,7 @@ void main() {
     Speech? speech,
     Suggester? suggester,
     EnglishTranslator? englishTranslator,
+    Favourites? favourites,
     Brightness brightness = Brightness.light,
     Size size = const Size(375, 812),
   }) async {
@@ -129,6 +145,7 @@ void main() {
           speech: speech,
           suggester: suggester,
           englishTranslator: englishTranslator,
+          favourites: favourites,
           // The web implementation, imported directly: it reports
           // "no model on this platform" and touches no plugin, which
           // is what a widget test wants.
@@ -1041,10 +1058,11 @@ void main() {
         tester,
         speech: _FakeSpeech(),
         englishTranslator: _AlwaysTea(),
+        favourites: _favourites(),
       );
       await tester.pumpAndSettle();
 
-      const order = ['speak', 'translate', 'more-button', 'clear'];
+      const order = ['speak', 'star', 'translate', 'more-button', 'clear'];
       var previous = double.negativeInfinity;
       for (final id in order) {
         final left = tester.getRect(find.byKey(Key(id))).left;
@@ -1056,25 +1074,40 @@ void main() {
     // Material 3 allows a top app bar four trailing icons. Going over cost the
     // title, which truncated; the three set-up actions — a layout preference,
     // a 533MB download, the credits — are the ones nobody reaches for mid-line.
-    testWidgets('keeps to four, with the set-up ones grouped', (tester) async {
+    // Five, one more than Material 3 advises, and chosen: the star belongs
+    // beside the speaker, since saving happens once a line. What it costs is
+    // the title on the narrowest phones — never the size of a button.
+    testWidgets('fits five on a narrow screen, grouping the set-up ones', (
+      tester,
+    ) async {
       await pump(
         tester,
         speech: _FakeSpeech(),
         englishTranslator: _AlwaysTea(),
+        favourites: _favourites(),
+        size: const Size(320, 568),
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byType(IconButton),
-        ),
-        findsExactly(4),
+      final buttons = find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byType(IconButton),
       );
-      // And they are shut away until asked for.
+      expect(buttons, findsExactly(5));
+      for (final id in ['speak', 'star', 'translate', 'more-button', 'clear']) {
+        final rect = tester.getRect(find.byKey(Key(id)));
+        expect(rect.left, greaterThanOrEqualTo(0), reason: id);
+        expect(rect.right, lessThanOrEqualTo(320), reason: id);
+        expect(rect.width, greaterThanOrEqualTo(48), reason: id);
+      }
+      expect(find.text('Kǒuyǔ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // And the set-up ones are shut away until asked for.
       expect(find.byKey(const Key('model')), findsNothing);
       await openMore(tester);
       expect(find.byKey(const Key('model')), findsOne);
+      expect(find.byKey(const Key('favourites')), findsOne);
     });
   });
 
@@ -1982,6 +2015,131 @@ void main() {
 
       final field = tester.widget<TextField>(find.byKey(const Key('english')));
       expect(field.controller!.text, isEmpty);
+    });
+  });
+  group('favourites', () {
+    StarState starOf(WidgetTester tester) {
+      final star = tester.widget<IconButton>(find.byKey(const Key('star')));
+      return (enabled: star.onPressed != null, filled: star.isSelected!);
+    }
+
+    /// A dictionary that answers the whole line.
+    _RecordingTranslator knowing(String meaning) =>
+        _RecordingTranslator()
+          ..reply = Translation(meaning, matchedWhole: true);
+
+    testWidgets('no star and no list without somewhere to keep them', (
+      tester,
+    ) async {
+      await pump(tester);
+      expect(find.byKey(const Key('star')), findsNothing);
+      await openMore(tester);
+      expect(find.byKey(const Key('favourites')), findsNothing);
+    });
+
+    testWidgets('the star waits for a line to keep', (tester) async {
+      await pump(tester, favourites: _favourites());
+      expect(starOf(tester), (enabled: false, filled: false));
+      await type(tester, 'n', 'i', 3);
+      expect(starOf(tester), (enabled: true, filled: false));
+    });
+
+    testWidgets('keeps the line and its meaning, and says where', (
+      tester,
+    ) async {
+      final favourites = _favourites();
+      await pump(tester, translator: knowing('you'), favourites: favourites);
+      await type(tester, 'n', 'i', 3);
+
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+
+      expect(favourites.items.value.single.pinyin, 'nǐ');
+      expect(favourites.items.value.single.meaning, 'you');
+      expect(starOf(tester).filled, isTrue);
+      expect(find.byKey(const Key('saved')), findsOne);
+      expect(find.textContaining('under ⋮'), findsOne);
+    });
+
+    testWidgets('the saved message goes by itself', (tester) async {
+      // A snack bar with an action stays until tapped, by default. This one
+      // is a confirmation, and should not sit there.
+      await pump(tester, favourites: _favourites());
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('saved')), findsOne);
+
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('saved')), findsNothing);
+    });
+
+    testWidgets('View on the saved message opens the list', (tester) async {
+      await pump(tester, favourites: _favourites());
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('View'));
+      await tester.pumpAndSettle();
+      expect(find.text('Favourites'), findsOne);
+    });
+
+    testWidgets('editing the line after saving it empties the star', (
+      tester,
+    ) async {
+      await pump(tester, favourites: _favourites());
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+      expect(starOf(tester).filled, isTrue);
+
+      // A different line is not the one that was kept.
+      await tap(tester, 'space');
+      await type(tester, 'h', 'ao', 3);
+      expect(starOf(tester).filled, isFalse);
+    });
+
+    testWidgets('removing through the star asks first', (tester) async {
+      final favourites = _favourites();
+      await pump(tester, favourites: favourites);
+      await type(tester, 'n', 'i', 3);
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('confirm-removal')), findsOne);
+      await tester.tap(find.byKey(const Key('keep')));
+      await tester.pumpAndSettle();
+      expect(favourites.items.value, hasLength(1));
+
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('remove')));
+      await tester.pumpAndSettle();
+      expect(favourites.items.value, isEmpty);
+      expect(starOf(tester).filled, isFalse);
+    });
+
+    testWidgets('opening one from the list puts it in the line', (
+      tester,
+    ) async {
+      final favourites = _favourites();
+      await favourites.save([
+        Spoken([const Syllable(initial: 'ch', rime: 'a', tone: Tone.second)]),
+      ], meaning: 'tea');
+      await pump(tester, favourites: favourites);
+      await type(tester, 'n', 'i', 3);
+
+      await tapInMore(tester, 'favourites');
+      await tester.tap(find.text('chá'));
+      await tester.pumpAndSettle();
+
+      // A whole line, so it replaces what was there, and the star knows it.
+      expect(composed(tester), 'chá');
+      expect(starOf(tester).filled, isTrue);
     });
   });
 }

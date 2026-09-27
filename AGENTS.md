@@ -62,6 +62,10 @@ setting this up:
   rendering. If Hanzi is *persistently* tofu, the CDN is unreachable.
 - **The app renders into a small box in the corner.** Flutter laid out against
   the viewport size it saw at load and missed a later resize. Reload.
+- **A swipe does nothing when driven by a browser automation tool.** Those
+  tools send a drag as one jump, and a `Dismissible` needs the moves in
+  between. Dispatch a sequence of `pointermove` events to `flt-glass-pane`
+  instead; swiping a favourite away works that way, and by hand.
 
 ## The web model tier
 
@@ -229,6 +233,45 @@ Two traps in that tool, both of which cost a common word once:
   synonyms within a sense with `; `, so 你好 is glossed `hello; hi` and 我 is
   `I; me; my`. Splitting only on `/` finds neither "hello" nor "I", which is
   exactly what the first cut of the English index did.
+
+## Favourites
+
+`lib/favourites/` is the store and `lib/widgets/favourite_star.dart` the star
+both screens share, with the one confirmation dialog and the one "Saved"
+message. Screens depend on the `Favourites` interface; `StoredFavourites` is
+named only in `app.dart`, and it reads and writes through two closures so its
+logic tests without a platform — `test/favourites/` needs no plugin except for
+the one test of the real binding.
+
+**Five app-bar icons is a decision, not drift.** It is one over Material 3's
+advice, chosen so the star sits beside the speaker. Do not "tidy" it back to
+four by moving something under ⋮. The test at 320pt checks what the choice may
+and may not cost: the title may give way, the 48pt targets may not.
+
+Three traps, each found while building it:
+
+- **`SharedPreferencesAsync()` throws in its constructor** where no platform
+  store is registered. Built eagerly, that stopped the app starting in a test,
+  and would anywhere the plugin is missing. It is opened on first use, inside
+  the handling that turns unreadable storage into an empty list.
+- **A `SnackBar` with an action stays up until tapped** in this Flutter
+  version — `persist` defaults to true once there is an action. The "Saved"
+  message sets `persist: false`; it is a confirmation, not a question.
+- **Long-press is not free on an app-bar icon.** Its tooltip already owns it on
+  touch devices, and `IconButton` does not call `onLongPress` while
+  `onPressed` is null — so a long-press on a disabled star would do nothing,
+  which is exactly when someone opening their list would try it. That is why
+  the list is a visible ⋮ item and a View action, not a gesture.
+
+- **Symbols typed into text are at the mercy of the font.** `☆` in a
+  sentence rendered as an empty box — no bundled font carries it, the same
+  gap as the CJK note above. Draw an icon with a `WidgetSpan` instead; the
+  Material icon font always ships. `⋮` happens to render, but prefer the icon
+  where one exists.
+
+Deleting always asks, through the star as well as by swiping, and the dialog
+names the line. That was chosen over an undo message; keep the two routes
+consistent if either changes.
 
 ## The direction a translation goes in
 

@@ -650,11 +650,47 @@ Reading characters back is not quite exact, and the gaps are worth naming:
 
 ### The app bar
 
-Four trailing icons, which is what Material 3 allows, grouped by how often each
-is wanted: **speak**, **translate**, a **⋮ group**, and **start again** last and
-furthest from the thumb. Behind the ⋮ are the three that are set-up rather than
-use — a keyboard layout preference, a 533MB download, and the hints and credits
-— and they are there because going over four cost the title, which truncated.
+Five trailing icons: **speak**, **star**, **translate**, a **⋮ group**, and
+**start again**, last and furthest from the thumb.
+
+That is one more than Material 3 advises, and it is a decision rather than an
+oversight. The star belongs beside the speaker, because saving happens once a
+line and tucking it away would hide it. What five costs is the title, which
+gives way on the narrowest phones; the buttons keep their full 48pt, and a
+test at 320pt holds both of those.
+
+Behind the ⋮ are the things that are set-up rather than use: **Favourites**,
+**Whole phrases** (the 533MB download), the keyboard arrangement, and the hints
+and credits.
+
+### Favourites
+
+The star keeps the line on screen and the meaning showing beside it. It is on
+both screens — a phrase looked up on purpose is the likeliest thing to want
+again — and it shows state: filled when the line is already kept, so a line
+cannot be saved twice, and outlined again as soon as the line is edited.
+
+The list is under **⋮ → Favourites**, and the "Saved" message has a **View**
+button that opens it at once. Tapping a row puts that line back in the input
+area; from the translate screen it goes straight on to the compose screen, as
+"Practise this" would. Swiping a row asks before it removes anything, and so
+does tapping a filled star — there is one way to lose a favourite and it
+always asks first.
+
+Two things about how it is built are not obvious from the screen:
+
+- **A favourite is stored as syllables, not as text.** Opening one rebuilds the
+  line, and written pinyin cannot be split back reliably — `wanan` is two
+  words — while each syllable's dictionary key reads back exactly. The text is
+  derived whenever it is shown.
+- **The meaning is kept as it was.** It is what the learner decided was worth
+  keeping, so a later model answer, or switching the model off, does not
+  change the list under them.
+
+It is kept in the platform's preferences — `SharedPreferences` on Android,
+`NSUserDefaults` on iOS, `localStorage` in a browser — through
+`shared_preferences`, because that is the one store that works on every target
+this app builds for; `path_provider` has no directory to offer a browser.
 
 ### Which language the app works in, and why
 

@@ -5,6 +5,8 @@ import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/pinyin/word.dart';
 import 'package:kouyu/screens/translate_screen.dart';
 import 'package:kouyu/theme.dart';
+import 'package:kouyu/favourites/favourites.dart';
+import 'package:kouyu/favourites/stored_favourites.dart';
 import 'package:kouyu/translation/english_translator.dart';
 import 'package:kouyu/translation/model_asset.dart';
 import 'package:kouyu/translation/model_store.dart';
@@ -73,6 +75,7 @@ Future<List<Word>?> _show(
   EnglishTranslator? phrases,
   ModelStore? store,
   String? initial,
+  Favourites? favourites,
   ThemeData? theme,
 }) async {
   final popped = <List<Word>?>[];
@@ -92,6 +95,7 @@ Future<List<Word>?> _show(
                         phraseTranslator: phrases,
                         modelStore: store,
                         initial: initial,
+                        favourites: favourites,
                       ),
                     ),
                   ),
@@ -114,6 +118,17 @@ Future<List<Word>?> _show(
 List<List<Word>?> _popped = [];
 
 List<Word>? get _answer => _popped.isEmpty ? null : _popped.single;
+
+/// A store over a string in memory.
+StoredFavourites _favourites() {
+  String? stored;
+  var minute = 0;
+  return StoredFavourites(
+    read: () async => stored,
+    write: (json) async => stored = json,
+    clock: () => DateTime.utc(2026, 9, 27, 10, minute++),
+  );
+}
 
 /// Types something and asks for it, which is now two separate acts.
 Future<void> _askFor(WidgetTester tester, String text) async {
@@ -483,5 +498,100 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('chá'), findsOne);
     }
+  });
+  group('favourites', () {
+    bool starEnabled(WidgetTester tester) =>
+        tester.widget<IconButton>(find.byKey(const Key('star'))).onPressed !=
+        null;
+
+    testWidgets('the star waits for an answer', (tester) async {
+      await _show(
+        tester,
+        translator: _Canned({
+          'tea': _word([_cha], meaning: 'the drink'),
+        }),
+        favourites: _favourites(),
+      );
+      expect(starEnabled(tester), isFalse);
+      await _askFor(tester, 'tea');
+      expect(starEnabled(tester), isTrue);
+    });
+
+    testWidgets('keeps the candidate chosen, with its own gloss', (
+      tester,
+    ) async {
+      // The gloss rather than what was asked, since two answers to "hot"
+      // would otherwise both be saved as "hot".
+      final favourites = _favourites();
+      final hot = Said(
+        options: [
+          Rendering(words: [_cha], meaning: 'hot (spicy)'),
+          Rendering(words: _iLoveYou, meaning: 'hot (of weather)'),
+        ],
+        phrasing: Phrasing.entry,
+      );
+      await _show(
+        tester,
+        translator: _Canned({'hot': hot}),
+        favourites: favourites,
+      );
+      await _askFor(tester, 'hot');
+      await tester.tap(find.byKey(const Key('pinyin')).last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+
+      expect(favourites.items.value.single.words, _iLoveYou);
+      expect(favourites.items.value.single.meaning, 'hot (of weather)');
+    });
+
+    testWidgets('keeps what was asked when there is no gloss', (tester) async {
+      // A sentence the model wrote has no dictionary gloss, and what the
+      // learner typed is the best description of it.
+      final favourites = _favourites();
+      await _show(
+        tester,
+        translator: _Canned(const {}),
+        phrases: _Canned({
+          'I love you': Said(
+            options: [Rendering(words: _iLoveYou)],
+            phrasing: Phrasing.generated,
+          ),
+        }),
+        favourites: favourites,
+      );
+      await _askFor(tester, 'I love you');
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+
+      expect(favourites.items.value.single.meaning, 'I love you');
+      expect(find.byKey(const Key('saved')), findsOne);
+    });
+
+    testWidgets('one opened from the list goes on to be practised', (
+      tester,
+    ) async {
+      final favourites = _favourites();
+      await favourites.save(_iLoveYou, meaning: 'I love you');
+      await _show(
+        tester,
+        translator: _Canned({
+          'tea': _word([_cha]),
+        }),
+        favourites: favourites,
+      );
+      await _askFor(tester, 'tea');
+      await tester.tap(find.byKey(const Key('star')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('View'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('wǒ ài nǐ'));
+      await tester.pumpAndSettle();
+
+      // Straight through to the compose screen, as "Practise this" would.
+      expect(_answer, _iLoveYou);
+    });
   });
 }
