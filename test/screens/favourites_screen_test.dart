@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/favourites/favourites.dart';
@@ -15,6 +16,14 @@ final _nihao = [
 final _cha = [
   Spoken([const Syllable(initial: 'ch', rime: 'a', tone: Tone.second)]),
 ];
+final _shui = [
+  Spoken([const Syllable(initial: 'sh', rime: 'ui', tone: Tone.third)]),
+];
+
+List<String> _titles(WidgetTester tester) => tester
+    .widgetList<ListTile>(find.byType(ListTile))
+    .map((tile) => (tile.title! as Text).data!)
+    .toList();
 
 /// A store over a string in memory, with a clock that moves a minute a save.
 StoredFavourites _store() {
@@ -169,5 +178,84 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('nǐ hǎo'), findsOne);
     }
+  });
+  group('putting them in order', () {
+    Future<StoredFavourites> three() async {
+      final favourites = _store();
+      await favourites.save(_nihao, meaning: 'hello');
+      await favourites.save(_cha, meaning: 'tea');
+      await favourites.save(_shui, meaning: 'water');
+      return favourites;
+    }
+
+    testWidgets('says how, above the list', (tester) async {
+      await _show(tester, await three());
+      expect(
+        tester.widget<Text>(find.byKey(const Key('favourites-hint'))).data,
+        contains('Hold one to drag it into place'),
+      );
+    });
+
+    testWidgets('holding a row and dragging it moves it', (tester) async {
+      final favourites = await three();
+      await _show(tester, favourites);
+      expect(_titles(tester), ['shuǐ', 'chá', 'nǐ hǎo']);
+
+      // Hold the top one, then drag it below the bottom one.
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('shuǐ')),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      // Past the two rows below it, a row's height at a time, so the list
+      // can open the gap under each one as it goes.
+      final row = tester.getSize(find.byType(ListTile).first).height;
+      for (var step = 0; step < 5; step++) {
+        await gesture.moveBy(Offset(0, row / 2));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(_titles(tester), ['chá', 'nǐ hǎo', 'shuǐ']);
+      // And it is the store's order too, not only the screen's.
+      expect(favourites.items.value.map((f) => f.pinyin), [
+        'chá',
+        'nǐ hǎo',
+        'shuǐ',
+      ]);
+    });
+
+    testWidgets('a drag without holding first moves nothing', (tester) async {
+      // Holding is what separates rearranging from scrolling. A quick drag
+      // is the list being scrolled, and must not reshuffle it.
+      final favourites = await three();
+      await _show(tester, favourites);
+
+      await tester.drag(find.text('shuǐ'), const Offset(0, 300));
+      await tester.pumpAndSettle();
+
+      expect(favourites.items.value.map((f) => f.pinyin), [
+        'shuǐ',
+        'chá',
+        'nǐ hǎo',
+      ]);
+    });
+
+    testWidgets('a tap still opens, and a swipe still asks', (tester) async {
+      // Holding, tapping and swiping all start on the same row, and each has
+      // to keep meaning what it meant.
+      final favourites = await three();
+      final popped = await _show(tester, favourites);
+
+      await tester.drag(find.text('chá'), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('confirm-removal')), findsOne);
+      await tester.tap(find.byKey(const Key('keep')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('chá'));
+      await tester.pumpAndSettle();
+      expect(popped.single!.words, _cha);
+    });
   });
 }

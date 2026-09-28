@@ -24,6 +24,15 @@ abstract interface class Favourites {
 
   Future<void> remove(Favourite favourite);
 
+  /// Puts the list in [order], which is the learner's own from then on.
+  ///
+  /// Given the whole order rather than a pair of indices, because the list on
+  /// screen is not always the list in the store — a row just swiped away is
+  /// hidden before the store has dropped it — and an index into one is not an
+  /// index into the other. Favourites [order] leaves out keep their places
+  /// after it; ones it names that are no longer kept are ignored.
+  Future<void> reorder(List<Favourite> order);
+
   void dispose();
 }
 

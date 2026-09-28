@@ -1403,7 +1403,8 @@ const _hints = <(IconData, String)>[
   (
     Icons.star_border,
     'The star keeps the line and its meaning. The list is under ⋮ — tap one '
-        'to open it, swipe one away to remove it.',
+        'to open it, hold one to drag it into place, swipe one away to '
+        'remove it.',
   ),
   (
     Icons.translate,

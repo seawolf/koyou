@@ -673,7 +673,13 @@ cannot be saved twice, and outlined again as soon as the line is edited.
 The list is under **⋮ → Favourites**, and the "Saved" message has a **View**
 button that opens it at once. Tapping a row puts that line back in the input
 area; from the translate screen it goes straight on to the compose screen, as
-"Practise this" would. Swiping a row asks before it removes anything, and so
+"Practise this" would.
+
+**Holding a row and dragging it** puts the list in your own order, which is
+kept. New favourites still arrive at the top. It is Flutter's
+`ReorderableListView`, which picks the gesture by platform — hold on a phone, a
+drag handle on a desktop — and gives a screen reader "move up" and "move down"
+as well, which a hand-built gesture would not. Swiping a row asks before it removes anything, and so
 does tapping a filled star — there is one way to lose a favourite and it
 always asks first.
 

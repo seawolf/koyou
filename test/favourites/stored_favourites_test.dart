@@ -102,6 +102,77 @@ void main() {
     expect(reopened.items.value.single.pinyin, 'chá');
   });
 
+  group('putting them in order', () {
+    Future<StoredFavourites> three(_Disk disk) async {
+      final favourites = disk.open(clock: clock);
+      await favourites.save([_ni], meaning: 'you');
+      await favourites.save([_hao], meaning: 'good');
+      await favourites.save([_cha], meaning: 'tea');
+      return favourites;
+    }
+
+    List<String> order(Favourites favourites) =>
+        favourites.items.value.map((f) => f.meaning!).toList();
+
+    test('keeps the order it is given, and survives reopening', () async {
+      final disk = _Disk();
+      final favourites = await three(disk);
+      expect(order(favourites), ['tea', 'good', 'you']);
+
+      await favourites.reorder([
+        favourites.find([_ni])!,
+        favourites.find([_cha])!,
+        favourites.find([_hao])!,
+      ]);
+      expect(order(favourites), ['you', 'tea', 'good']);
+
+      final reopened = disk.open();
+      await _settle();
+      expect(order(reopened), ['you', 'tea', 'good']);
+    });
+
+    test('a new favourite still goes to the top', () async {
+      final favourites = await three(_Disk());
+      await favourites.reorder(favourites.items.value.reversed.toList());
+      await favourites.save([_ni, _hao], meaning: 'hello');
+      expect(order(favourites), ['hello', 'you', 'good', 'tea']);
+    });
+
+    test('keeps the places of ones it was not told about', () async {
+      // The screen hides a row the moment it is swiped away, before the store
+      // has dropped it, so the order it sends can be one short.
+      final favourites = await three(_Disk());
+      await favourites.reorder([
+        favourites.find([_ni])!,
+        favourites.find([_cha])!,
+      ]);
+      expect(order(favourites), ['you', 'tea', 'good']);
+    });
+
+    test('ignores ones that are no longer kept', () async {
+      final favourites = await three(_Disk());
+      final gone = favourites.find([_hao])!;
+      await favourites.remove(gone);
+      await favourites.reorder([
+        gone,
+        favourites.find([_ni])!,
+        favourites.find([_cha])!,
+      ]);
+      expect(order(favourites), ['you', 'tea']);
+    });
+
+    test('shows the new order at once, not a frame later', () async {
+      // A reordered list published after even one yield is drawn once in its
+      // old order, and the dragged row visibly jumps back before settling.
+      final favourites = await three(_Disk());
+      final pending = favourites.reorder(
+        favourites.items.value.reversed.toList(),
+      );
+      expect(order(favourites), ['you', 'good', 'tea']);
+      await pending;
+    });
+  });
+
   test('a row it cannot read does not cost the others', () async {
     final good = {
       'words': [

@@ -269,6 +269,19 @@ Three traps, each found while building it:
   Material icon font always ships. `⋮` happens to render, but prefer the icon
   where one exists.
 
+- **Reordering is `onReorderItem`, not `onReorder`.** The older callback is
+  deprecated in this Flutter version, and it hands over a `newIndex` that has
+  not been adjusted for the row being lifted out — the off-by-one everyone
+  used to write by hand. The new one has.
+- **`Favourites.reorder` takes the whole order, not two indices.** The list on
+  screen is not always the store's: a row just swiped away is hidden before the
+  store has dropped it, so an index into one is not an index into the other.
+- **A reordered list has to publish before the next frame.** Even awaiting a
+  completed future yields, and a list published one frame late is drawn once in
+  its old order — the dragged row jumps back before it settles.
+  `StoredFavourites` publishes synchronously once it has loaded, and there is a
+  test that the order changes before `reorder` returns.
+
 Deleting always asks, through the star as well as by swiping, and the dialog
 names the line. That was chosen over an undo message; keep the two routes
 consistent if either changes.

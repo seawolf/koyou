@@ -71,19 +71,28 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
             );
           }
 
-          return ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                // Swiping is not discoverable on its own, so it is said once,
-                // above the list rather than beside every row.
-                child: Text(
-                  'Tap one to open it. Swipe one away to remove it.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                ),
+          return ReorderableListView(
+            // Said once, above the list rather than beside every row, because
+            // neither holding nor swiping is discoverable on its own.
+            header: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Tap one to open it. Hold one to drag it into place. Swipe '
+                'one away to remove it.',
+                key: const Key('favourites-hint'),
+                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
               ),
-              for (final favourite in shown) _row(context, favourite),
-            ],
+            ),
+            // Holding a row starts the drag on a phone, and a desktop gets a
+            // handle instead — ReorderableListView picks by platform. It also
+            // gives a screen reader "move up" and "move down", which a
+            // hand-built gesture would not.
+            onReorderItem: (from, to) {
+              final order = [...shown];
+              order.insert(to, order.removeAt(from));
+              widget.favourites.reorder(order);
+            },
+            children: [for (final favourite in shown) _row(context, favourite)],
           );
         },
       ),

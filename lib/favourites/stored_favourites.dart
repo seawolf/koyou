@@ -17,7 +17,7 @@ class StoredFavourites implements Favourites {
     required this.write,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now {
-    _loaded = _load();
+    _loaded = _load().whenComplete(() => _ready = true);
   }
 
   /// Kept in the platform's preferences: `SharedPreferences` on Android,
@@ -53,6 +53,12 @@ class StoredFavourites implements Favourites {
   final ValueNotifier<List<Favourite>> items = ValueNotifier(const []);
 
   late final Future<void> _loaded;
+
+  /// Whether [_loaded] has finished, so a change can be published without
+  /// waiting on it. Awaiting even a completed future yields, and a reordered
+  /// list published a moment late is drawn for one frame in its old order —
+  /// the dragged row visibly jumps back before it settles.
+  bool _ready = false;
 
   /// Writes go one at a time, in order. Two saves close together would
   /// otherwise race, and the older list could land last and win.
@@ -98,6 +104,22 @@ class StoredFavourites implements Favourites {
     _publish([
       for (final kept in items.value)
         if (!kept.isFor(favourite.words)) kept,
+    ]);
+    await _persist();
+  }
+
+  @override
+  Future<void> reorder(List<Favourite> order) async {
+    if (!_ready) await _loaded;
+    final kept = items.value;
+    final placed = <Favourite>[
+      for (final favourite in order)
+        if (kept.contains(favourite)) favourite,
+    ];
+    _publish([
+      ...placed,
+      for (final favourite in kept)
+        if (!placed.contains(favourite)) favourite,
     ]);
     await _persist();
   }
