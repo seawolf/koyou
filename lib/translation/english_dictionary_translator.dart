@@ -51,6 +51,7 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
       );
     }
     if (found.isEmpty) return null;
+    _putFirst(found, _askedFor(english));
 
     final distinctions = _distinctions(found);
     return Said(
@@ -66,6 +67,46 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
       phrasing: Phrasing.entry,
     );
   }
+
+  /// Which part of speech the English itself asked for, where it says.
+  ///
+  /// English marks it already: "to land" is the verb and "a leak" the noun.
+  /// The index ignores both markers, since neither is part of any headword, so
+  /// without this "to land" and "land" gave the same list in the same order.
+  static _PartOfSpeech? _askedFor(String english) {
+    final typed = english.trim().toLowerCase();
+    if (typed.startsWith('to ')) return _PartOfSpeech.verb;
+    for (final article in const ['a ', 'an ', 'the ']) {
+      if (typed.startsWith(article)) return _PartOfSpeech.noun;
+    }
+    return null;
+  }
+
+  /// Moves the candidates that are [wanted] to the front, keeping the order
+  /// within each side — so the first, which is the one chosen until somebody
+  /// says otherwise, is the best of the kind that was asked for.
+  ///
+  /// The dictionary's own convention decides what is a verb: CC-CEDICT writes
+  /// every verb sense "to …", so this works for all of it, not only for words
+  /// in a syllabus.
+  static void _putFirst(List<_Found> found, _PartOfSpeech? wanted) {
+    if (wanted == null) return;
+    bool isWanted(_Found f) =>
+        _isVerb(f.sense) == (wanted == _PartOfSpeech.verb);
+    final reordered = [...found.where(isWanted), ...found.whereNot(isWanted)];
+    found
+      ..clear()
+      ..addAll(reordered);
+  }
+
+  static bool _isVerb(String? sense) {
+    if (sense == null) return false;
+    // "(bound form) to leak out" is a verb too: the aside comes first.
+    final bare = sense.replaceFirst(_leadingAsides, '').trim().toLowerCase();
+    return bare.startsWith('to ');
+  }
+
+  static final _leadingAsides = RegExp(r'^(\([^)]*\)\s*)+');
 
   /// A note for each candidate whose shown sense another candidate shares,
   /// saying what tells them apart; null for the rest.
@@ -196,4 +237,10 @@ class _Found {
   final List<Word> words;
   final DictionaryEntry? entry;
   final String? sense;
+}
+
+enum _PartOfSpeech { noun, verb }
+
+extension<T> on Iterable<T> {
+  Iterable<T> whereNot(bool Function(T) test) => where((item) => !test(item));
 }

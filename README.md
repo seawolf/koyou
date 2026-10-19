@@ -651,6 +651,8 @@ Reading characters back is not quite exact, and the gaps are worth naming:
   than inventing one: asked to explain such pairs, the 0.8B model was right
   about three in eight and confidently wrong about the rest, and a learner
   cannot tell which is which. See [docs/local-model.md](docs/local-model.md).
+- **"to land" asks for the verb and "a leak" for the noun.** CC-CEDICT writes
+  every verb sense "to …", so the typed form decides which comes first.
 - **The gloss shown is the sense that was asked about**, not the entry's
   first. 热 leads with "to warm up", so somebody typing "hot" was choosing
   between 辣 "hot (spicy)" and 热 "to warm up" — one answer and one

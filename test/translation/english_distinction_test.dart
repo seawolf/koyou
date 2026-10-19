@@ -142,6 +142,36 @@ void main() {
     ]);
   });
 
+  group('when the English says noun or verb', () {
+    final t = _over(
+      english: {
+        'leak': ['tou4|透', 'lou4 dong4|漏洞', 'lou4|漏'],
+      },
+      entries: [
+        'tou4\t透\t-\t900\t3\tto tell secretly; to leak',
+        'lou4 dong4\t漏洞\t-\t3000\t5\tleak/loophole',
+        'lou4\t漏\t-\t2000\t4\t(bound form) to leak',
+      ],
+    );
+    Future<List<String>> order(String english) async => [
+      for (final option in (await t.say(english))!.options) option.written,
+    ];
+
+    test('"to leak" puts the verbs first', () async {
+      // An aside before the verb does not hide it: "(bound form) to leak".
+      expect(await order('to leak'), ['tòu', 'lòu', 'lòudòng']);
+    });
+
+    test('"a leak" puts the nouns first', () async {
+      expect(await order('a leak'), ['lòudòng', 'tòu', 'lòu']);
+      expect(await order('the leak'), ['lòudòng', 'tòu', 'lòu']);
+    });
+
+    test('plain "leak" keeps the dictionary\'s own order', () async {
+      expect(await order('leak'), ['tòu', 'lòudòng', 'lòu']);
+    });
+  });
+
   group('the real dictionary', () {
     TestWidgetsFlutterBinding.ensureInitialized();
     final real = EnglishDictionaryTranslator(
@@ -161,6 +191,11 @@ void main() {
         'only this meaning',
         'also: Chinese meal; Chinese food',
       ]);
+    });
+
+    test('"to land" is the verb and "the land" the noun', () async {
+      expect((await real.say('to land'))!.best.written, 'dēnglù');
+      expect((await real.say('the land'))!.best.written, 'dì');
     });
 
     test(
