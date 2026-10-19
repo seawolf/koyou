@@ -13,6 +13,7 @@ import 'translation/english_dictionary_translator.dart';
 import 'translation/english_index.dart';
 import 'translation/english_model_translator.dart';
 import 'translation/english_translator.dart';
+import 'translation/example_index.dart';
 import 'translation/model_store.dart';
 import 'translation/model_translator.dart';
 import 'translation/on_device_backend.dart';
@@ -92,6 +93,8 @@ class _KouyuAppState extends State<KouyuApp> {
           EnglishDictionaryTranslator(
             index: EnglishIndex.bundled(),
             dictionary: Dictionary.bundled(),
+            examples: ExampleIndex.bundled(),
+            characters: CharacterIndex.bundled(),
           ),
         ]),
         englishPhraseTranslator: EnglishModelTranslator(

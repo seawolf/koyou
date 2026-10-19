@@ -454,6 +454,16 @@ Two traps in there, both of which cost an afternoon:
   the translation, for the least reliable thing a small model does: it does not
   know which tone is right, it knows which sentence sounds likely, and it nags
   confidently about correct input.
+- **An example shows the word in the reading it was offered with.**
+  `EnglishDictionaryTranslator` reads the sentence either side of the word
+  and puts the word back as the candidate's own syllables, rather than reading
+  the whole sentence: a word with several readings would otherwise carry one
+  tone in its row and another in its example. Do not "simplify" it to one
+  `read` of the sentence.
+- **Do not have the model write example sentences.** Asked for one per word,
+  0.8B swapped in the commoner sibling in 7 of 20 — 月亮 for 月球, 去世 for
+  逝世, 实验 for 试验 — always the rarer word of the pair, which is the one that
+  needed the example. Tatoeba's are written and translated by people.
 - **Do not ask the model what separates two near-synonyms.** Where several
   candidates share a gloss, `EnglishDictionaryTranslator` notes what tells them
   apart from the dictionary alone — a sense only one has, "only this meaning",

@@ -458,6 +458,30 @@ wrong explanation from a right one. So those pairs say which word is commoner
 and "no difference recorded", which is true, rather than something a model
 made up.
 
+### Nor is writing example sentences
+
+The next idea was to have it write a sentence for each word of such a pair, so
+the difference could be seen rather than described. Asked for a short, natural
+sentence using a given word, it did not use the word at all in 7 of 20, and
+every time it was the rarer word of the pair it dropped in favour of the
+commoner one:
+
+| asked for | it wrote |
+| --- | --- |
+| 月球 | 月**亮**是夜晚天空中最大的天体 |
+| 夏季 | 夏**天**来了，天气很热 |
+| 逝世 | 他**去世**了 |
+| 猴 | 猴**子**很可爱 |
+| 试验 | 我计划去实验室进行这次**实**验 |
+| 湖泊 | 湖面上有一片平静的湖水 |
+| 诉讼 | 他**起诉**了这家工厂 |
+
+The sentences that did use the word were often good — 监控 with security
+cameras, 监测 with air quality — but keeping only those means checking each one
+and discarding the rest, which leaves the same gaps a corpus has at a second of
+CPU per lookup. Tatoeba covers 74% of these words with sentences people wrote,
+and that is what ships.
+
 ## Suggested tiers
 
 The dictionary is tier zero and always on: it is what makes the tones survive,

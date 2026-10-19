@@ -44,6 +44,18 @@ class CharacterIndex {
   /// and the caller — see `EnglishModelTranslator` — would rather offer
   /// nothing than something with a hole in it.
   Future<List<Word>?> read(String chinese) async {
+    final words = await readPart(chinese);
+    // No Chinese in it at all is not an answer, whatever else came through.
+    // A model that loses its footing and replies in English would otherwise
+    // have its English handed back as the pinyin to say.
+    if (words == null || !words.any((word) => word is Spoken)) return null;
+    return words;
+  }
+
+  /// [chinese] as words, which may be none at all — for a piece of a sentence
+  /// rather than a whole answer, where the piece before a word can be empty or
+  /// only punctuation. Null still means something in it could not be read.
+  Future<List<Word>?> readPart(String chinese) async {
     final words = <Word>[];
     var at = 0;
     while (at < chinese.length) {
@@ -70,10 +82,7 @@ class CharacterIndex {
       words.add(Spoken(syllables));
       at += match.length;
     }
-    // No Chinese in it at all is not an answer, whatever else came through.
-    // A model that loses its footing and replies in English would otherwise
-    // have its English handed back as the pinyin to say.
-    return words.any((word) => word is Spoken) ? words : null;
+    return words;
   }
 
   /// The longest word starting at [at], or null if not even the one character

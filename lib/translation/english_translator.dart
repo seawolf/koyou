@@ -15,6 +15,7 @@ class Rendering {
     required this.words,
     this.meaning,
     this.distinction,
+    this.example,
     this.hskLevel,
   });
 
@@ -39,6 +40,14 @@ class Rendering {
   /// where the dictionary records no difference at all — which is commoner.
   final String? distinction;
 
+  /// A sentence using the word, where one is known.
+  ///
+  /// Shows what a note cannot: 会员 is a member of a club, and its example
+  /// is about a membership card; 成员 is a member of a group, and its example
+  /// is a committee. Where two words share a meaning, this is what a learner
+  /// chooses by.
+  final Example? example;
+
   /// The HSK band of the word, 1 being the most elementary, or null where it
   /// is outside the syllabus or the answer spans several words.
   final int? hskLevel;
@@ -55,14 +64,49 @@ class Rendering {
       listEquals(other.words, words) &&
       other.meaning == meaning &&
       other.distinction == distinction &&
+      other.example == example &&
       other.hskLevel == hskLevel;
 
   @override
-  int get hashCode =>
-      Object.hash(Object.hashAll(words), meaning, distinction, hskLevel);
+  int get hashCode => Object.hash(
+    Object.hashAll(words),
+    meaning,
+    distinction,
+    example,
+    hskLevel,
+  );
 
   @override
   String toString() => meaning == null ? written : '$written ($meaning)';
+}
+
+/// A sentence showing a word in use: as pinyin, with the word itself marked,
+/// and in English.
+@immutable
+class Example {
+  const Example({
+    required this.words,
+    required this.target,
+    required this.english,
+  });
+
+  /// The sentence, read into words the way the rest of the app reads them.
+  final List<Word> words;
+
+  /// Which of [words] is the word being shown, so it can stand out.
+  final int target;
+
+  final String english;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Example &&
+      listEquals(other.words, words) &&
+      other.target == target &&
+      other.english == english;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(words), target, english);
 }
 
 /// Where an answer came from.

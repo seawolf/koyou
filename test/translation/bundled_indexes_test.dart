@@ -134,6 +134,15 @@ void main() {
       expect(words!.map((word) => word.written).join(' '), 'nǐhǎo shìjiè');
     });
 
+    test('reads a piece of a sentence, which may hold no Chinese', () async {
+      // The pieces either side of a word in an example: one may be empty, or
+      // only punctuation, and that is not a failure.
+      expect(await characters.readPart(''), isEmpty);
+      expect(await characters.readPart('。'), isEmpty);
+      expect((await characters.readPart('我'))!.single.written, 'wǒ');
+      expect(await characters.readPart('我\u{2f81a}'), isNull);
+    });
+
     test('declines rather than leave a hole', () async {
       // A character no dictionary entry covers. Half a line of pinyin is not
       // a line anyone can say.

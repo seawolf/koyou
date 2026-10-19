@@ -333,6 +333,47 @@ void main() {
     expect(find.text('only this meaning'), findsOne);
   });
 
+  testWidgets('shows a candidate\'s example, the word itself in bold', (
+    tester,
+  ) async {
+    final member = Said(
+      options: [
+        Rendering(
+          words: [_cha],
+          meaning: 'member',
+          example: Example(
+            words: [..._iLoveYou.take(1), _cha, ..._iLoveYou.skip(1)],
+            target: 1,
+            english: 'I belong to a tennis club.',
+          ),
+        ),
+      ],
+      phrasing: Phrasing.entry,
+    );
+    await _show(tester, translator: _Canned({'member': member}));
+    await _askFor(tester, 'member');
+
+    expect(find.byKey(const Key('example')), findsOne);
+    expect(find.text('I belong to a tennis club.'), findsOne);
+    final line = tester.widget<RichText>(
+      find
+          .descendant(
+            of: find.byKey(const Key('example')),
+            matching: find.byType(RichText),
+          )
+          .first,
+    );
+    final bold = <String>[];
+    line.text.visitChildren((span) {
+      if (span is TextSpan && span.style?.fontWeight == FontWeight.bold) {
+        bold.add(span.text!);
+      }
+      return true;
+    });
+    expect(bold, ['chá']);
+    expect(line.text.toPlainText(), 'wǒ chá ài nǐ');
+  });
+
   testWidgets('adds no note where the meanings already differ', (tester) async {
     final hot = Said(
       options: [

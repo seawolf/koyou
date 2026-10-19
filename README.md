@@ -662,6 +662,16 @@ Reading characters back is not quite exact, and the gaps are worth naming:
   than inventing one: asked to explain such pairs, the 0.8B model was right
   about three in eight and confidently wrong about the rest, and a learner
   cannot tell which is which. See [docs/local-model.md](docs/local-model.md).
+- **Each candidate has an example sentence where one exists**, from
+  [Tatoeba](https://tatoeba.org): written and translated by people, read into
+  pinyin by the dictionary, with the word itself in bold. It shows what a note
+  cannot — 会员 sits in "Do you have a points card?" and 成员 in "The
+  committee consists of four members". 11,270 words have one. The word is
+  shown in the reading it was offered with, not whatever the sentence alone
+  would be read as, so a candidate and its own example never disagree about a
+  tone. The model was tried first and swapped the word it was asked for with a
+  commoner one in 7 of 20 sentences — 月亮 for 月球, 去世 for 逝世 — which is
+  the very difference an example is there to show.
 - **"to land" asks for the verb and "a leak" for the noun.** CC-CEDICT writes
   every verb sense "to …", so the typed form decides which comes first.
 - **The gloss shown is the sense that was asked about**, not the entry's

@@ -490,6 +490,8 @@ class _Option extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                       ),
                     ),
+                  if (rendering.example case final example?)
+                    _ExampleLine(example: example),
                   if (rendering.hskLevel case final level?)
                     Text(
                       'HSK $level',
@@ -598,6 +600,58 @@ class _About extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A sentence showing the word in use: pinyin with the word itself in bold,
+/// and its English beneath.
+///
+/// Pinyin, not characters, because that is the learning surface; the
+/// sentence is read through the dictionary like everything else, so its
+/// tones are the dictionary's.
+class _ExampleLine extends StatelessWidget {
+  const _ExampleLine({required this.example});
+
+  final Example example;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final words = example.words.where((word) => !word.isEmpty).toList();
+    final target = example.words[example.target];
+
+    return Padding(
+      key: const Key('example'),
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
+            TextSpan(
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+              children: [
+                for (var i = 0; i < words.length; i++) ...[
+                  if (i > 0) const TextSpan(text: ' '),
+                  TextSpan(
+                    text: words[i].written,
+                    style: identical(words[i], target)
+                        ? const TextStyle(fontWeight: FontWeight.bold)
+                        : null,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            example.english,
+            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+          ),
+        ],
+      ),
     );
   }
 }

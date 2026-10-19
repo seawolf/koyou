@@ -1,7 +1,10 @@
 import '../pinyin/reading.dart';
+import '../pinyin/syllable.dart';
 import '../pinyin/word.dart';
+import 'character_index.dart';
 import 'dictionary.dart';
 import 'english_index.dart';
+import 'example_index.dart';
 import 'english_translator.dart';
 
 /// Answers a word by inverting CC-CEDICT.
@@ -18,7 +21,16 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
   const EnglishDictionaryTranslator({
     required this.index,
     required this.dictionary,
+    this.examples,
+    this.characters,
   });
+
+  /// Sentences showing each word in use. Both this and [characters] are
+  /// needed to show one, and either being null leaves examples out.
+  final ExampleIndex? examples;
+
+  /// Reads an example's sentence into pinyin.
+  final CharacterIndex? characters;
 
   final EnglishIndex index;
 
@@ -47,6 +59,7 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
           words: [Spoken(syllables)],
           entry: entry,
           sense: entry == null ? null : _senseFor(entry, queries),
+          example: await _exampleFor(meaning.simplified, syllables),
         ),
       );
     }
@@ -61,10 +74,43 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
             words: found[i].words,
             meaning: found[i].sense,
             distinction: distinctions[i],
+            example: found[i].example,
             hskLevel: found[i].entry?.hskLevel,
           ),
       ],
       phrasing: Phrasing.entry,
+    );
+  }
+
+  /// The example for [word], with the word itself in the reading it is
+  /// being offered with.
+  ///
+  /// Not in whatever reading the sentence would otherwise be read with. A
+  /// word with several readings is offered as one of them, and reading the
+  /// sentence on its own could pick another: the candidate would say one tone
+  /// and its own example a different one. So the sentence is read either side
+  /// of the word and the word is put back as the candidate's syllables.
+  Future<Example?> _exampleFor(String word, List<Syllable> syllables) async {
+    final examples = this.examples;
+    final characters = this.characters;
+    if (examples == null || characters == null) return null;
+    final sentence = await examples.find(word);
+    if (sentence == null) return null;
+
+    final end = sentence.offset + word.length;
+    if (end > sentence.chinese.length ||
+        sentence.chinese.substring(sentence.offset, end) != word) {
+      return null;
+    }
+    final before = await characters.readPart(
+      sentence.chinese.substring(0, sentence.offset),
+    );
+    final after = await characters.readPart(sentence.chinese.substring(end));
+    if (before == null || after == null) return null;
+    return Example(
+      words: [...before, Spoken(syllables), ...after],
+      target: before.length,
+      english: sentence.english,
     );
   }
 
@@ -232,11 +278,17 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
 /// A candidate on its way to being a [Rendering], kept with its entry so the
 /// candidates can be compared before they are shown.
 class _Found {
-  _Found({required this.words, required this.entry, required this.sense});
+  _Found({
+    required this.words,
+    required this.entry,
+    required this.sense,
+    this.example,
+  });
 
   final List<Word> words;
   final DictionaryEntry? entry;
   final String? sense;
+  final Example? example;
 }
 
 enum _PartOfSpeech { noun, verb }
