@@ -16,6 +16,7 @@ class Rendering {
     this.meaning,
     this.distinction,
     this.example,
+    this.register,
     this.hskLevel,
   });
 
@@ -30,7 +31,9 @@ class Rendering {
   final String? meaning;
 
   /// What tells this candidate apart from another showing the same [meaning],
-  /// or null where nothing needs telling apart.
+  /// or null where nothing needs telling apart. Where this project's own
+  /// notes say what a word is used for, that is shown instead, whether or not
+  /// the meaning is shared — it was written to tell words apart.
   ///
   /// 64% of English headwords with several candidates show the same gloss on
   /// two of them — "lunch" offered 午餐, 午饭 and 中餐, each glossed "lunch" —
@@ -47,6 +50,9 @@ class Rendering {
   /// is a committee. Where two words share a meaning, this is what a learner
   /// chooses by.
   final Example? example;
+
+  /// Whether this is the everyday or the formal word, where that is known.
+  final Register? register;
 
   /// The HSK band of the word, 1 being the most elementary, or null where it
   /// is outside the syllabus or the answer spans several words.
@@ -65,6 +71,7 @@ class Rendering {
       other.meaning == meaning &&
       other.distinction == distinction &&
       other.example == example &&
+      other.register == register &&
       other.hskLevel == hskLevel;
 
   @override
@@ -73,6 +80,7 @@ class Rendering {
     meaning,
     distinction,
     example,
+    register,
     hskLevel,
   );
 
@@ -107,6 +115,20 @@ class Example {
 
   @override
   int get hashCode => Object.hash(Object.hashAll(words), target, english);
+}
+
+/// How formal an answer should be, where the learner says.
+///
+/// Two values and no more, because that is what the data can honour. A word
+/// is labelled with one only where `assets/notes/word_notes.tsv` says so, and
+/// a preference reorders the candidates that carry a label without hiding
+/// the ones that do not.
+enum Register {
+  /// What you would say in conversation.
+  everyday,
+
+  /// What you would write, or say on an occasion.
+  formal,
 }
 
 /// Where an answer came from.
@@ -178,7 +200,10 @@ class Said {
 /// the first place, which is a different problem with different failure modes.
 abstract interface class EnglishTranslator {
   /// Pinyin for [english], or null if this translator has none to offer.
-  Future<Said?> say(String english);
+  ///
+  /// [register] is the learner's preference, if they gave one. It orders an
+  /// answer; it never empties one.
+  Future<Said?> say(String english, {Register? register});
 }
 
 /// Asks each translator in turn and takes the first answer.
@@ -188,9 +213,9 @@ class CompositeEnglishTranslator implements EnglishTranslator {
   final List<EnglishTranslator> translators;
 
   @override
-  Future<Said?> say(String english) async {
+  Future<Said?> say(String english, {Register? register}) async {
     for (final translator in translators) {
-      final said = await translator.say(english);
+      final said = await translator.say(english, register: register);
       if (said != null) return said;
     }
     return null;

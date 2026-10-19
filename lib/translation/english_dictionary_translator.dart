@@ -5,6 +5,7 @@ import 'character_index.dart';
 import 'dictionary.dart';
 import 'english_index.dart';
 import 'example_index.dart';
+import 'word_notes.dart';
 import 'english_translator.dart';
 
 /// Answers a word by inverting CC-CEDICT.
@@ -23,7 +24,12 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
     required this.dictionary,
     this.examples,
     this.characters,
+    this.notes,
   });
+
+  /// This project's own notes, over the dictionary: a register, and what a
+  /// word is used for where CC-CEDICT gives several the same gloss.
+  final WordNotes? notes;
 
   /// Sentences showing each word in use. Both this and [characters] are
   /// needed to show one, and either being null leaves examples out.
@@ -41,7 +47,7 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
   final Dictionary dictionary;
 
   @override
-  Future<Said?> say(String english) async {
+  Future<Said?> say(String english, {Register? register}) async {
     final meanings = await index.lookUp(english);
     if (meanings.isEmpty) return null;
     final queries = EnglishIndex.queriesFor(english);
@@ -60,10 +66,15 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
           entry: entry,
           sense: entry == null ? null : _senseFor(entry, queries),
           example: await _exampleFor(meaning.simplified, syllables),
+          note: await notes?.find(meaning.simplified, meaning.key),
         ),
       );
     }
     if (found.isEmpty) return null;
+    // A register preference first and the part of speech last, so that when
+    // both are given the part of speech wins: "to bury" asks for a verb in
+    // so many words, and a preference for formal words is only a lean.
+    _preferRegister(found, register);
     _putFirst(found, _askedFor(english));
 
     final distinctions = _distinctions(found);
@@ -73,8 +84,9 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
           Rendering(
             words: found[i].words,
             meaning: found[i].sense,
-            distinction: distinctions[i],
+            distinction: found[i].note?.note ?? distinctions[i],
             example: found[i].example,
+            register: found[i].note?.register,
             hskLevel: found[i].entry?.hskLevel,
           ),
       ],
@@ -112,6 +124,30 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
       target: before.length,
       english: sentence.english,
     );
+  }
+
+  /// Moves the candidates in the [wanted] register to the front, then the
+  /// ones nobody has labelled, and the other register last.
+  ///
+  /// A lean, not a filter. Most words carry no label, and hiding them because
+  /// a learner asked for formal words would empty most answers; putting the
+  /// formal word first, chosen, where one is known, is what "formal" can
+  /// honestly mean with the data there is.
+  static void _preferRegister(List<_Found> found, Register? wanted) {
+    if (wanted == null) return;
+    int place(_Found f) => switch (f.note?.register) {
+      null => 1,
+      final register when register == wanted => 0,
+      _ => 2,
+    };
+    final indexed = [for (var i = 0; i < found.length; i++) (i, found[i])];
+    indexed.sort((a, b) {
+      final byPlace = place(a.$2).compareTo(place(b.$2));
+      return byPlace != 0 ? byPlace : a.$1.compareTo(b.$1);
+    });
+    found
+      ..clear()
+      ..addAll(indexed.map((entry) => entry.$2));
   }
 
   /// Which part of speech the English itself asked for, where it says.
@@ -283,12 +319,14 @@ class _Found {
     required this.entry,
     required this.sense,
     this.example,
+    this.note,
   });
 
   final List<Word> words;
   final DictionaryEntry? entry;
   final String? sense;
   final Example? example;
+  final WordNote? note;
 }
 
 enum _PartOfSpeech { noun, verb }

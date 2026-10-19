@@ -682,6 +682,16 @@ Reading characters back is not quite exact, and the gaps are worth naming:
   speaker; a correction is a one-line edit, and a test checks every line
   points at a real entry, holds no characters, and never gives two candidates
   for one English word the same note.
+- **Informal / Formal / Either** beside the Translate button leans the answer
+  that way. It is a lean, not a filter: the word in the chosen register goes
+  first and is chosen, words nobody has labelled keep their place, and
+  nothing is hidden — most words carry no label, and hiding them would empty
+  most answers. A dictionary answer reorders the moment the choice changes,
+  since it is free. It does not reach the model: asked to translate formally
+  or informally, the model started answering instead of translating, about
+  half the time against once in twelve without — so a sentence is translated
+  as written, and the screen says so. See
+  [docs/local-model.md](docs/local-model.md).
 - **"to land" asks for the verb and "a leak" for the noun.** CC-CEDICT writes
   every verb sense "to …", so the typed form decides which comes first.
 - **The gloss shown is the sense that was asked about**, not the entry's

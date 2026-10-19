@@ -100,7 +100,7 @@ StoredFavourites _favourites() {
 /// that an answer makes the journey back.
 class _AlwaysTea implements EnglishTranslator {
   @override
-  Future<Said?> say(String english) async => Said(
+  Future<Said?> say(String english, {Register? register}) async => Said(
     options: [
       Rendering(
         words: [

@@ -19,6 +19,7 @@ import 'translation/model_translator.dart';
 import 'translation/on_device_backend.dart';
 import 'translation/phrasebook_translator.dart';
 import 'translation/tone_suggestion.dart';
+import 'translation/word_notes.dart';
 import 'translation/translator.dart';
 
 class KouyuApp extends StatefulWidget {
@@ -95,6 +96,7 @@ class _KouyuAppState extends State<KouyuApp> {
             dictionary: Dictionary.bundled(),
             examples: ExampleIndex.bundled(),
             characters: CharacterIndex.bundled(),
+            notes: WordNotes.bundled(),
           ),
         ]),
         englishPhraseTranslator: EnglishModelTranslator(

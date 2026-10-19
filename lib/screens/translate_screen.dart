@@ -86,6 +86,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
   /// shown is about something else, which is worse than showing nothing.
   String _answered = '';
 
+  /// What the learner wants, if they have said. Null is "either".
+  Register? _register;
+
   /// Which candidate is selected, for the words where English is vaguer than
   /// Chinese. Reset whenever a new answer arrives.
   int _chosen = 0;
@@ -125,8 +128,23 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   /// Whether there is a question on screen that has not been asked yet.
+  /// Whether the button has something to do.
+  ///
+  /// The words, not the register. A dictionary answer is reordered the moment
+  /// the register changes, and a model's sentence does not depend on it at
+  /// all — asked for a register, the model starts answering instead of
+  /// translating (see `docs/local-model.md`) — so a moved toggle is never a
+  /// new question for the button.
   bool get _askable =>
       _typed.text.trim().isNotEmpty && _typed.text.trim() != _answered;
+
+  /// A new preference. A dictionary answer is reordered at once, because it
+  /// is local and free. A model's sentence is left as it is: the register
+  /// does not reach the model, and the screen says so beneath it.
+  void _prefer(Register? register) {
+    setState(() => _register = register);
+    if (_said?.phrasing == Phrasing.entry && _answered.isNotEmpty) _ask();
+  }
 
   /// Editing invalidates the answer and nothing else.
   ///
@@ -160,7 +178,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
     if (typed.isEmpty) return;
     _focus.unfocus();
 
-    final said = await widget.translator.say(typed);
+    final register = _register;
+    final said = await widget.translator.say(typed, register: register);
     if (!mounted || asked != _asked) return;
     setState(() {
       _said = said;
@@ -174,17 +193,18 @@ class _TranslateScreenState extends State<TranslateScreen> {
     if (said != null) return;
     final phrases = widget.phraseTranslator;
     if (phrases == null) return;
-    await _think(phrases, typed, asked);
+    await _think(phrases, typed, asked, register);
   }
 
   Future<void> _think(
     EnglishTranslator phrases,
     String typed,
     int asked,
+    Register? register,
   ) async {
     if (!mounted || asked != _asked) return;
     setState(() => _thinking = true);
-    final said = await phrases.say(typed);
+    final said = await phrases.say(typed, register: register);
     if (!mounted || asked != _asked) return;
     setState(() {
       _thinking = false;
@@ -318,19 +338,40 @@ class _TranslateScreenState extends State<TranslateScreen> {
           // intermediate state fights that — as well as waking the model, at a
           // second of CPU and a sip of battery, for a sentence nobody has
           // finished.
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              key: const Key('translate-it'),
-              onPressed: _askable && !_thinking ? _ask : null,
-              icon: const Icon(Icons.search),
-              label: const Text('Translate'),
-            ),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FilledButton.icon(
+                key: const Key('translate-it'),
+                onPressed: _askable && !_thinking ? _ask : null,
+                icon: const Icon(Icons.search),
+                label: const Text('Translate'),
+              ),
+              // A lean, not a filter: it puts the word in the chosen register
+              // first where one is labelled, and hides nothing.
+              SegmentedButton<Register?>(
+                key: const Key('register'),
+                segments: const [
+                  ButtonSegment(
+                    value: Register.everyday,
+                    label: Text('Informal'),
+                  ),
+                  ButtonSegment(value: Register.formal, label: Text('Formal')),
+                  ButtonSegment(value: null, label: Text('Either')),
+                ],
+                selected: {_register},
+                onSelectionChanged: (chosen) => _prefer(chosen.single),
+                showSelectedIcon: false,
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           if (said != null)
             _Answer(
               said: said,
+              leaning: _register != null,
               chosen: _chosen,
               onChoose: (index) => setState(() => _chosen = index),
               onPractise: () => Navigator.of(context).pop(rendering!.words),
@@ -357,6 +398,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 class _Answer extends StatelessWidget {
   const _Answer({
     required this.said,
+    required this.leaning,
     required this.chosen,
     required this.onChoose,
     required this.onPractise,
@@ -366,6 +408,9 @@ class _Answer extends StatelessWidget {
   final int chosen;
   final ValueChanged<int> onChoose;
   final VoidCallback onPractise;
+
+  /// Whether Informal or Formal is chosen, which a sentence cannot honour.
+  final bool leaning;
 
   @override
   Widget build(BuildContext context) {
@@ -397,6 +442,21 @@ class _Answer extends StatelessWidget {
         if (said.phrasing == Phrasing.generated) ...[
           const SizedBox(height: 16),
           _Check(readsBackAs: said.readsBackAs),
+          // Said, because the toggle above still shows Formal: a sentence
+          // that looked as though it had been translated formally, and had
+          // not, would be the kind of wrong a learner cannot see.
+          if (leaning)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Informal and Formal only reorder single words. A sentence is '
+                'translated as you wrote it.',
+                key: const Key('register-not-applied'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
         ],
         const SizedBox(height: 24),
         // The transfer the whole screen exists for: the answer goes into the
@@ -492,9 +552,9 @@ class _Option extends StatelessWidget {
                     ),
                   if (rendering.example case final example?)
                     _ExampleLine(example: example),
-                  if (rendering.hskLevel case final level?)
+                  if (_labelOf(rendering) case final label?)
                     Text(
-                      'HSK $level',
+                      label,
                       style: theme.textTheme.labelSmall?.copyWith(color: muted),
                     ),
                 ],
@@ -505,6 +565,20 @@ class _Option extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The small print under a candidate: its HSK band and its register, where
+/// either is known.
+String? _labelOf(Rendering rendering) {
+  final parts = [
+    if (rendering.hskLevel case final level?) 'HSK $level',
+    if (rendering.register case final register?)
+      switch (register) {
+        Register.everyday => 'everyday',
+        Register.formal => 'formal',
+      },
+  ];
+  return parts.isEmpty ? null : parts.join(' · ');
 }
 
 /// The round trip, which is the only thing standing between a learner and a

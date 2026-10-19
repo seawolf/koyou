@@ -32,9 +32,13 @@ class _Canned implements EnglishTranslator {
   final Duration delay;
   final List<String> asked = [];
 
+  /// The register each question was asked in, in order.
+  final List<Register?> registers = [];
+
   @override
-  Future<Said?> say(String english) async {
+  Future<Said?> say(String english, {Register? register}) async {
     asked.add(english);
+    registers.add(register);
     if (delay != Duration.zero) await Future<void>.delayed(delay);
     return answers[english];
   }
@@ -674,6 +678,110 @@ void main() {
 
       // Straight through to the compose screen, as "Practise this" would.
       expect(_answer, _iLoveYou);
+    });
+  });
+  group('formal or informal', () {
+    Said summer() => Said(
+      options: [
+        Rendering(
+          words: [_cha],
+          meaning: 'summer',
+          register: Register.everyday,
+          hskLevel: 2,
+        ),
+        Rendering(
+          words: _iLoveYou,
+          meaning: 'summer',
+          register: Register.formal,
+          hskLevel: 4,
+        ),
+      ],
+      phrasing: Phrasing.entry,
+    );
+
+    Future<void> choose(WidgetTester tester, String label) async {
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('register')),
+          matching: find.text(label),
+        ),
+      );
+      await _waitForTheModel(tester);
+    }
+
+    testWidgets('starts on either', (tester) async {
+      await _show(tester, translator: _Canned({'summer': summer()}));
+      final control = tester.widget<SegmentedButton<Register?>>(
+        find.byKey(const Key('register')),
+      );
+      expect(control.selected, {null});
+    });
+
+    testWidgets('asks in the register chosen', (tester) async {
+      final dictionary = _Canned({'summer': summer()});
+      await _show(tester, translator: dictionary);
+      await choose(tester, 'Formal');
+      await _askFor(tester, 'summer');
+      expect(dictionary.registers, [Register.formal]);
+    });
+
+    testWidgets('reorders a dictionary answer at once', (tester) async {
+      // Local and free, so there is no reason to make anyone press the
+      // button again for it.
+      final dictionary = _Canned({'summer': summer()});
+      await _show(tester, translator: dictionary);
+      await _askFor(tester, 'summer');
+      await choose(tester, 'Informal');
+      expect(dictionary.registers, [null, Register.everyday]);
+    });
+
+    testWidgets('a sentence ignores it, and says so', (tester) async {
+      // The register never reaches the model — asked for one, it starts
+      // answering instead of translating — so moving the toggle spends no
+      // CPU, does not light the button, and the screen says why.
+      final phrases = _Canned({
+        'it is hot in summer': Said(
+          options: [Rendering(words: _iLoveYou)],
+          phrasing: Phrasing.generated,
+        ),
+      });
+      await _show(tester, translator: _Canned(const {}), phrases: phrases);
+      await _askFor(tester, 'it is hot in summer');
+      expect(find.byKey(const Key('register-not-applied')), findsNothing);
+
+      await choose(tester, 'Formal');
+      expect(phrases.asked, hasLength(1));
+      expect(
+        tester
+            .widget<FilledButton>(find.byKey(const Key('translate-it')))
+            .onPressed,
+        isNull,
+      );
+      expect(find.byKey(const Key('register-not-applied')), findsOne);
+    });
+
+    testWidgets('never says so about a dictionary answer', (tester) async {
+      await _show(tester, translator: _Canned({'summer': summer()}));
+      await choose(tester, 'Formal');
+      await _askFor(tester, 'summer');
+      expect(find.byKey(const Key('register-not-applied')), findsNothing);
+    });
+
+    testWidgets('labels each candidate with its register', (tester) async {
+      await _show(tester, translator: _Canned({'summer': summer()}));
+      await _askFor(tester, 'summer');
+      expect(find.text('HSK 2 · everyday'), findsOne);
+      expect(find.text('HSK 4 · formal'), findsOne);
+    });
+
+    testWidgets('fits a narrow phone beside the button', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await _show(tester, translator: _Canned({'summer': summer()}));
+      expect(tester.takeException(), isNull);
+      final control = tester.getRect(find.byKey(const Key('register')));
+      expect(control.right, lessThanOrEqualTo(320));
     });
   });
 }

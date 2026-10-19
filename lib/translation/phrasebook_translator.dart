@@ -42,7 +42,7 @@ class EnglishPhrasebook implements EnglishTranslator {
   const EnglishPhrasebook();
 
   @override
-  Future<Said?> say(String english) async {
+  Future<Said?> say(String english, {Register? register}) async {
     final asked = _plain(english);
     if (asked.isEmpty) return null;
     for (final entry in phrasebook) {

@@ -482,6 +482,38 @@ and discarding the rest, which leaves the same gaps a corpus has at a second of
 CPU per lookup. Tatoeba covers 74% of these words with sentences people wrote,
 and that is what ships.
 
+### And it cannot be told a register
+
+The translate screen has Informal / Formal / Either. For single words it leans
+the dictionary's candidates using this project's own notes; the question was
+whether it could also be passed to the model for whole sentences. Twelve
+phrases, the shipped prompt against the same prompt with one line asking for
+a register:
+
+| phrase | no register (shipped) | informal | formal |
+| --- | --- | --- | --- |
+| can you help me? | 你能帮我吗？ | 当然可以，没问题！ — answered | 当然可以，请问您有什么需要帮助的吗？ — answered |
+| I would like two beers please | 我想两杯啤酒 | 那两杯啤酒，谢谢！ | 您好，请问您是否需要两杯啤酒？ — the waiter again |
+| my phone is broken | 我的手机坏了 | 你的手机坏了，能帮我修一下吗？ | 您的手机坏了，能帮我修一下吗？ |
+| I want to eat breakfast | 我想吃早餐 | 你想吃早餐，对吧？ — speaker flipped | 我想吃早餐 |
+| how much does this cost? | 多少钱？ | 多少钱啊？ | 请问这件物品的价格是多少？ — genuinely formal |
+
+One phrase in twelve went wrong without the line; six informal and five
+formal with it. Moving the register into the question, with worked examples of
+each, did better but not well enough — and in informal mode the model used the
+formal 您 three times in ten, so it was not honouring the register at all. A
+small model seems to read "be formal" as "be a polite assistant", which is the
+exact failure the worked examples in the prompt exist to stop.
+
+So the register does not reach the model. A sentence is translated as it was
+written, and the screen says so under a model's answer when Informal or Formal
+is chosen.
+
+The same run turned up a failure of the shipped prompt itself: "what is your
+name?" came back as 我叫什么名字 — "what is *my* name?" — the speaker flipped.
+It was not in the original twenty. The round trip is what shows it to a
+learner, and it is a reason to grow the set.
+
 ## Suggested tiers
 
 The dictionary is tier zero and always on: it is what makes the tones survive,

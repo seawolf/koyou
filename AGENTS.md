@@ -466,6 +466,18 @@ Two traps in there, both of which cost an afternoon:
   the whole sentence: a word with several readings would otherwise carry one
   tone in its row and another in its example. Do not "simplify" it to one
   `read` of the sentence.
+- **A register preference leans; it never filters.** Most words carry no
+  register label, so hiding the unlabelled ones would empty most answers.
+  The chosen register goes first, unlabelled words keep their order, and the
+  other register goes last. A typed part of speech ("to land") is applied
+  after it and wins, because it is stated outright and a register is only a
+  preference.
+- **Do not put a register in the model's prompt.** One line asking for formal
+  or informal Mandarin took the reverse prompt from one failure in twelve to
+  five or six — it answered questions, flipped the speaker, and brought back
+  the waiter — and in informal mode it used the formal 您 anyway.
+  `EnglishModelTranslator.say` accepts the register and ignores it on purpose;
+  the screen says a sentence is translated as written.
 - **Do not have the model write example sentences.** Asked for one per word,
   0.8B swapped in the commoner sibling in 7 of 20 — 月亮 for 月球, 去世 for
   逝世, 实验 for 试验 — always the rarer word of the pair, which is the one that

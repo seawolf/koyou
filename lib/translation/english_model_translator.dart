@@ -26,8 +26,14 @@ class EnglishModelTranslator implements EnglishTranslator {
 
   final TranslationBackend backend;
 
+  /// [register] is accepted and deliberately not used. Told to translate
+  /// formally or informally, the model stopped translating and started
+  /// answering — about half of twelve phrases went wrong against one with no
+  /// instruction, and in informal mode it used the formal 您 anyway. The
+  /// numbers are in `docs/local-model.md`; the screen tells the learner a
+  /// sentence is translated as written.
   @override
-  Future<Said?> say(String english) async {
+  Future<Said?> say(String english, {Register? register}) async {
     if (english.trim().isEmpty) return null;
 
     final chinese = await backend.intoChinese(english);
