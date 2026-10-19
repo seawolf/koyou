@@ -433,6 +433,31 @@ complete-hsk-vocabulary — genuinely absent, checked, the syllabus counts 你 a
 "(after a form of address) hello". That is what the hand-written phrase list is
 for.
 
+### Telling near-synonyms apart is not a job for it
+
+The English index often offers several words with the same gloss — 午餐, 午饭
+and 中餐 are all "lunch" — and the dictionary can say what separates about
+two thirds of them, from senses only one of them has. The remaining third are
+near-synonyms CC-CEDICT does not separate, which is where a model looked
+useful. Asked, in one line, how each of eight such pairs differs:
+
+| pair | what 0.8B said | |
+| --- | --- | --- |
+| 诉讼 / 官司 | formal legal term vs colloquial | right |
+| 监控 / 监测 | active surveillance vs general observation | right |
+| 成员 / 会员 | status in an organisation vs a membership subscription | roughly right |
+| 冒犯 / 触犯 | "rude" vs "serious" | vague |
+| 湖 / 湖泊 | "湖 is a specific body of water in China" | half invented |
+| 迁移 / 迁徙 | movement "due to climate change" | invented detail |
+| 幸亏 / 好在 | explains the characters, not the usage | wrong |
+| 猴子 / 猴 | "homo… is a verb meaning to be human" | nonsense |
+
+Three in eight, and the wrong ones mostly sound plausible. That is the failure
+this app is built against everywhere else: a learner cannot tell a confident
+wrong explanation from a right one. So those pairs say which word is commoner
+and "no difference recorded", which is true, rather than something a model
+made up.
+
 ## Suggested tiers
 
 The dictionary is tier zero and always on: it is what makes the tones survive,

@@ -447,6 +447,13 @@ Two traps in there, both of which cost an afternoon:
   the translation, for the least reliable thing a small model does: it does not
   know which tone is right, it knows which sentence sounds likely, and it nags
   confidently about correct input.
+- **Do not ask the model what separates two near-synonyms.** Where several
+  candidates share a gloss, `EnglishDictionaryTranslator` notes what tells them
+  apart from the dictionary alone — a sense only one has, "only this meaning",
+  or which is commoner — and says "no difference recorded" where CC-CEDICT
+  records none. Asked to fill that gap, 0.8B was right about three pairs in
+  eight and fluently wrong about the rest (`docs/local-model.md`); a learner
+  cannot tell which is which, so an invented difference is worse than none.
 - **Never rank-ratio one word against another to correct it.** 呢 is rank 96
   against 你 at 5, and 时 is 115 against 是 at 4; both are perfectly good words.
   `DictionarySuggester` only speaks when what was typed is *not a word*, or is

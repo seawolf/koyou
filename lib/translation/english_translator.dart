@@ -11,7 +11,12 @@ import '../pinyin/word.dart';
 /// written pinyin is ambiguous.
 @immutable
 class Rendering {
-  const Rendering({required this.words, this.meaning, this.hskLevel});
+  const Rendering({
+    required this.words,
+    this.meaning,
+    this.distinction,
+    this.hskLevel,
+  });
 
   final List<Word> words;
 
@@ -22,6 +27,17 @@ class Rendering {
   /// 辣, and a learner who cannot read the characters has nothing else to
   /// choose by.
   final String? meaning;
+
+  /// What tells this candidate apart from another showing the same [meaning],
+  /// or null where nothing needs telling apart.
+  ///
+  /// 64% of English headwords with several candidates show the same gloss on
+  /// two of them — "lunch" offered 午餐, 午饭 and 中餐, each glossed "lunch" —
+  /// which left a learner choosing between three identical rows. So wherever
+  /// [meaning] is shared, this says what differs: a sense only this word has
+  /// ("also: Chinese meal; Chinese food"), that it has no other sense, or —
+  /// where the dictionary records no difference at all — which is commoner.
+  final String? distinction;
 
   /// The HSK band of the word, 1 being the most elementary, or null where it
   /// is outside the syllabus or the answer spans several words.
@@ -38,10 +54,12 @@ class Rendering {
       other is Rendering &&
       listEquals(other.words, words) &&
       other.meaning == meaning &&
+      other.distinction == distinction &&
       other.hskLevel == hskLevel;
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(words), meaning, hskLevel);
+  int get hashCode =>
+      Object.hash(Object.hashAll(words), meaning, distinction, hskLevel);
 
   @override
   String toString() => meaning == null ? written : '$written ($meaning)';

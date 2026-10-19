@@ -305,6 +305,47 @@ void main() {
     expect(find.byIcon(Icons.radio_button_checked), findsOne);
   });
 
+  testWidgets('says what tells two same-meaning candidates apart', (
+    tester,
+  ) async {
+    // Three rows reading "lunch" is not a choice. The note under each is
+    // what makes it one, and a row whose meaning is its own gets none.
+    final lunch = Said(
+      options: [
+        Rendering(
+          words: [_cha],
+          meaning: 'lunch',
+          distinction: 'also: luncheon',
+        ),
+        Rendering(
+          words: _iLoveYou,
+          meaning: 'lunch',
+          distinction: 'only this meaning',
+        ),
+      ],
+      phrasing: Phrasing.entry,
+    );
+    await _show(tester, translator: _Canned({'lunch': lunch}));
+    await _askFor(tester, 'lunch');
+
+    expect(find.byKey(const Key('distinction')), findsExactly(2));
+    expect(find.text('also: luncheon'), findsOne);
+    expect(find.text('only this meaning'), findsOne);
+  });
+
+  testWidgets('adds no note where the meanings already differ', (tester) async {
+    final hot = Said(
+      options: [
+        Rendering(words: [_cha], meaning: 'hot (spicy)'),
+        Rendering(words: _iLoveYou, meaning: 'hot (of weather)'),
+      ],
+      phrasing: Phrasing.entry,
+    );
+    await _show(tester, translator: _Canned({'hot': hot}));
+    await _askFor(tester, 'hot');
+    expect(find.byKey(const Key('distinction')), findsNothing);
+  });
+
   testWidgets('practises the candidate that was picked', (tester) async {
     final hot = Said(
       options: [

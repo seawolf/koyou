@@ -640,6 +640,17 @@ Reading characters back is not quite exact, and the gaps are worth naming:
   ten times worse than the best is dropped, which is about where a choice
   stops being a choice: "thank you" ends up with only 谢谢, where before it
   offered 三克油 (a joke transliteration) beside it.
+- **Candidates that share a meaning say what tells them apart.** That is the
+  usual case, not an edge one: 64% of English headwords with several
+  candidates show the same gloss on two of them, and "lunch" offered three
+  rows each reading "lunch". Under each such row is a note — a sense only that
+  word has ("also: luncheon", "also: Chinese meal; Chinese food"), "only this
+  meaning" for the plain one left over, and, where CC-CEDICT records no
+  difference at all, which word is commoner. That last covers 35% of them —
+  near-synonyms like 湖 and 湖泊 — and it says "no difference recorded" rather
+  than inventing one: asked to explain such pairs, the 0.8B model was right
+  about three in eight and confidently wrong about the rest, and a learner
+  cannot tell which is which. See [docs/local-model.md](docs/local-model.md).
 - **The gloss shown is the sense that was asked about**, not the entry's
   first. 热 leads with "to warm up", so somebody typing "hot" was choosing
   between 辣 "hot (spicy)" and 热 "to warm up" — one answer and one

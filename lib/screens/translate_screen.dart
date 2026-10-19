@@ -478,6 +478,18 @@ class _Option extends StatelessWidget {
                       meaning,
                       style: theme.textTheme.bodyMedium?.copyWith(color: muted),
                     ),
+                  // Only where the meaning above is shared with another row:
+                  // three rows reading "lunch" is not a choice, and this is
+                  // what makes it one.
+                  if (rendering.distinction case final distinction?)
+                    Text(
+                      distinction,
+                      key: const Key('distinction'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: muted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   if (rendering.hskLevel case final level?)
                     Text(
                       'HSK $level',
