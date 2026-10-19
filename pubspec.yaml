@@ -44,6 +44,9 @@ flutter:
     # Example sentences picked from Tatoeba by tool/build_examples.dart, under
     # its licence (CC BY 2.0 FR) — see assets/examples/LICENCE.
     - assets/examples/
+    # Hand-written notes on near-synonyms, this project's own — see the
+    # header of the file itself.
+    - assets/notes/
 
 # Per-platform icons are generated from assets/icon/ by tool/generate_icons.sh,
 # which also regenerates those source images. Run that script, not this config,

@@ -1,0 +1,187 @@
+# What tells near-synonyms apart, where CC-CEDICT gives them the same gloss.
+#
+# Hand-written, and this project's own — not generated, and not CC-CEDICT's.
+# Drafted by Claude (Anthropic) from general knowledge of Mandarin usage, for
+# the words a learner actually meets: syllabus words that share a gloss and
+# that the dictionary has no other way to separate.
+#
+# Cross-checked by Qwen 3.8-Max (Alibaba), a Chinese-first model, asked first
+# to verify the file and then, twice, to name the least accurate notes. Its
+# corrections to 吓/吓唬, 过滤/筛选, 犹豫/迟疑, 饭店/旅馆, 出丑, 土匪, 缴费,
+# 腮, 延 and 有幸 were taken; 单身/独身, 不免/必将, 比如/例如 and 渐渐 were
+# rewritten more moderately than it proposed; its claims about 括弧 and 书橱
+# could not be confirmed and were not taken. Two models
+# agreeing is not a native speaker, so this still wants review by one, or by a
+# teacher; a correction is a one-line edit here.
+#
+# One word per line, four fields separated by tabs:
+#   simplified   the word, exactly as CC-CEDICT writes it
+#   key          its dictionary key, tone numbers and all
+#   register     everyday, formal, or - where register is not the difference
+#   note         what it is used for, in a few words. Pinyin, never characters:
+#                this is on the learning surface.
+#
+# The test in test/translation/word_notes_test.dart checks every line points
+# at a real dictionary entry, uses a known register, holds no characters, and
+# that words sharing a gloss do not share a note.
+湖	hu2	everyday	a particular lake, and in lake names
+湖泊	hu2 po1	formal	lakes in general, as in geography
+官司	guan1 si5	everyday	a court case, in conversation
+诉讼	su4 song4	formal	litigation, the legal term
+幸亏	xing4 kui1	-	the usual word for luckily
+好在	hao3 zai4	-	pointing out a saving grace
+出洋相	chu1 yang2 xiang4	everyday	colloquial, often playful
+出丑	chu1 chou3	-	to disgrace oneself; heavier than chūyángxiàng
+成员	cheng2 yuan2	-	of a group, team or family
+会员	hui4 yuan2	-	of a club or service you join
+迁徙	qian1 xi3	-	of animals, birds or whole peoples
+迁移	qian1 yi2	-	moving home, or data, elsewhere
+监控	jian1 kong4	-	surveillance; watching and controlling
+监测	jian1 ce4	-	measuring over time, like air quality
+猴子	hou2 zi5	everyday	the word on its own
+猴	hou2	-	mostly inside other words, like hóunián
+蚊帐	wen2 zhang4	everyday	the usual word
+帐子	zhang4 zi5	-	any bed curtain or net
+冒犯	mao4 fan4	-	to offend a person, by rudeness
+触犯	chu4 fan4	-	to break a law or rule
+姐姐	jie3 jie5	everyday	the word on its own, and to address her
+姐	jie3	-	short form, after a name or in compounds
+曾经	ceng2 jing1	everyday	the usual word
+曾	ceng2	formal	shorter, more written
+外号	wai4 hao4	everyday	the usual word
+绰号	chuo4 hao4	formal	more written
+总之	zong3 zhi1	everyday	the usual word
+总而言之	zong3 er2 yan2 zhi1	formal	fuller, for summing up a speech or essay
+不免	bu4 mian3	-	unavoidably, of a feeling or a result
+必将	bi4 jiang1	formal	will certainly happen; in speeches and news
+请帖	qing3 tie3	-	the usual word
+请柬	qing3 jian3	formal	more formal
+岛	dao3	everyday	an island
+岛屿	dao3 yu3	formal	islands in general, as in geography
+犹豫	you2 yu4	everyday	unable to decide; the usual word
+迟疑	chi2 yi2	formal	pausing before acting; more written
+蜂蜜	feng1 mi4	everyday	the usual word
+蜜	mi4	-	short form; also sweetness, figuratively
+饭店	fan4 dian4	-	mostly a restaurant now; also in some hotel names
+旅馆	lu:3 guan3	-	an inn or a guesthouse, usually modest
+每	mei3	-	every one in turn, like měi tiān
+各	ge4	-	each of several different ones, like gè guó
+早上	zao3 shang5	everyday	morning, the usual word
+清晨	qing1 chen2	formal	daybreak, more literary
+要么	yao4 me5	everyday	either… or…, in conversation
+或是	huo4 shi4	formal	or, more written
+礼仪	li3 yi2	-	ceremony and etiquette, on formal occasions
+礼节	li3 jie2	-	manners and courtesy
+实验	shi2 yan4	-	a scientific experiment
+试验	shi4 yan4	-	a trial or a test run
+休养	xiu1 yang3	-	to rest and recuperate
+康复	kang1 fu4	-	to recover fully; rehabilitation
+谣言	yao2 yan2	-	a false rumour, often malicious
+传闻	chuan2 wen2	-	hearsay, which may be true
+口水	kou3 shui3	everyday	the usual word
+唾液	tuo4 ye4	formal	the medical term
+样品	yang4 pin3	-	a product sample
+样本	yang4 ben3	-	a sample for study or statistics
+吓	xia4	everyday	to scare; also to be startled, xià yī tiào
+吓唬	xia4 hu5	everyday	to scare someone, often a bluff or a tease
+螺丝	luo2 si1	everyday	the usual word
+螺丝钉	luo2 si1 ding1	-	the screw itself; also a cog, figuratively
+船	chuan2	everyday	a boat or a ship
+船只	chuan2 zhi1	formal	vessels in general, as a collective
+悲痛	bei1 tong4	-	deep grief, as at a death
+悲哀	bei1 ai1	-	sorrow; a sad state of things
+发言人	fa1 yan2 ren2	-	an official spokesperson
+代言人	dai4 yan2 ren2	-	a brand ambassador or endorser
+钢	gang1	everyday	steel
+钢铁	gang1 tie3	formal	iron and steel; the industry
+肚子	du4 zi5	everyday	the belly, the tummy
+胃	wei4	-	the stomach as an organ
+夏天	xia4 tian1	everyday	the usual word
+夏季	xia4 ji4	formal	the season, in forecasts and writing
+夏	xia4	-	short form, in compounds and writing
+旱灾	han4 zai1	-	a drought, as a disaster
+旱	han4	-	dry, short of rain
+过滤	guo4 lu:4	-	to filter out, of liquids, air or data
+筛选	shai1 xuan3	-	to screen, picking the best from many
+比如	bi3 ru2	everyday	for example, or "say…" to suppose
+例如	li4 ru2	formal	for example, listing actual cases
+幸好	xing4 hao3	everyday	luckily
+有幸	you3 xing4	formal	humble: to have the honour of doing something
+括号	kuo4 hao4	everyday	the usual word, for any bracket
+括弧	kuo4 hu2	-	round brackets specifically
+去世	qu4 shi4	-	neutral, the everyday word
+逝世	shi4 shi4	formal	respectful, for notable people
+交费	jiao1 fei4	everyday	to pay, the usual word
+缴费	jiao3 fei4	formal	to pay bills or dues; the word in payment apps
+私营	si1 ying2	-	privately run, of a business
+私有	si1 you3	-	privately owned, of property
+延长	yan2 chang2	everyday	to extend, the usual word
+延	yan2	-	short form in compounds; also to delay, yánqī
+渐渐	jian4 jian4	everyday	little by little, of natural changes
+逐渐	zhu2 jian4	formal	gradually, more written
+趋势	qu1 shi4	-	a general trend
+动向	dong4 xiang4	-	a development or movement to watch
+课本	ke4 ben3	everyday	a school textbook
+教科书	jiao4 ke1 shu1	formal	a textbook, more formal
+月亮	yue4 liang5	everyday	the moon in the sky
+月球	yue4 qiu2	-	the moon as a body in space
+剧院	ju4 yuan4	-	a theatre as an institution or building
+剧场	ju4 chang3	-	a theatre auditorium; a venue
+老虎	lao3 hu3	everyday	the word on its own
+虎	hu3	-	mostly inside other words, and in writing
+西红柿	xi1 hong2 shi4	everyday	the northern word
+番茄	fan1 qie2	-	the southern word, also on packaging
+倒下	dao3 xia4	-	to fall down, of a person or thing
+倒塌	dao3 ta1	-	to collapse, of a building
+实话	shi2 hua4	-	honest words, as in shuō shíhuà
+真理	zhen1 li3	-	truth as a principle
+脸颊	lian3 jia2	-	the cheek, the usual word
+腮	sai1	-	the lower cheek, around the jaw; also gills
+煤	mei2	everyday	coal
+煤炭	mei2 tan4	formal	coal as a resource or an industry
+解说员	jie3 shuo1 yuan2	-	a live commentator, as for sport
+评论员	ping2 lun4 yuan2	-	a critic or a columnist
+比赛	bi3 sai4	-	a match or a race
+竞争	jing4 zheng1	-	competition; rivalry
+恭喜	gong1 xi3	everyday	congratulations!, said to someone
+祝贺	zhu4 he4	formal	to congratulate, more formal
+合同	he2 tong5	everyday	a contract, the usual word
+合约	he2 yue1	formal	an agreement, more formal
+强盗	qiang2 dao4	-	a robber
+土匪	tu3 fei3	-	rural bandit gangs, mostly of the past
+仅仅	jin3 jin3	everyday	only, just
+仅	jin3	formal	shorter, more written
+出生	chu1 sheng1	everyday	to be born
+诞生	dan4 sheng1	formal	the birth of something great
+就要	jiu4 yao4	everyday	about to, in conversation
+将要	jiang1 yao4	formal	will soon, more written
+书柜	shu1 gui4	everyday	the usual word
+书橱	shu1 chu2	-	a book cabinet, less common
+早饭	zao3 fan4	everyday	the usual word
+早餐	zao3 can1	formal	slightly more formal, as on menus
+明媚	ming2 mei4	-	of scenery or sunshine
+亮丽	liang4 li4	-	of looks, colours or appearance
+埋	mai2	everyday	to bury anything
+埋葬	mai2 zang4	formal	to bury the dead
+单方面	dan1 fang1 mian4	everyday	one-sided, the usual word
+单边	dan1 bian1	formal	unilateral, in politics
+单身	dan1 shen1	everyday	not in a relationship; the usual word
+独身	du2 shen1	formal	staying unmarried, long-term or by choice
+警告	jing3 gao4	-	to warn of danger; a warning
+告诫	gao4 jie4	-	to admonish; to advise against
+浪费	lang4 fei4	everyday	to waste
+耗费	hao4 fei4	-	to use up or consume
+财富	cai2 fu4	-	wealth, riches; also figurative
+钱财	qian2 cai2	-	money and property
+冬天	dong1 tian1	everyday	the usual word
+冬季	dong1 ji4	formal	the season, in forecasts and writing
+冬	dong1	-	short form, in compounds and writing
+操心	cao1 xin1	-	to fret over; to take trouble over
+愁	chou2	-	to be anxious or sad about
+胳膊	ge1 bo5	everyday	the usual word
+臂	bi4	-	the arm, more written, in compounds
+航天员	hang2 tian1 yuan2	-	the Chinese word for its own astronauts
+宇航员	yu3 hang2 yuan2	-	an astronaut, the general word
+秋天	qiu1 tian1	everyday	the usual word
+秋季	qiu1 ji4	formal	the season, in forecasts and writing
+秋	qiu1	-	short form, in compounds and writing

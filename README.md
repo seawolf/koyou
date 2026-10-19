@@ -672,6 +672,16 @@ Reading characters back is not quite exact, and the gaps are worth naming:
   tone. The model was tried first and swapped the word it was asked for with a
   commoner one in 7 of 20 sentences — 月亮 for 月球, 去世 for 逝世 — which is
   the very difference an example is there to show.
+- **Our own notes go where the dictionary has none.**
+  [`assets/notes/word_notes.tsv`](assets/notes/word_notes.tsv) is a short,
+  hand-written layer over CC-CEDICT for the near-synonyms a learner actually
+  meets — 159 words — giving each a register (everyday or formal) and a few
+  words on what it is for: 会员 "of a club or service you join", 成员 "of a
+  group, team or family". CC-CEDICT itself is untouched. The notes were
+  drafted by Claude from general knowledge and should be reviewed by a native
+  speaker; a correction is a one-line edit, and a test checks every line
+  points at a real entry, holds no characters, and never gives two candidates
+  for one English word the same note.
 - **"to land" asks for the verb and "a leak" for the noun.** CC-CEDICT writes
   every verb sense "to …", so the typed form decides which comes first.
 - **The gloss shown is the sense that was asked about**, not the entry's

@@ -195,6 +195,12 @@ variables at the top of that script and re-run it.
   examples pointing at the old segmentation. Tatoeba is CC BY 2.0 FR and is
   credited under ⓘ alongside the others.
 
+`assets/notes/word_notes.tsv` is **not** generated: it is hand-written, this
+project's own, and edited directly. It was drafted by Claude for the
+near-synonyms learners meet and wants a native speaker's review. Keep its
+notes in pinyin, never characters, and run `test/translation/word_notes_test.dart`
+after any edit — it checks each line against the real dictionary.
+
 CC-CEDICT is CC BY-SA 4.0 and the HSK data is MIT. The generated shards carry
 both notices and the app credits them under the ⓘ button. Keep that credit if
 you touch the app bar.
