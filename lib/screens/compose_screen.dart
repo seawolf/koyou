@@ -1350,6 +1350,14 @@ class _Sections extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
+              'Example sentences from Tatoeba (tatoeba.org), written and '
+              'translated by its contributors. Used under the Creative '
+              'Commons Attribution 2.0 France licence.\n'
+              'https://creativecommons.org/licenses/by/2.0/fr/',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
               'Word frequency and HSK levels from complete-hsk-vocabulary, '
               'copyright Yanis Zafirópulos, used under the MIT licence.',
               style: theme.textTheme.bodyMedium,

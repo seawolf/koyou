@@ -1148,6 +1148,7 @@ void main() {
 
       expect(find.textContaining('CC-CEDICT'), findsOneWidget);
       expect(find.textContaining('complete-hsk-vocabulary'), findsOneWidget);
+      expect(find.textContaining('Tatoeba'), findsOneWidget);
       expect(find.textContaining('Apache 2.0'), findsOneWidget);
       // Two things are MIT licensed, so this is deliberately not "one".
       expect(find.textContaining('MIT'), findsWidgets);

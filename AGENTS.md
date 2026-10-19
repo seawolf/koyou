@@ -188,6 +188,13 @@ variables at the top of that script and re-run it.
   three listings are needed in `pubspec.yaml` because Flutter's asset
   directories are not recursive.
 
+- `assets/examples/*.tsv` and `assets/examples/LICENCE` come from
+  `tool/build_examples.dart`, which picks one Tatoeba sentence per word. It
+  reads the dictionary's generated character and English indexes, so run it
+  **after** `build_dictionary.dart`; a dictionary rebuild without it leaves
+  examples pointing at the old segmentation. Tatoeba is CC BY 2.0 FR and is
+  credited under ⓘ alongside the others.
+
 CC-CEDICT is CC BY-SA 4.0 and the HSK data is MIT. The generated shards carry
 both notices and the app credits them under the ⓘ button. Keep that credit if
 you touch the app bar.

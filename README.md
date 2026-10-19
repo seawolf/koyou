@@ -259,7 +259,18 @@ while `Syllable.numbered` hands over `wan3 an1` for free.
 
 ### The dictionary
 
-CC-CEDICT, 115,380 entries over 23 shards by first letter, about 7.5MB. Shards
+CC-CEDICT, 115,380 entries over 23 shards by first letter, about 7.5MB. Example
+sentences come from Tatoeba through a second tool, run after this one because
+it reads the character index to know which sentences can be shown as pinyin:
+
+```bash
+dart run tool/build_examples.dart
+```
+
+It keeps one sentence per word — 870KB for 11,270 words — preferring short ones
+in syllabus vocabulary, and drops any that Tatoeba's own reviewers have flagged
+for a native check or a change, along with quotations, idioms, and sentences
+about Tatoeba itself. Shards
 are parsed on demand and kept, so a lookup touches one file of at most 650KB
 rather than holding the lot in memory.
 

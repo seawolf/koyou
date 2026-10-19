@@ -1,0 +1,7 @@
+The files in this directory are selected from Tatoeba by
+tool/build_examples.dart, and carry its licence.
+
+Tatoeba (https://tatoeba.org), sentences and translations written by its
+contributors. Creative Commons Attribution 2.0 France.
+https://creativecommons.org/licenses/by/2.0/fr/
+Source: https://downloads.tatoeba.org/exports

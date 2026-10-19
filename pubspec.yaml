@@ -25,6 +25,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   shared_preferences_platform_interface: ^2.4.2
+  archive: ^4.2.0
 
 flutter:
   uses-material-design: true
@@ -40,6 +41,9 @@ flutter:
     - assets/dictionary/
     - assets/dictionary/english/
     - assets/dictionary/characters/
+    # Example sentences picked from Tatoeba by tool/build_examples.dart, under
+    # its licence (CC BY 2.0 FR) — see assets/examples/LICENCE.
+    - assets/examples/
 
 # Per-platform icons are generated from assets/icon/ by tool/generate_icons.sh,
 # which also regenerates those source images. Run that script, not this config,
