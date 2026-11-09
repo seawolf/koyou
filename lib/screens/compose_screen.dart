@@ -17,6 +17,7 @@ import '../translation/translator.dart';
 import '../widgets/blinking_cursor.dart';
 import '../widgets/favourite_star.dart';
 import '../widgets/pinyin_keyboard.dart';
+import '../widgets/word_list.dart';
 import 'favourites_screen.dart';
 import 'model_screen.dart';
 import 'translate_screen.dart';
@@ -761,7 +762,22 @@ class _Reading extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                _Words(key: const Key('word-list'), words: parts),
+                WordList(key: const Key('word-list'), words: parts),
+              ],
+              // A single word taken apart into its characters, each in the
+              // reading it takes here: mǐfàn is mǐ "uncooked rice" and fàn
+              // "cooked rice". Only for a word the dictionary is sure of —
+              // see `Translation.madeOf`.
+              if ((exact ? quick!.madeOf : const <WordGloss>[]) case final made
+                  when made.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text(
+                  'made of',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                WordList(key: const Key('made-of'), words: made),
               ],
             ],
           ),
@@ -779,58 +795,6 @@ class _Reading extends StatelessWidget {
     return whole == null
         ? 'several words sound like this'
         : 'some of these words sound like other words';
-  }
-}
-
-/// One word per line, so a word-by-word answer cannot be read as a sentence.
-class _Words extends StatelessWidget {
-  const _Words({super.key, required this.words});
-
-  final List<WordGloss> words;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final word in words)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2, right: 8),
-                  child: Text(
-                    '\u2022',
-                    style: theme.textTheme.bodyLarge?.copyWith(color: muted),
-                  ),
-                ),
-                // The pinyin the learner typed, so a line can be matched to
-                // the syllables it came from.
-                Text(
-                  word.pinyin,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                Text('  ', style: theme.textTheme.bodyLarge),
-                // Wraps rather than truncates: an ambiguous syllable offers
-                // three candidates and they are the whole point of the line.
-                Expanded(
-                  child: Text(
-                    word.english,
-                    style: theme.textTheme.bodyLarge?.copyWith(color: muted),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
   }
 }
 

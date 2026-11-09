@@ -134,6 +134,80 @@ void main() {
     });
   });
 
+  group('taking an answer apart', () {
+    test('a dictionary candidate lists its characters', () async {
+      final translator = EnglishDictionaryTranslator(
+        index: EnglishIndex.bundled(),
+        dictionary: Dictionary.bundled(),
+      );
+      final options = (await translator.say('rice'))!.options;
+      final mifan = options.firstWhere((o) => o.written == 'mǐfàn');
+      expect(mifan.parts.map((p) => p.pinyin), ['mǐ', 'fàn']);
+      // One character is its own breakdown.
+      final water = (await translator.say('water'))!.best;
+      expect(water.parts, isEmpty);
+    });
+
+    // A dictionary over just the words the model's answers below use.
+    final dictionary = Dictionary(
+      loadShard: (letter) async {
+        const rows = [
+          'ming2 tian1\t明天\t-\t469\t1\ttomorrow',
+          'wo3\t我\t-\t3\t1\tI; me; my',
+          'qu4\t去\t-\t40\t1\tto go',
+          'ming2\t明\t-\t900\t2\tbright',
+          'tian1\t天\t-\t200\t1\tday; sky',
+        ];
+        final found = rows.where((row) => row.startsWith(letter)).toList();
+        if (found.isEmpty) throw StateError('no shard $letter');
+        return found.join('\n');
+      },
+    );
+    final characters = _characters({
+      '明天': 'ming2 tian1',
+      '我': 'wo3',
+      '去': 'qu4',
+      '明': 'ming2',
+      '天': 'tian1',
+    });
+
+    test(
+      'a model\'s sentence lists its words, glossed by the dictionary',
+      () async {
+        final said = await EnglishModelTranslator(
+          characters: characters,
+          backend: _Fake(chinese: '明天我去Paris。'),
+          dictionary: dictionary,
+        ).say('tomorrow I go to Paris');
+        expect(
+          [for (final p in said!.best.parts) '${p.pinyin} ${p.english}'],
+          ['míngtiān tomorrow', 'wǒ I; me; my', 'qù to go', 'Paris as written'],
+        );
+      },
+    );
+
+    test('a model\'s single word lists its characters', () async {
+      final said = await EnglishModelTranslator(
+        characters: characters,
+        backend: _Fake(chinese: '明天'),
+        dictionary: dictionary,
+      ).say('tomorrow');
+      expect(
+        [for (final p in said!.best.parts) '${p.pinyin} ${p.english}'],
+        ['míng bright', 'tiān day; sky'],
+      );
+    });
+
+    test('without a dictionary, an answer is not taken apart', () async {
+      final said = await EnglishModelTranslator(
+        characters: characters,
+        backend: _Fake(chinese: '明天我去'),
+      ).say('tomorrow I go');
+      expect(said!.best.parts, isEmpty);
+      expect(said.best.written, 'míngtiān wǒ qù');
+    });
+  });
+
   group('the model, composing a phrase', () {
     final characters = _characters({
       '我': 'wo3',

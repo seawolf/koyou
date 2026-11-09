@@ -1,5 +1,6 @@
 import '../pinyin/reading.dart';
 import '../pinyin/syllable.dart';
+import 'breakdown.dart';
 import '../pinyin/word.dart';
 import 'character_index.dart';
 import 'dictionary.dart';
@@ -7,6 +8,7 @@ import 'english_index.dart';
 import 'example_index.dart';
 import 'word_notes.dart';
 import 'english_translator.dart';
+import 'translator.dart';
 
 /// Answers a word by inverting CC-CEDICT.
 ///
@@ -67,6 +69,8 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
           sense: entry == null ? null : _senseFor(entry, queries),
           example: await _exampleFor(meaning.simplified, syllables),
           note: await notes?.find(meaning.simplified, meaning.key),
+          parts: await Breakdown(dictionary)
+              .charactersOf(meaning.simplified, meaning.key),
         ),
       );
     }
@@ -87,6 +91,7 @@ class EnglishDictionaryTranslator implements EnglishTranslator {
             distinction: found[i].note?.note ?? distinctions[i],
             example: found[i].example,
             register: found[i].note?.register,
+            parts: found[i].parts,
             hskLevel: found[i].entry?.hskLevel,
           ),
       ],
@@ -320,6 +325,7 @@ class _Found {
     required this.sense,
     this.example,
     this.note,
+    this.parts = const [],
   });
 
   final List<Word> words;
@@ -327,6 +333,7 @@ class _Found {
   final String? sense;
   final Example? example;
   final WordNote? note;
+  final List<WordGloss> parts;
 }
 
 enum _PartOfSpeech { noun, verb }

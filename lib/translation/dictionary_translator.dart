@@ -1,4 +1,5 @@
 import '../pinyin/word.dart';
+import 'breakdown.dart';
 import 'dictionary.dart';
 import 'translator.dart';
 
@@ -29,12 +30,17 @@ class DictionaryTranslator implements Translator {
         ? const <DictionaryEntry>[]
         : await dictionary.lookUp(key);
     if (whole.isNotEmpty) {
+      final uncertain = _isAmbiguous(whole);
       return Translation(
         _describe(whole),
         // One entry for everything typed. The key drops word breaks, so this
         // finds 缘分 whether it was spaced or not.
         matchedWhole: true,
-        uncertain: _isAmbiguous(whole),
+        uncertain: uncertain,
+        madeOf: uncertain
+            ? const []
+            : await Breakdown(dictionary)
+                  .charactersOf(whole.first.simplified, whole.first.key),
         // Taken from the word offered first, not from whichever entry happens
         // to carry a band.
         hskLevel: whole.first.hskLevel,

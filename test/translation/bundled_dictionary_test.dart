@@ -202,6 +202,37 @@ void main() {
   // Against the real data rather than a stand-in, because the whole value of
   // the tone suggester is that it stays quiet on ordinary input, and only the
   // real frequency ranks can show that.
+  group('taking a whole-word answer apart', () {
+    final translator = DictionaryTranslator(dictionary);
+
+    test('lists the characters of a word it is sure of', () async {
+      // mǐfàn, typed as one word.
+      final found = await translator.translate(
+        TranslationRequest([
+          Spoken([
+            syllable('m', 'i', Tone.third),
+            syllable('f', 'an', Tone.fourth),
+          ]),
+        ]),
+      );
+      expect(found!.matchedWhole, isTrue);
+      expect(found.madeOf.map((part) => part.pinyin), ['mǐ', 'fàn']);
+      expect(found.madeOf.first.english, startsWith('uncooked rice'));
+    });
+
+    test('takes nothing apart where several words sound alike', () async {
+      // shì is forty words. Taking the first apart would present a guess as
+      // the thing typed.
+      final found = await translator.translate(
+        TranslationRequest([
+          Spoken([syllable('sh', 'i', Tone.fourth)]),
+        ]),
+      );
+      expect(found!.uncertain, isTrue);
+      expect(found.madeOf, isEmpty);
+    });
+  });
+
   group('suggesting a mistyped tone', () {
     late Suggester suggester;
 

@@ -102,6 +102,7 @@ class _KouyuAppState extends State<KouyuApp> {
         englishPhraseTranslator: EnglishModelTranslator(
           characters: CharacterIndex.bundled(),
           backend: onDeviceBackend(),
+          dictionary: Dictionary.bundled(),
         ),
       ),
     );

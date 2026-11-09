@@ -8,6 +8,7 @@ import '../translation/model_asset.dart';
 import '../translation/model_store.dart';
 import '../translation/translator.dart';
 import '../widgets/favourite_star.dart';
+import '../widgets/word_list.dart';
 import 'favourites_screen.dart';
 
 /// Work out how to say something, starting from English.
@@ -427,6 +428,11 @@ class _Answer extends StatelessWidget {
             // suggest there is something to decide.
             choosable: said.options.length > 1,
             onTap: () => onChoose(index),
+            // A dictionary word is taken apart into its characters, a
+            // model's sentence into its words.
+            partsLabel: said.phrasing == Phrasing.entry
+                ? 'made of'
+                : 'word by word',
           ),
         if (said.options.length > 1)
           Padding(
@@ -480,12 +486,17 @@ class _Option extends StatelessWidget {
     required this.selected,
     required this.choosable,
     required this.onTap,
+    required this.partsLabel,
   });
 
   final Rendering rendering;
   final bool selected;
   final bool choosable;
   final VoidCallback onTap;
+
+  /// What to call [Rendering.parts]: "made of" for a word's characters,
+  /// "word by word" for a sentence's words.
+  final String partsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -548,6 +559,23 @@ class _Option extends StatelessWidget {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: muted,
                         fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  if (rendering.parts.isNotEmpty)
+                    Padding(
+                      key: const Key('parts'),
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            partsLabel,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                          WordList(words: rendering.parts, dense: true),
+                        ],
                       ),
                     ),
                   if (rendering.example case final example?)

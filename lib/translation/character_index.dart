@@ -56,7 +56,18 @@ class CharacterIndex {
   /// rather than a whole answer, where the piece before a word can be empty or
   /// only punctuation. Null still means something in it could not be read.
   Future<List<Word>?> readPart(String chinese) async {
-    final words = <Word>[];
+    final read = await readWithCharacters(chinese);
+    return read == null ? null : [for (final piece in read) piece.word];
+  }
+
+  /// [chinese] as words, each with the characters it was read from — null for
+  /// a name carried in Latin letters, which was not read from any.
+  ///
+  /// What lets a sentence be glossed a word at a time: the pinyin alone does
+  /// not say which word was meant, since many share a reading, but the
+  /// characters do.
+  Future<List<ReadWord>?> readWithCharacters(String chinese) async {
+    final words = <ReadWord>[];
     var at = 0;
     while (at < chinese.length) {
       if (!_isHan(chinese.codeUnitAt(at))) {
@@ -69,7 +80,9 @@ class CharacterIndex {
         // else in the gap is punctuation, and this app has none.
         final between = chinese.substring(was, at);
         final literal = between.replaceAll(_notLiteral, ' ').trim();
-        if (literal.isNotEmpty) words.add(Literal(literal));
+        if (literal.isNotEmpty) {
+          words.add((word: Literal(literal), characters: null, key: null));
+        }
         continue;
       }
 
@@ -79,7 +92,11 @@ class CharacterIndex {
       // A word the dictionary knows but the keyboard cannot build — the erhua
       // suffix, an interjection. Rare enough to decline over.
       if (syllables == null) return null;
-      words.add(Spoken(syllables));
+      words.add((
+        word: Spoken(syllables),
+        characters: chinese.substring(at, at + match.length),
+        key: match.key,
+      ));
       at += match.length;
     }
     return words;
@@ -139,6 +156,10 @@ class CharacterIndex {
     return _shards[name] = _Shard(readings, longest);
   }
 }
+
+/// A word read from characters: the word, and the characters and dictionary
+/// key it came from — both null for a name carried in Latin letters.
+typedef ReadWord = ({Word word, String? characters, String? key});
 
 /// One parsed shard, and how far back a longest-match has to look in it.
 class _Shard {

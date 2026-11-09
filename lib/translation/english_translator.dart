@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../pinyin/word.dart';
+import 'translator.dart';
 
 /// One way of saying what was asked for, as pinyin the keyboard could have
 /// built.
@@ -18,6 +19,7 @@ class Rendering {
     this.example,
     this.register,
     this.hskLevel,
+    this.parts = const <WordGloss>[],
   });
 
   final List<Word> words;
@@ -54,6 +56,14 @@ class Rendering {
   /// Whether this is the everyday or the formal word, where that is known.
   final Register? register;
 
+  /// What this is made of, one level down: a word's characters, or a
+  /// sentence's words. Empty where there is nothing to take apart.
+  ///
+  /// One level and no more. A sentence lists its words and a word lists its
+  /// characters; a sentence listing the characters of each of its words would
+  /// bury the answer it was meant to explain.
+  final List<WordGloss> parts;
+
   /// The HSK band of the word, 1 being the most elementary, or null where it
   /// is outside the syllabus or the answer spans several words.
   final int? hskLevel;
@@ -72,7 +82,8 @@ class Rendering {
       other.distinction == distinction &&
       other.example == example &&
       other.register == register &&
-      other.hskLevel == hskLevel;
+      other.hskLevel == hskLevel &&
+      listEquals(other.parts, parts);
 
   @override
   int get hashCode => Object.hash(
@@ -82,6 +93,7 @@ class Rendering {
     example,
     register,
     hskLevel,
+    Object.hashAll(parts),
   );
 
   @override

@@ -97,6 +97,7 @@ class Translation {
     this.hskLevel,
     this.words = const <WordGloss>[],
     this.matchedWhole = false,
+    this.madeOf = const <WordGloss>[],
   });
 
   final String text;
@@ -142,6 +143,15 @@ class Translation {
   /// words wants to know which English came from which of them.
   final List<WordGloss> words;
 
+  /// The characters of a single word, each in the reading it takes there and
+  /// with what it means on its own — 米饭 as mǐ "uncooked rice" and fàn
+  /// "cooked rice" — or empty where there is no such word to take apart.
+  ///
+  /// Only where the answer is one word the dictionary is sure of. Where
+  /// several words sound alike, taking the first apart would present a guess
+  /// as the thing typed.
+  final List<WordGloss> madeOf;
+
   @override
   String toString() => text;
 
@@ -153,7 +163,8 @@ class Translation {
       other.uncertain == uncertain &&
       other.hskLevel == hskLevel &&
       other.matchedWhole == matchedWhole &&
-      listEquals(other.words, words);
+      listEquals(other.words, words) &&
+      listEquals(other.madeOf, madeOf);
 
   @override
   int get hashCode => Object.hash(
@@ -163,6 +174,7 @@ class Translation {
     hskLevel,
     matchedWhole,
     Object.hashAll(words),
+    Object.hashAll(madeOf),
   );
 }
 

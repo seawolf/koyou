@@ -1,6 +1,10 @@
+import '../pinyin/word.dart';
+import 'breakdown.dart';
 import 'character_index.dart';
+import 'dictionary.dart';
 import 'english_translator.dart';
 import 'translation_backend.dart';
+import 'translator.dart';
 
 /// Composes a whole phrase, by letting the model answer in characters.
 ///
@@ -17,7 +21,12 @@ class EnglishModelTranslator implements EnglishTranslator {
   const EnglishModelTranslator({
     required this.characters,
     required this.backend,
+    this.dictionary,
   });
+
+  /// Glosses the answer a word at a time, so a sentence the model wrote can be
+  /// taken apart as a dictionary answer can. Null leaves the parts out.
+  final Dictionary? dictionary;
 
   /// Reads the model's characters back into pinyin, and declines anything it
   /// cannot read — which is also what catches a model that stopped
@@ -39,8 +48,11 @@ class EnglishModelTranslator implements EnglishTranslator {
     final chinese = await backend.intoChinese(english);
     if (chinese == null || chinese.trim().isEmpty) return null;
 
-    final words = await characters.read(chinese);
-    if (words == null) return null;
+    final read = await characters.readWithCharacters(chinese);
+    if (read == null || !read.any((piece) => piece.word is Spoken)) {
+      return null;
+    }
+    final words = [for (final piece in read) piece.word];
 
     // The check that makes this direction safe to show at all. Going the other
     // way a bad answer is visibly bad English; going this way the learner
@@ -51,9 +63,44 @@ class EnglishModelTranslator implements EnglishTranslator {
     final readsBackAs = await backend.intoEnglish(chinese);
 
     return Said(
-      options: [Rendering(words: words)],
+      options: [Rendering(words: words, parts: await _partsOf(read))],
       phrasing: Phrasing.generated,
       readsBackAs: readsBackAs,
     );
+  }
+
+  /// The answer taken apart one level: a sentence into its words, each glossed
+  /// from the dictionary, or a single word into its characters.
+  ///
+  /// The meanings are the dictionary's, never the model's. The model chose the
+  /// words; what each one means is looked up, so a word it used oddly is at
+  /// least glossed truly.
+  Future<List<WordGloss>> _partsOf(List<ReadWord> read) async {
+    final dictionary = this.dictionary;
+    if (dictionary == null) return const [];
+    final breakdown = Breakdown(dictionary);
+
+    final spoken = [
+      for (final piece in read)
+        if (piece.word is Spoken) piece,
+    ];
+    if (spoken.length == 1 && read.length == 1) {
+      final only = spoken.single;
+      return breakdown.charactersOf(only.characters!, only.key!);
+    }
+    return [
+      for (final piece in read)
+        switch (piece.word) {
+          Literal(:final text) => WordGloss(
+            pinyin: text,
+            english: 'as written',
+          ),
+          Spoken() => WordGloss(
+            pinyin: piece.word.written,
+            english:
+                await breakdown.glossOf(piece.characters!, piece.key!) ?? '—',
+          ),
+        },
+    ];
   }
 }

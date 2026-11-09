@@ -8,6 +8,7 @@ import 'package:kouyu/theme.dart';
 import 'package:kouyu/favourites/favourites.dart';
 import 'package:kouyu/favourites/stored_favourites.dart';
 import 'package:kouyu/translation/english_translator.dart';
+import 'package:kouyu/translation/translator.dart';
 import 'package:kouyu/translation/model_asset.dart';
 import 'package:kouyu/translation/model_store.dart';
 
@@ -782,6 +783,65 @@ void main() {
       expect(tester.takeException(), isNull);
       final control = tester.getRect(find.byKey(const Key('register')));
       expect(control.right, lessThanOrEqualTo(320));
+    });
+  });
+  group('taking an answer apart', () {
+    testWidgets('a dictionary word lists what it is made of', (tester) async {
+      final rice = Said(
+        options: [
+          Rendering(
+            words: [_cha],
+            meaning: '(cooked) rice',
+            parts: const [
+              WordGloss(pinyin: 'mǐ', english: 'uncooked rice'),
+              WordGloss(pinyin: 'fàn', english: 'cooked rice; meal'),
+            ],
+          ),
+        ],
+        phrasing: Phrasing.entry,
+      );
+      await _show(tester, translator: _Canned({'rice': rice}));
+      await _askFor(tester, 'rice');
+
+      expect(find.byKey(const Key('parts')), findsOne);
+      expect(find.text('made of'), findsOne);
+      expect(find.text('uncooked rice'), findsOne);
+    });
+
+    testWidgets('a model\'s sentence lists its words', (tester) async {
+      final phrases = _Canned({
+        'I love you': Said(
+          options: [
+            Rendering(
+              words: _iLoveYou,
+              parts: const [
+                WordGloss(pinyin: 'wǒ', english: 'I; me; my'),
+                WordGloss(pinyin: 'ài', english: 'to love'),
+                WordGloss(pinyin: 'nǐ', english: 'you'),
+              ],
+            ),
+          ],
+          phrasing: Phrasing.generated,
+        ),
+      });
+      await _show(tester, translator: _Canned(const {}), phrases: phrases);
+      await _askFor(tester, 'I love you');
+
+      expect(find.text('word by word'), findsOne);
+      expect(find.text('to love'), findsOne);
+    });
+
+    testWidgets('shows nothing where there is nothing to take apart', (
+      tester,
+    ) async {
+      await _show(
+        tester,
+        translator: _Canned({
+          'tea': _word([_cha]),
+        }),
+      );
+      await _askFor(tester, 'tea');
+      expect(find.byKey(const Key('parts')), findsNothing);
     });
   });
 }

@@ -692,6 +692,19 @@ Reading characters back is not quite exact, and the gaps are worth naming:
   half the time against once in twelve without — so a sentence is translated
   as written, and the screen says so. See
   [docs/local-model.md](docs/local-model.md).
+- **Words are taken apart, one level down.** A word of two or more
+  characters lists what it is made of — mǐfàn is *mǐ* "uncooked rice" and
+  *fàn* "cooked rice; meal", dōngxi is *dōng* "east" and *xi* "west" — on the
+  compose screen under a whole-word answer, and on the translate screen under
+  every dictionary candidate. A sentence the model wrote lists its words
+  instead, each glossed by the dictionary rather than by the model. One level
+  and no more: a sentence listing the characters of each of its words would
+  bury the answer it was meant to explain. Each character is looked up in the
+  reading the word gives it, which covers 97% of syllabus words; a neutral
+  tone falls back to the same syllable in a full tone (西 *xi* is 西 *xī*), but
+  a full tone with no entry is left unglossed rather than given another
+  word's meaning (漂 in 漂亮 is *piào*, and the 漂 that has an entry, *piāo*,
+  means "to float").
 - **"to land" asks for the verb and "a leak" for the noun.** CC-CEDICT writes
   every verb sense "to …", so the typed form decides which comes first.
 - **The gloss shown is the sense that was asked about**, not the entry's

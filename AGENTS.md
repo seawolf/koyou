@@ -466,6 +466,15 @@ Two traps in there, both of which cost an afternoon:
   the whole sentence: a word with several readings would otherwise carry one
   tone in its row and another in its example. Do not "simplify" it to one
   `read` of the sentence.
+- **A breakdown is the dictionary's, at one level.** `Breakdown` takes a word
+  apart into its characters, each looked up in the reading the word's own key
+  gives it; a model's sentence is taken apart into its words, glossed by
+  looking each up — never by asking the model what it meant. A neutral tone
+  falls back to the same letters in a full tone, because it is the weakened
+  form of the same syllable; a full tone with no entry does **not**, because
+  the nearest reading is often a different word (漂 *piào* in 漂亮 against 漂
+  *piāo*, "to float"). Where several words sound alike, `Translation.madeOf`
+  stays empty: taking the first apart would present a guess as fact.
 - **A register preference leans; it never filters.** Most words carry no
   register label, so hiding the unlabelled ones would empty most answers.
   The chosen register goes first, unlabelled words keep their order, and the

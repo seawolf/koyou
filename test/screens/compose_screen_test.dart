@@ -2143,4 +2143,38 @@ void main() {
       expect(starOf(tester).filled, isTrue);
     });
   });
+  group('what a word is made of', () {
+    testWidgets('lists the characters of a whole-word answer', (tester) async {
+      final translator = _RecordingTranslator()
+        ..reply = const Translation(
+          '(cooked) rice',
+          matchedWhole: true,
+          madeOf: [
+            WordGloss(pinyin: 'mǐ', english: 'uncooked rice'),
+            WordGloss(pinyin: 'fàn', english: 'cooked rice; meal'),
+          ],
+        );
+      await pump(tester, translator: translator);
+      await type(tester, 'n', 'i', 3);
+
+      expect(find.text('made of'), findsOne);
+      final list = find.byKey(const Key('made-of'));
+      expect(find.descendant(of: list, matching: find.text('mǐ')), findsOne);
+      expect(
+        find.descendant(of: list, matching: find.text('cooked rice; meal')),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows nothing where there is nothing to take apart', (
+      tester,
+    ) async {
+      final translator = _RecordingTranslator()
+        ..reply = const Translation('you', matchedWhole: true);
+      await pump(tester, translator: translator);
+      await type(tester, 'n', 'i', 3);
+      expect(find.byKey(const Key('made-of')), findsNothing);
+      expect(find.text('made of'), findsNothing);
+    });
+  });
 }
