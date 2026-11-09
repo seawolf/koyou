@@ -234,15 +234,6 @@ class Composition {
     );
   }
 
-  /// The literal at [word], or null if that word is not one.
-  ///
-  /// What the screen asks before opening the editor on a tapped word.
-  Literal? literalAt(int word) {
-    if (word < 0 || word >= words.length) return null;
-    final found = words[word];
-    return found is Literal ? found : null;
-  }
-
   /// Starts a new word.
   ///
   /// Refused while a draft is open — the half-typed syllable would either be

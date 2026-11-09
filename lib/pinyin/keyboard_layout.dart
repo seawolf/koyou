@@ -30,9 +30,6 @@ class InitialKey {
 
   /// The rimes reachable from this key, phonologically.
   final List<String> rimes;
-
-  /// Whether this key stands for a syllable with no initial consonant.
-  bool get isBare => initial.isEmpty;
 }
 
 /// One key in the rime bank, labelled as the learner would spell it.

@@ -54,13 +54,6 @@ class TranslationRequest {
             .expand((word) => word.syllables)
             .map((syllable) => syllable.numbered)
             .join(' ');
-
-  /// Each word as written, tone marks included: `[nǐ hǎo, shìjiè]`. Names
-  /// included, as themselves.
-  List<String> get writtenWords => [
-    for (final word in words)
-      if (!word.isEmpty) word.written,
-  ];
 }
 
 /// One word of what was typed, and what it means on its own.

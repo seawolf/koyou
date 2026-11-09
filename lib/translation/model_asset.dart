@@ -95,6 +95,4 @@ class ModelStatus {
   /// 0 to 1 while downloading, or null when there is nothing to show.
   double? get progress =>
       state == ModelState.downloading && total > 0 ? received / total : null;
-
-  bool get isUsable => state == ModelState.ready;
 }
