@@ -97,17 +97,16 @@ The parts worth testing live in `web_model.dart`, which imports no
 `dart:js_interop` and so runs on the VM with a fake engine. Keep it that way:
 only the binding in `on_device_backend_web.dart` should need a browser.
 
-## Two Android build warnings that are not bugs
+## An Android build warning that is not a bug
 
-Both appear on every `flutter build apk`. Neither breaks the build, and neither
-is fixable here. Do not spend an afternoon on them again.
+It appears on every `flutter build apk`. It does not break the build, and it is
+not fixable here. Do not spend an afternoon on it again.
 
-**`java.lang.System::load has been called by ... NativeLibraryLoader`** —
-Gradle 9.3.1's own `native-platform` JAR calling a restricted method on a newer
-JDK. Nothing in this repo is involved. Adding
-`--enable-native-access=ALL-UNNAMED` to `org.gradle.jvmargs` was tried and does
-**not** silence it: the call is in Gradle's launcher JVM, not the daemon those
-args configure. It goes away when Gradle does.
+There used to be two. The other — `java.lang.System::load has been called by
+... NativeLibraryLoader` — was Gradle's own `native-platform` JAR calling a
+restricted method on a newer JDK, from the launcher JVM, so no
+`org.gradle.jvmargs` could silence it. It went away with Gradle 9.9.0, as
+expected; if it comes back after a Gradle downgrade, that is why.
 
 **`Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP):
 flutter_tts`** — this one is real, and will eventually fail rather than warn.
