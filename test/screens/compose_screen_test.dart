@@ -1051,6 +1051,7 @@ void main() {
       expect(menuIconOf(tester, 'credits'), Icons.info_outline);
       expect(menuIconOf(tester, 'model'), Icons.auto_awesome_outlined);
       expect(menuIconOf(tester, 'copy'), Icons.copy);
+      expect(menuIconOf(tester, 'paste'), Icons.content_paste);
     });
 
     group('copying the line', () {
@@ -2379,6 +2380,129 @@ void main() {
       await press(tester, [LogicalKeyboardKey.escape]);
       await press(tester, [h, a, o, three]);
       expect(composed(tester), 'nǐhǎo');
+    });
+
+    group('copy and paste', () {
+      /// A clipboard holding [holds], recording what is put on it; or one
+      /// that refuses everything, as a browser may.
+      ({String? Function() copied}) clipboard(
+        WidgetTester tester, {
+        String? holds,
+        bool refuses = false,
+      }) {
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (refuses && call.method.startsWith('Clipboard.')) {
+              throw PlatformException(code: 'refused');
+            }
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String;
+            }
+            if (call.method == 'Clipboard.getData') {
+              return holds == null ? null : {'text': holds};
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        return (copied: () => copied);
+      }
+
+      /// [key] pressed with [modifier] held.
+      Future<void> chord(
+        WidgetTester tester,
+        LogicalKeyboardKey modifier,
+        LogicalKeyboardKey key,
+      ) async {
+        await tester.sendKeyDownEvent(modifier);
+        await tester.sendKeyEvent(key);
+        await tester.sendKeyUpEvent(modifier);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('copies the line with Cmd+C or Ctrl+C', (tester) async {
+        final board = clipboard(tester);
+        await pump(tester);
+        await press(tester, [n, i, three]);
+        await chord(
+          tester,
+          LogicalKeyboardKey.metaLeft,
+          LogicalKeyboardKey.keyC,
+        );
+        expect(board.copied(), 'nǐ');
+        expect(find.byKey(const Key('copied')), findsOneWidget);
+
+        await press(tester, [h, a, o, three]);
+        await chord(
+          tester,
+          LogicalKeyboardKey.controlLeft,
+          LogicalKeyboardKey.keyC,
+        );
+        expect(board.copied(), 'nǐhǎo');
+      });
+
+      testWidgets('pastes tone-marked pinyin in at the caret', (tester) async {
+        clipboard(tester, holds: 'hǎo péngyou!');
+        await pump(tester);
+        await press(tester, [n, i, three, space]);
+        await chord(
+          tester,
+          LogicalKeyboardKey.metaLeft,
+          LogicalKeyboardKey.keyV,
+        );
+        expect(composed(tester), 'nǐ hǎo péngyou');
+      });
+
+      testWidgets('refuses to paste pinyin with no tones, and says so', (
+        tester,
+      ) async {
+        clipboard(tester, holds: 'ni hao');
+        await pump(tester);
+        await chord(
+          tester,
+          LogicalKeyboardKey.metaLeft,
+          LogicalKeyboardKey.keyV,
+        );
+        expect(find.byKey(const Key('composed')), findsNothing);
+        expect(find.byKey(const Key('not-pinyin')), findsOneWidget);
+      });
+
+      // A phone has no Cmd+V, so the menu offers it, beneath Copy.
+      testWidgets('pastes from the menu too, beneath copy', (tester) async {
+        clipboard(tester, holds: 'xièxie');
+        await pump(tester);
+        await openMore(tester);
+        final copy = tester.getRect(find.byKey(const Key('copy'))).top;
+        final paste = tester.getRect(find.byKey(const Key('paste'))).top;
+        final arrangement = tester
+            .getRect(find.byKey(const Key('arrangement')))
+            .top;
+        expect(paste, greaterThan(copy));
+        expect(paste, lessThan(arrangement));
+
+        await tester.tap(find.byKey(const Key('paste')));
+        await tester.pumpAndSettle();
+        expect(composed(tester), 'xièxie');
+      });
+
+      testWidgets('says so when the clipboard cannot be read', (tester) async {
+        clipboard(tester, refuses: true);
+        await pump(tester);
+        await chord(
+          tester,
+          LogicalKeyboardKey.metaLeft,
+          LogicalKeyboardKey.keyV,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('not-pasted')), findsOneWidget);
+      });
     });
 
     // The reason this needs no setting: a phone's own keyboard comes up for a

@@ -4,6 +4,7 @@ import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/pinyin/syllable.dart';
 import 'package:kouyu/pinyin/tone.dart';
 import 'package:kouyu/pinyin/word.dart';
+import 'package:kouyu/pinyin/written.dart';
 
 void main() {
   InitialKey key(String label) =>
@@ -612,6 +613,28 @@ void main() {
         type(const Composition(), 'h', 'ao', Tone.third),
       );
       expect(line.movedBy(-1).caret, line.caret);
+    });
+  });
+
+  group('pasting', () {
+    test('puts the words in at the caret, a break between each', () {
+      final line = type(const Composition(), 'n', 'i', Tone.third).space();
+      final pasted = line.withPasted(readWritten('hǎo péngyou')!);
+      expect(pasted.text, 'nǐ hǎo péngyou');
+      expect(pasted.caret, pasted.end, reason: 'ready to type on');
+    });
+
+    test('keeps a name as a name', () {
+      final pasted = const Composition().withPasted(
+        readWritten('wǒ jiào Steve')!,
+      );
+      expect(pasted.words.whereType<Literal>().single.text, 'Steve');
+      expect(pasted.text, 'wǒ jiào Steve');
+    });
+
+    test('drops a syllable that was half built', () {
+      final drafting = const Composition().withInitial(key('sh'));
+      expect(drafting.withPasted(readWritten('nǐ')!).preview, 'nǐ');
     });
   });
 }

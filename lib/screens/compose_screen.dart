@@ -12,6 +12,7 @@ import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
 import '../pinyin/tone.dart';
 import '../pinyin/word.dart';
+import '../pinyin/written.dart';
 import '../translation/english_translator.dart';
 import '../translation/model_store.dart';
 import '../translation/tone_suggestion.dart';
@@ -163,6 +164,21 @@ class _ComposeScreenState extends State<ComposeScreen> {
   KeyEventResult _onKey(KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     final keys = HardwareKeyboard.instance;
+    if (event is KeyDownEvent &&
+        (keys.isControlPressed || keys.isMetaPressed) &&
+        !keys.isAltPressed) {
+      // Copy and paste, under either modifier: Cmd on a Mac, Ctrl elsewhere.
+      // Nothing on this screen can be selected, so there is no selection of
+      // the browser's for these to take over.
+      switch (event.logicalKey) {
+        case LogicalKeyboardKey.keyC when _composition.text.isNotEmpty:
+          _copy();
+          return KeyEventResult.handled;
+        case LogicalKeyboardKey.keyV:
+          _paste();
+          return KeyEventResult.handled;
+      }
+    }
     if (keys.isControlPressed || keys.isMetaPressed || keys.isAltPressed) {
       return KeyEventResult.ignored;
     }
@@ -273,6 +289,38 @@ class _ComposeScreenState extends State<ComposeScreen> {
               content: Text('Could not copy — the clipboard was not allowed.'),
             ),
     );
+  }
+
+  /// Puts pinyin from the clipboard in at the caret, as though typed there.
+  ///
+  /// Written pinyin, tone marks and all — what the menu's copy puts out, or
+  /// what a learner copies from a textbook page. Text without tones is
+  /// refused rather than guessed at, and said so, as is a clipboard the
+  /// browser would not let us read.
+  Future<void> _paste() async {
+    final ClipboardData? data;
+    try {
+      data = await Clipboard.getData(Clipboard.kTextPlain);
+    } on PlatformException {
+      _say('not-pasted', 'Could not paste — the clipboard was not allowed.');
+      return;
+    }
+    if (!mounted) return;
+    final words = readWritten(data?.text ?? '');
+    if (words == null) {
+      _say(
+        'not-pinyin',
+        'Nothing to paste: that is not pinyin with its tones.',
+      );
+      return;
+    }
+    _edit(_composition.withPasted(words));
+  }
+
+  void _say(String key, String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(key: Key(key), content: Text(message)));
   }
 
   @override
@@ -506,6 +554,15 @@ class _ComposeScreenState extends State<ComposeScreen> {
                   onPressed: _composition.text.isEmpty ? null : _copy,
                   leadingIcon: const Icon(Icons.copy),
                   child: const Text('Copy to clipboard'),
+                ),
+                // Always offered: whether the clipboard holds pinyin is only
+                // known by reading it, and a browser may ask permission for
+                // that, which is not something to do just to draw a menu.
+                MenuItemButton(
+                  key: const Key('paste'),
+                  onPressed: _paste,
+                  leadingIcon: const Icon(Icons.content_paste),
+                  child: const Text('Paste from clipboard'),
                 ),
                 MenuItemButton(
                   key: const Key('arrangement'),
@@ -1459,7 +1516,8 @@ const _hints = <(IconData, String)>[
     'With a keyboard attached, type pinyin as it is written and a number for '
         'the tone: ni3 hao3. Another number straight after changes that tone. '
         'v is ü, the arrow keys move the caret, and Esc drops a half-built '
-        'syllable.',
+        'syllable. Cmd or Ctrl with C and V copy and paste, as do the menu '
+        'items — pasting takes pinyin with its tone marks.',
   ),
   (
     Icons.spellcheck,

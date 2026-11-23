@@ -5,8 +5,9 @@
 /// and the app works in initials, rimes and tones.
 ///
 /// Not a parser of written pinyin. It reads `ni3 hao3`, never `nǐ hǎo` —
-/// splitting written pinyin into syllables is genuinely ambiguous (`wanan` is
-/// two words) and a key already has its boundaries and its tones.
+/// splitting written pinyin into syllables is ambiguous without tones
+/// (`wanan` is two words) and a key already has its boundaries and its tones.
+/// Written pinyin, which is what a paste brings, is `written.dart`'s job.
 library;
 
 import 'inventory.dart';
@@ -46,6 +47,10 @@ Syllable? syllableFor(String numbered) {
   if (parts == null) return null;
   return Syllable(initial: parts.initial, rime: parts.rime, tone: tone);
 }
+
+/// The initial and rime spelt by [letters], toneless — `wo` is the rime `uo`
+/// with no initial — or null if no syllable this app builds is spelt that way.
+({String initial, String rime})? spelt(String letters) => _spellings[letters];
 
 const Map<String, Tone> _tones = {
   '1': Tone.first,

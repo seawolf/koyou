@@ -228,6 +228,37 @@ class Composition {
     return null;
   }
 
+  /// [pasted] put in at the caret, as though typed there: each syllable
+  /// committed where typing would commit it, and a word break between words.
+  ///
+  /// Replayed rather than spliced in, so a paste follows every rule typing
+  /// does — into the middle of a word, beside a name — without a second set
+  /// of them. A syllable half built is dropped first; the paste is what was
+  /// asked for next.
+  Composition withPasted(List<Word> pasted) {
+    var next = backTo(ComposeStage.initial);
+    var first = true;
+    for (final word in pasted) {
+      if (word.isEmpty) continue;
+      if (!first) next = next.space();
+      first = false;
+      switch (word) {
+        case Literal(:final text):
+          next = next.withLiteral(text);
+        case Spoken(:final syllables):
+          for (final syllable in syllables) {
+            final key = keyFor(syllable);
+            if (key == null) continue;
+            next = next
+                .withInitial(key)
+                .withRime(syllable.rime)
+                .commit(syllable.tone);
+          }
+      }
+    }
+    return next;
+  }
+
   /// A tone key on a physical keyboard: it finishes the syllable being
   /// built, or, with none being built, retones the one just before the caret.
   ///

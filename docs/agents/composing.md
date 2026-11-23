@@ -70,6 +70,19 @@ composed line in `lib/screens/compose_screen.dart`.
 - **Keys with a modifier held are left alone**, so Cmd+R reloads and Ctrl+A is
   not an `a`. Tones are digits, `ni3`, because that is the convention learners
   already type; the line still shows tone marks.
+- **Paste reads written pinyin, and refuses it without tones.** `readWritten`
+  in `lib/pinyin/written.dart` splits by the rule pinyin is written to — a
+  syllable starting with a, o or e follows another only after an apostrophe,
+  so `fāngàn` is `fān gàn` — relaxing it only when nothing else reads, for
+  the common `xīān`. No syllable takes two tone marks. Text with no tones at
+  all is refused, not read as neutral: that is the ambiguity the app exists to
+  avoid. A toneless word of more than one syllable is a name, so `Anna` stays
+  `Anna` rather than becoming `an na`. A paste is replayed through the same
+  insertion typing uses (`Composition.withPasted`), never spliced in.
+- **Cmd/Ctrl+C takes over the browser's copy only because nothing on this
+  screen is selectable.** Put a `SelectableText` or `SelectionArea` here and
+  the shortcut would hide what the learner selected; it would need to defer to
+  a selection first.
 - **A tone number with nothing being built retones the syllable before the
   caret** (`Composition.withTone`), so `ni3` then `4` is `nì`. The window
   closes by itself: a new syllable takes the number, and after a space the
