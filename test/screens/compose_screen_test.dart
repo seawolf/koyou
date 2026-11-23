@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kouyu/pinyin/keyboard_layout.dart';
 import 'package:kouyu/pinyin/syllable.dart';
@@ -1049,6 +1050,107 @@ void main() {
       expect(menuIconOf(tester, 'arrangement'), Icons.swap_horiz);
       expect(menuIconOf(tester, 'credits'), Icons.info_outline);
       expect(menuIconOf(tester, 'model'), Icons.auto_awesome_outlined);
+      expect(menuIconOf(tester, 'copy'), Icons.copy);
+    });
+
+    group('copying the line', () {
+      /// Answers the platform's clipboard call, which a test otherwise has
+      /// nobody to answer, and returns what was last put on it.
+      String? Function() watchClipboard(WidgetTester tester) {
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        return () => copied;
+      }
+
+      testWidgets('copies it with its tone marks, and says so', (tester) async {
+        final copied = watchClipboard(tester);
+        await pump(tester);
+        await type(tester, 'n', 'i', 3);
+        await tap(tester, 'space');
+        await type(tester, 'h', 'ao', 3);
+
+        await tapInMore(tester, 'copy');
+
+        expect(copied(), 'nǐ hǎo');
+        expect(find.byKey(const Key('copied')), findsOneWidget);
+      });
+
+      // A syllable still being built has no tone, and pasting `ni` elsewhere
+      // is pasting an ambiguity.
+      testWidgets('leaves out a syllable that is not finished', (tester) async {
+        final copied = watchClipboard(tester);
+        await pump(tester);
+        await type(tester, 'n', 'i', 3);
+        await tap(tester, 'initial-h');
+
+        await tapInMore(tester, 'copy');
+
+        expect(copied(), 'nǐ');
+      });
+
+      // Seen on web: a browser that withholds clipboard permission answers
+      // with an error, and unhandled it left the item doing nothing at all.
+      testWidgets('says so when the clipboard is refused', (tester) async {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async => call.method == 'Clipboard.setData'
+              ? throw PlatformException(code: 'copy_fail')
+              : null,
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await pump(tester);
+        await type(tester, 'n', 'i', 3);
+
+        await tapInMore(tester, 'copy');
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('copied')), findsNothing);
+        expect(find.byKey(const Key('not-copied')), findsOneWidget);
+      });
+
+      testWidgets('is offered only once there is something to copy', (
+        tester,
+      ) async {
+        await pump(tester);
+        await openMore(tester);
+        expect(
+          tester.widget<MenuItemButton>(find.byKey(const Key('copy'))).enabled,
+          isFalse,
+        );
+      });
+
+      testWidgets('sits between whole phrases and the arrangement', (
+        tester,
+      ) async {
+        await pump(tester);
+        await openMore(tester);
+        final model = tester.getRect(find.byKey(const Key('model'))).top;
+        final copy = tester.getRect(find.byKey(const Key('copy'))).top;
+        final arrangement = tester
+            .getRect(find.byKey(const Key('arrangement')))
+            .top;
+        expect(copy, greaterThan(model));
+        expect(copy, lessThan(arrangement));
+      });
     });
 
     testWidgets('orders them by use, with the destructive one last', (

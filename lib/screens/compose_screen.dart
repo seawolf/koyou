@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import '../audio/speech.dart';
 import '../favourites/favourites.dart';
@@ -196,6 +197,33 @@ class _ComposeScreenState extends State<ComposeScreen> {
           'No audio for this — a word here is not in the dictionary.',
         ),
       ),
+    );
+  }
+
+  /// Puts the line on the clipboard as it reads, tone marks and all.
+  ///
+  /// The committed words only: a syllable still being built has no tone yet,
+  /// and pasting `n` or `ni` somewhere is pasting an ambiguity.
+  ///
+  /// A browser may refuse the write — it is a permission, and an embedded or
+  /// unfocused page often lacks it — and that refusal arrives as an error, not
+  /// as a quiet false. Said so on screen, because a menu item that appears to
+  /// work and leaves the clipboard as it was is worse than one that explains.
+  Future<void> _copy() async {
+    var copied = true;
+    try {
+      await Clipboard.setData(ClipboardData(text: _composition.text));
+    } on PlatformException {
+      copied = false;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      copied
+          ? const SnackBar(key: Key('copied'), content: Text('Copied'))
+          : const SnackBar(
+              key: Key('not-copied'),
+              content: Text('Could not copy — the clipboard was not allowed.'),
+            ),
     );
   }
 
@@ -415,6 +443,12 @@ class _ComposeScreenState extends State<ComposeScreen> {
                 ),
                 leadingIcon: const Icon(Icons.auto_awesome_outlined),
                 child: const Text('Whole phrases'),
+              ),
+              MenuItemButton(
+                key: const Key('copy'),
+                onPressed: _composition.text.isEmpty ? null : _copy,
+                leadingIcon: const Icon(Icons.copy),
+                child: const Text('Copy to clipboard'),
               ),
               MenuItemButton(
                 key: const Key('arrangement'),
