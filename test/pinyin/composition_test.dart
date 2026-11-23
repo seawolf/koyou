@@ -453,4 +453,165 @@ void main() {
       expect(composition.backspace().backspace().preview, 'wǒ');
     });
   });
+
+  group('typing on a physical keyboard', () {
+    /// [letters] typed one at a time, failing the test at the first refusal.
+    Composition typing(
+      String letters, [
+      Composition from = const Composition(),
+    ]) {
+      var composition = from;
+      for (final letter in letters.split('')) {
+        final next = composition.withLetter(letter);
+        expect(next, isNotNull, reason: '$letter after ${composition.preview}');
+        composition = next!;
+      }
+      return composition;
+    }
+
+    test('spells a syllable as it is written, then takes a tone', () {
+      final composition = typing('shang').commit(Tone.fourth);
+      expect(composition.text, 'shàng');
+    });
+
+    // The visual cue the user asked for: each letter moves on at once, and
+    // the h of a digraph revises the initial rather than waiting for it.
+    test('moves on at the first letter, and an h makes it a digraph', () {
+      final s = typing('s');
+      expect(s.draft.initial!.label, 's');
+      expect(s.stage, ComposeStage.rime);
+
+      final sh = typing('sh');
+      expect(sh.draft.initial!.label, 'sh');
+      expect(sh.stage, ComposeStage.rime);
+
+      expect(typing('zh').draft.initial!.label, 'zh');
+      expect(typing('ch').draft.initial!.label, 'ch');
+      expect(typing('sa').draft.initial!.label, 's');
+    });
+
+    test('takes a rime as soon as one is spelt, and lengthens it after', () {
+      expect(typing('ba').draft.rime, 'a');
+      expect(typing('ba').stage, ComposeStage.tone);
+      expect(typing('ban').draft.rime, 'an');
+      expect(typing('bang').draft.rime, 'ang');
+    });
+
+    test('holds letters that are on the way to a rime but not one yet', () {
+      final io = typing('xio');
+      expect(io.draft.rime, isNull);
+      expect(io.draft.typed, 'io');
+      expect(io.stage, ComposeStage.rime);
+      expect(io.draftSuffix, 'xio');
+      expect(typing('xiong').draft.rime, 'iong');
+    });
+
+    test('refuses what no syllable is spelt with', () {
+      expect(typing('q').withLetter('o'), isNull, reason: 'no qo, no qong');
+      expect(const Composition().withLetter('i'), isNull);
+      expect(const Composition().withLetter('v'), isNull);
+      expect(typing('ba').withLetter('h'), isNull, reason: 'only after z c s');
+    });
+
+    test('spells the syllables without an initial as they are written', () {
+      expect(typing('wo').commit(Tone.third).text, 'wǒ');
+      expect(typing('yi').commit(Tone.first).text, 'yī');
+      expect(typing('yu').commit(Tone.second).text, 'yú');
+      expect(typing('ai').commit(Tone.fourth).text, 'ài');
+      expect(typing('er').commit(Tone.fourth).text, 'èr');
+    });
+
+    test('takes v for ü, and u where ü is written u', () {
+      expect(typing('lv').commit(Tone.fourth).text, 'lǜ');
+      expect(typing('nve').commit(Tone.fourth).text, 'nüè');
+      expect(typing('ju').commit(Tone.second).text, 'jú');
+    });
+
+    test('ignores case', () {
+      expect(typing('NI').commit(Tone.third).text, 'nǐ');
+    });
+
+    test('a tone straight after a syllable changes its tone', () {
+      final ni = typing('ni').withTone(Tone.third);
+      expect(ni.text, 'nǐ');
+      expect(ni.withTone(Tone.fourth).text, 'nì');
+      expect(
+        ni.withTone(Tone.fourth).withTone(Tone.second).text,
+        'ní',
+        reason: 'as many times as it takes',
+      );
+    });
+
+    test('a tone is for the new syllable once one is started', () {
+      final line = typing('h', typing('ni').withTone(Tone.third));
+      expect(line.withTone(Tone.fourth).text, 'nǐ', reason: 'h takes no tone');
+      final hao = typing('hao', typing('ni').withTone(Tone.third));
+      expect(hao.withTone(Tone.fourth).text, 'nǐhào');
+    });
+
+    test('a tone after a space changes nothing', () {
+      final spaced = typing('ni').withTone(Tone.third).space();
+      expect(spaced.withTone(Tone.fourth).text, 'nǐ');
+    });
+
+    test('a tone retones whatever is before the caret, after moving it', () {
+      final line = typing(
+        'hao',
+        typing('ni').withTone(Tone.third),
+      ).withTone(Tone.third);
+      expect(line.movedBy(-1).withTone(Tone.second).text, 'níhǎo');
+    });
+
+    test('a tone has nothing to change at the very start', () {
+      expect(const Composition().withTone(Tone.first).isEmpty, isTrue);
+    });
+
+    test('takes back one letter at a time, by the rules that built it', () {
+      expect(typing('bang').withoutLetter().draft.rime, 'an');
+      expect(typing('sh').withoutLetter().draft.initial!.label, 's');
+      expect(typing('xio').withoutLetter().draft.rime, 'i');
+      expect(typing('s').withoutLetter().draft.isEmpty, isTrue);
+      expect(typing('a').withoutLetter().draft.isEmpty, isTrue);
+    });
+
+    test('with nothing being built, takes back a whole syllable', () {
+      final composition = typing('ni').commit(Tone.third);
+      expect(composition.withoutLetter().text, '');
+    });
+
+    test('types where the caret is', () {
+      final line = type(
+        type(const Composition(), 'n', 'i', Tone.third).space(),
+        'h',
+        'ao',
+        Tone.third,
+      ).movedTo(const Caret(word: 0, syllable: 1));
+      expect(typing('men', line).commit(Tone.neutral).text, 'nǐmen hǎo');
+    });
+
+    test('moves the caret a place at a time, across word breaks', () {
+      final line = type(
+        type(const Composition(), 'n', 'i', Tone.third),
+        'h',
+        'ao',
+        Tone.third,
+      ).space();
+      // nǐ hǎo |  — the caret starts after the break.
+      final atEnd = line.caret;
+      expect(line.movedBy(1).caret, atEnd, reason: 'nothing to the right');
+      expect(line.movedBy(-1).caret, const Caret(word: 0, syllable: 2));
+      expect(
+        line.movedBy(-1).movedBy(-1).caret,
+        const Caret(word: 0, syllable: 1),
+      );
+    });
+
+    test('keeps the caret still while a syllable is being built', () {
+      final line = typing(
+        'n',
+        type(const Composition(), 'h', 'ao', Tone.third),
+      );
+      expect(line.movedBy(-1).caret, line.caret);
+    });
+  });
 }

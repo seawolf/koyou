@@ -2245,6 +2245,153 @@ void main() {
       expect(starOf(tester).filled, isTrue);
     });
   });
+  group('a physical keyboard', () {
+    /// Presses each of [keys] in turn, as a desktop keyboard would.
+    Future<void> press(
+      WidgetTester tester,
+      List<LogicalKeyboardKey> keys,
+    ) async {
+      for (final key in keys) {
+        await tester.sendKeyEvent(key);
+        await tester.pumpAndSettle();
+      }
+    }
+
+    final n = LogicalKeyboardKey.keyN;
+    final i = LogicalKeyboardKey.keyI;
+    final h = LogicalKeyboardKey.keyH;
+    final a = LogicalKeyboardKey.keyA;
+    final o = LogicalKeyboardKey.keyO;
+    final s = LogicalKeyboardKey.keyS;
+    final x = LogicalKeyboardKey.keyX;
+    final three = LogicalKeyboardKey.digit3;
+    final space = LogicalKeyboardKey.space;
+    final backspace = LogicalKeyboardKey.backspace;
+
+    testWidgets('types pinyin as written, with a digit for the tone', (
+      tester,
+    ) async {
+      await pump(tester);
+      await press(tester, [n, i, three, space, h, a, o, three]);
+      expect(composed(tester), 'nǐ hǎo');
+    });
+
+    // The cue for where typing has got to is the keyboard on screen, so it
+    // has to follow along: s moves on to s's rimes, h turns them into sh's.
+    testWidgets('moves the on-screen keys along with each letter', (
+      tester,
+    ) async {
+      await pump(tester);
+      await press(tester, [s]);
+      expect(find.text('then what follows it'), findsOneWidget);
+      expect(find.byKey(const Key('trail-initial')), findsOneWidget);
+      expect(find.byKey(const Key('rime-ong')), findsOneWidget, reason: 'song');
+
+      await press(tester, [h]);
+      // sh has no `ong`, so the bank really is sh's.
+      expect(find.byKey(const Key('rime-ong')), findsNothing);
+      expect(find.byKey(const Key('rime-uang')), findsOneWidget);
+
+      await press(tester, [a]);
+      expect(find.byKey(const Key('tone-1')), findsOneWidget);
+    });
+
+    testWidgets('narrows the rimes to what the letters so far can become', (
+      tester,
+    ) async {
+      await pump(tester);
+      await press(tester, [x, i, o]);
+      expect(find.byKey(const Key('rime-iong')), findsOneWidget);
+      expect(find.byKey(const Key('rime-ia')), findsNothing);
+      expect(composed(tester), 'xio');
+    });
+
+    testWidgets('changes a tone with another digit straight after', (
+      tester,
+    ) async {
+      await pump(tester);
+      await press(tester, [n, i, three, LogicalKeyboardKey.digit4]);
+      expect(composed(tester), 'nì');
+
+      // A space ends the chance: the caret is in a new word.
+      await press(tester, [space, LogicalKeyboardKey.digit2]);
+      expect(composed(tester), 'nì ');
+    });
+
+    testWidgets('takes back a letter at a time with backspace', (tester) async {
+      await pump(tester);
+      await press(tester, [n, i, three, s, h]);
+      await press(tester, [backspace]);
+      expect(composed(tester), 'nǐs');
+      await press(tester, [backspace, backspace]);
+      expect(
+        find.byKey(const Key('composed')),
+        findsNothing,
+        reason: 'then the whole syllable',
+      );
+    });
+
+    testWidgets('drops the syllable being built with escape', (tester) async {
+      await pump(tester);
+      await press(tester, [n, i, three, h, a]);
+      await press(tester, [LogicalKeyboardKey.escape]);
+      expect(composed(tester), 'nǐ');
+      expect(find.text('Start a syllable'), findsOneWidget);
+    });
+
+    testWidgets('moves the caret with the arrow keys', (tester) async {
+      await pump(tester);
+      await press(tester, [n, i, three, h, a, o, three]);
+      await press(tester, [LogicalKeyboardKey.arrowLeft, n, i, three]);
+      expect(composed(tester), 'nǐnǐhǎo');
+    });
+
+    // The browser's and the system's shortcuts are theirs: Cmd+R is not an
+    // r, and Ctrl+A is not an a.
+    testWidgets('leaves keys alone while a modifier is held', (tester) async {
+      await pump(tester);
+      for (final modifier in [
+        LogicalKeyboardKey.metaLeft,
+        LogicalKeyboardKey.controlLeft,
+        LogicalKeyboardKey.altLeft,
+      ]) {
+        await tester.sendKeyDownEvent(modifier);
+        await press(tester, [n]);
+        await tester.sendKeyUpEvent(modifier);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('composed')),
+          findsNothing,
+          reason: modifier.keyLabel,
+        );
+      }
+    });
+
+    testWidgets('still hears the keyboard after a key on screen is tapped', (
+      tester,
+    ) async {
+      await pump(tester);
+      await tap(tester, 'initial-n');
+      await press(tester, [i, three]);
+      expect(composed(tester), 'nǐ');
+
+      await openMore(tester);
+      await press(tester, [LogicalKeyboardKey.escape]);
+      await press(tester, [h, a, o, three]);
+      expect(composed(tester), 'nǐhǎo');
+    });
+
+    // The reason this needs no setting: a phone's own keyboard comes up for a
+    // text field and for nothing else, and there is none here to focus.
+    testWidgets('has no text field that would bring up a phone keyboard', (
+      tester,
+    ) async {
+      await pump(tester);
+      await press(tester, [n, i, three]);
+      expect(find.byType(EditableText), findsNothing);
+    });
+  });
+
   group('what a word is made of', () {
     testWidgets('lists the characters of a whole-word answer', (tester) async {
       final translator = _RecordingTranslator()

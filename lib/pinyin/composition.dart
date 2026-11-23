@@ -17,10 +17,16 @@ enum ComposeStage { initial, rime, tone }
 /// empty: the bare-vowel key is a real choice that contributes no letters, and
 /// `ān` has to be typeable.
 class Draft {
-  const Draft({this.initial, this.rime});
+  const Draft({this.initial, this.rime, this.typed = ''});
 
   final InitialKey? initial;
   final String? rime;
+
+  /// Letters typed on a physical keyboard towards a rime that they do not yet
+  /// spell: `io` on the way to `iong`, which is no rime on its own. Empty
+  /// whenever [rime] is chosen, because a letter that completes a rime chooses
+  /// it at once.
+  final String typed;
 
   bool get isEmpty => initial == null;
 
@@ -39,7 +45,7 @@ class Draft {
     final initial = this.initial;
     if (initial == null) return '';
     final rime = this.rime;
-    if (rime == null) return initial.spelling;
+    if (rime == null) return '${initial.spelling}$typed';
     return Syllable(
       initial: initial.initial,
       rime: rime,
@@ -169,6 +175,105 @@ class Composition {
   /// does not exist.
   Composition withInitial(InitialKey initial) =>
       _copy(draft: Draft(initial: initial));
+
+  /// Types one letter of the syllable as it is written, or returns null if no
+  /// syllable is spelt that way.
+  ///
+  /// What a physical keyboard does, and the same choices the keys make:
+  /// every letter is checked against the labels on the keys themselves, so
+  /// typing can reach exactly what tapping can and nothing else — there is no
+  /// `qong` to type, as there is none to tap.
+  ///
+  /// Each letter moves on at once, to show what can follow, and a later one
+  /// may revise it: `s` chooses the initial s, and an `h` straight after makes
+  /// it sh, which works because no rime begins with h. Rimes go the same way —
+  /// `a` is a rime and asks for a tone, `n` makes it `an`, `g` makes it `ang`.
+  /// Letters that are on the way to a rime without spelling one yet, like
+  /// `io`, wait in [Draft.typed]. `v` stands for ü, as on every pinyin input
+  /// method.
+  Composition? withLetter(String letter) {
+    final typed = letter.toLowerCase() == 'v' ? 'ü' : letter.toLowerCase();
+    final initial = draft.initial;
+    if (initial == null) {
+      for (final key in initialKeys) {
+        if (key.label != typed) continue;
+        // The vowel keys spell nothing themselves: the letter that chose one
+        // is also the first letter of its rime.
+        return key.spelling.isEmpty
+            ? withInitial(key).withLetter(typed)
+            : withInitial(key);
+      }
+      return null;
+    }
+
+    const digraphs = {'z': 'zh', 'c': 'ch', 's': 'sh'};
+    final digraph = digraphs[initial.label];
+    if (typed == 'h' &&
+        digraph != null &&
+        draft.rime == null &&
+        draft.typed.isEmpty) {
+      return withInitial(initialKeys.firstWhere((k) => k.label == digraph));
+    }
+
+    final spelt = '${draft.rimeLabel ?? draft.typed}$typed';
+    final keys = rimeKeysFor(initial);
+    for (final key in keys) {
+      if (key.label == spelt) return withRime(key.rime);
+    }
+    if (keys.any((key) => key.label.startsWith(spelt))) {
+      return _copy(
+        draft: Draft(initial: initial, typed: spelt),
+      );
+    }
+    return null;
+  }
+
+  /// A tone key on a physical keyboard: it finishes the syllable being
+  /// built, or, with none being built, retones the one just before the caret.
+  ///
+  /// The second is the chance to change your mind straight after choosing:
+  /// `ni3` then `4` is `nì`. It lasts while that syllable is still the one
+  /// before the caret — starting another means the tone is for the new one,
+  /// and a space puts the caret at the start of a new word with nothing
+  /// before it. A name has no tone to change.
+  Composition withTone(Tone tone) {
+    if (!draft.isEmpty) return commit(tone);
+    if (caret.syllable == 0 || words[caret.word] is! Spoken) return this;
+    return retoned(caret.word, caret.syllable - 1, tone);
+  }
+
+  /// Takes back the last letter typed, on a physical keyboard.
+  ///
+  /// Letter by letter, which is what a keyboard's backspace means; the
+  /// on-screen one steps back a whole stage, because that is what its keys
+  /// chose. Done by typing the syllable again without its last letter, so
+  /// `sh` goes back to `s` and `ang` to `an` by the same rules that built
+  /// them. With no syllable being built it is [backspace], which takes the
+  /// previous one whole: a committed syllable is a choice, not letters.
+  Composition withoutLetter() {
+    final written = draft.written;
+    if (draft.isEmpty || written.isEmpty) return backspace();
+    var next = backTo(ComposeStage.initial);
+    for (final letter in written.substring(0, written.length - 1).split('')) {
+      next = next.withLetter(letter) ?? next;
+    }
+    return next;
+  }
+
+  /// The caret moved one place left (negative [step]) or right, crossing word
+  /// breaks as places of their own. Unmoved while a syllable is being built,
+  /// which belongs where it was started.
+  Composition movedBy(int step) {
+    if (!draft.isEmpty) return this;
+    final places = [
+      for (var word = 0; word < words.length; word++)
+        for (var syllable = 0; syllable <= words[word].length; syllable++)
+          Caret(word: word, syllable: syllable),
+    ];
+    final at = places.indexOf(caret) + step;
+    if (at < 0 || at >= places.length) return this;
+    return movedTo(places[at]);
+  }
 
   Composition withRime(String rime) => _copy(
     draft: Draft(initial: draft.initial, rime: rime),

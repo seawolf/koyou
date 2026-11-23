@@ -10,6 +10,7 @@ import '../audio/speech.dart';
 import '../favourites/favourites.dart';
 import '../pinyin/composition.dart';
 import '../pinyin/keyboard_layout.dart';
+import '../pinyin/tone.dart';
 import '../pinyin/word.dart';
 import '../translation/english_translator.dart';
 import '../translation/model_store.dart';
@@ -150,6 +151,53 @@ class _ComposeScreenState extends State<ComposeScreen> {
     final can = await speech.available();
     if (!mounted || !can) return;
     setState(() => _canSpeak = true);
+  }
+
+  /// A physical key: pinyin letters, a digit for the tone, and the keys that
+  /// match the on-screen ones.
+  ///
+  /// Digits rather than anything cleverer, because `ni3 hao3` is the
+  /// convention every learner who has typed pinyin already knows; the line
+  /// still shows `nǐ hǎo`. Anything with a modifier held is left alone, so the
+  /// browser and the system keep their own shortcuts.
+  KeyEventResult _onKey(KeyEvent event) {
+    if (event is KeyUpEvent) return KeyEventResult.ignored;
+    final keys = HardwareKeyboard.instance;
+    if (keys.isControlPressed || keys.isMetaPressed || keys.isAltPressed) {
+      return KeyEventResult.ignored;
+    }
+    final now = _composition;
+    final Composition? next = switch (event.logicalKey) {
+      LogicalKeyboardKey.backspace => now.withoutLetter(),
+      LogicalKeyboardKey.space => now.space(),
+      LogicalKeyboardKey.escape => now.backTo(ComposeStage.initial),
+      LogicalKeyboardKey.arrowLeft => now.movedBy(-1),
+      LogicalKeyboardKey.arrowRight => now.movedBy(1),
+      _ => _typed(now, event.character),
+    };
+    if (next == null) return KeyEventResult.ignored;
+    if (!identical(next, now)) _edit(next);
+    return KeyEventResult.handled;
+  }
+
+  /// [now] with [character] typed, or null when it is not a key this screen
+  /// uses — which leaves it to anyone else listening.
+  ///
+  /// A letter that spells no syllable is still handled, unchanged: it is a
+  /// pinyin key pressed wrongly, not someone else's shortcut.
+  static Composition? _typed(Composition now, String? character) {
+    if (character == null || character.length != 1) return null;
+    final tone = switch (character) {
+      '1' => Tone.first,
+      '2' => Tone.second,
+      '3' => Tone.third,
+      '4' => Tone.fourth,
+      '5' || '0' => Tone.neutral,
+      _ => null,
+    };
+    if (tone != null) return now.withTone(tone);
+    if (!RegExp(r'^[a-zA-Zü]$').hasMatch(character)) return null;
+    return now.withLetter(character) ?? now;
   }
 
   void _edit(Composition next) {
@@ -379,191 +427,201 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kǒuyǔ'),
-        backgroundColor: theme.colorScheme.primaryContainer,
-        // Five, one more than Material 3 advises, and chosen: the star earns
-        // its place beside the speaker, because saving happens once a line and
-        // tucking it away would hide it. The cost is the title, which gives
-        // way on the narrowest phones; the buttons keep their full 48pt. The
-        // three behind ⋮ are set-up rather than use — the list of favourites,
-        // a layout preference and a 533MB download — with the credits.
-        // Clearing stays last, on its own, furthest from the thumb.
-        actions: [
-          if (_canSpeak)
-            IconButton(
-              key: const Key('speak'),
-              // Nothing committed means nothing to say: a lone draft syllable
-              // has no tone yet, so it is not a syllable anyone can pronounce.
-              onPressed: _composition.text.isEmpty ? null : _speak,
-              icon: const Icon(Icons.volume_up_outlined),
-              tooltip: 'Say it',
-            ),
-          if (widget.favourites case final favourites?)
-            FavouriteStar(
-              favourites: favourites,
-              line: _composition.text.isEmpty ? null : _composition.words,
-              meaning: _meaningToKeep,
-              onView: _openFavourites,
-            ),
-          if (widget.englishTranslator case final english?)
-            IconButton(
-              key: const Key('translate'),
-              onPressed: () => _startFromEnglish(english),
-              // The standard glyph for it, and the one Material names
-              // `translate`: there is no arguing with a convention this
-              // settled.
-              icon: const Icon(Icons.translate),
-              tooltip: 'Translate into pinyin',
-            ),
-          MenuAnchor(
-            key: const Key('more'),
-            builder: (context, controller, _) => IconButton(
-              key: const Key('more-button'),
-              onPressed: () =>
-                  controller.isOpen ? controller.close() : controller.open(),
-              icon: const Icon(Icons.more_vert),
-              tooltip: 'More',
-            ),
-            menuChildren: [
-              if (widget.favourites != null)
-                MenuItemButton(
-                  key: const Key('favourites'),
-                  onPressed: _openFavourites,
-                  leadingIcon: const Icon(Icons.star_border),
-                  child: const Text('Favourites'),
-                ),
-              MenuItemButton(
-                key: const Key('model'),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => ModelScreen(store: widget.modelStore),
+    // Listens for a physical keyboard, which is how a desktop types here.
+    // No text field is involved, so a phone's own keyboard never appears:
+    // where there is no physical one, no key events arrive and nothing
+    // changes. Autofocused so typing works from the start, and at the top so
+    // keys still arrive once a button or the menu has had the focus.
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) => _onKey(event),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Kǒuyǔ'),
+          backgroundColor: theme.colorScheme.primaryContainer,
+          // Five, one more than Material 3 advises, and chosen: the star earns
+          // its place beside the speaker, because saving happens once a line and
+          // tucking it away would hide it. The cost is the title, which gives
+          // way on the narrowest phones; the buttons keep their full 48pt. The
+          // three behind ⋮ are set-up rather than use — the list of favourites,
+          // a layout preference and a 533MB download — with the credits.
+          // Clearing stays last, on its own, furthest from the thumb.
+          actions: [
+            if (_canSpeak)
+              IconButton(
+                key: const Key('speak'),
+                // Nothing committed means nothing to say: a lone draft syllable
+                // has no tone yet, so it is not a syllable anyone can pronounce.
+                onPressed: _composition.text.isEmpty ? null : _speak,
+                icon: const Icon(Icons.volume_up_outlined),
+                tooltip: 'Say it',
+              ),
+            if (widget.favourites case final favourites?)
+              FavouriteStar(
+                favourites: favourites,
+                line: _composition.text.isEmpty ? null : _composition.words,
+                meaning: _meaningToKeep,
+                onView: _openFavourites,
+              ),
+            if (widget.englishTranslator case final english?)
+              IconButton(
+                key: const Key('translate'),
+                onPressed: () => _startFromEnglish(english),
+                // The standard glyph for it, and the one Material names
+                // `translate`: there is no arguing with a convention this
+                // settled.
+                icon: const Icon(Icons.translate),
+                tooltip: 'Translate into pinyin',
+              ),
+            MenuAnchor(
+              key: const Key('more'),
+              builder: (context, controller, _) => IconButton(
+                key: const Key('more-button'),
+                onPressed: () =>
+                    controller.isOpen ? controller.close() : controller.open(),
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'More',
+              ),
+              menuChildren: [
+                if (widget.favourites != null)
+                  MenuItemButton(
+                    key: const Key('favourites'),
+                    onPressed: _openFavourites,
+                    leadingIcon: const Icon(Icons.star_border),
+                    child: const Text('Favourites'),
                   ),
+                MenuItemButton(
+                  key: const Key('model'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) =>
+                          ModelScreen(store: widget.modelStore),
+                    ),
+                  ),
+                  leadingIcon: const Icon(Icons.auto_awesome_outlined),
+                  child: const Text('Whole phrases'),
                 ),
-                leadingIcon: const Icon(Icons.auto_awesome_outlined),
-                child: const Text('Whole phrases'),
-              ),
-              MenuItemButton(
-                key: const Key('copy'),
-                onPressed: _composition.text.isEmpty ? null : _copy,
-                leadingIcon: const Icon(Icons.copy),
-                child: const Text('Copy to clipboard'),
-              ),
-              MenuItemButton(
-                key: const Key('arrangement'),
-                onPressed: () => setState(() {
-                  _arrangement = _arrangement == KeyArrangement.articulatory
-                      ? KeyArrangement.qwerty
-                      : KeyArrangement.articulatory;
-                }),
-                // Not a keyboard glyph: on every platform that means "show the
-                // keyboard", and this does not show anything — it swaps one
-                // arrangement for the other.
-                leadingIcon: const Icon(Icons.swap_horiz),
-                // Named as the act, not the state: a menu lists things to
-                // do, and "Articulation order" on its own could as easily be
-                // the setting you are already on.
-                child: Text(switch (_arrangement) {
-                  KeyArrangement.articulatory => 'Switch to QWERTY',
-                  KeyArrangement.qwerty => 'Switch to articulation',
-                }),
-              ),
-              // CC-CEDICT asks for attribution under CC BY-SA 4.0. This is it.
-              MenuItemButton(
-                key: const Key('credits'),
-                onPressed: () => showAboutDialog(
-                  context: context,
-                  applicationName: 'Kǒuyǔ',
-                  // Folded away rather than listed. There is more worth saying
-                  // than fits a dialog, and a wall of it is read by nobody —
-                  // so the hints and the licences each sit behind their own
-                  // heading.
-                  children: const [_Sections()],
+                MenuItemButton(
+                  key: const Key('copy'),
+                  onPressed: _composition.text.isEmpty ? null : _copy,
+                  leadingIcon: const Icon(Icons.copy),
+                  child: const Text('Copy to clipboard'),
                 ),
-                leadingIcon: const Icon(Icons.info_outline),
-                child: const Text('Hints and credits'),
-              ),
-            ],
-          ),
-          // Away from the thumb: rare, and it throws away everything typed.
-          IconButton(
-            key: const Key('clear'),
-            onPressed: _composition.isEmpty
-                ? null
-                : () => _edit(_composition.cleared()),
-            // `clear_all` is drawn as a stack of lines, which reads as a
-            // list or a menu rather than as throwing anything away. This is a
-            // reset: everything typed goes and the line starts again.
-            icon: const Icon(Icons.restart_alt),
-            tooltip: 'Start again',
-          ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final landscape = constraints.maxWidth > constraints.maxHeight;
-          final reading = _Reading(
-            composition: _composition,
-            translation: _translation,
-            phrase: _phrase,
-            lookingUp: _lookingUp,
-            thinking: _thinking,
-            onMoveCaret: (caret) => _edit(_composition.movedTo(caret)),
-            onReopen: (word, syllable, stage) =>
-                _edit(_composition.redraft(word, syllable, stage)),
-            onEditLiteral: (word, text) => _askForWord(
-              at: Caret(word: word, syllable: 0),
-              existing: text,
+                MenuItemButton(
+                  key: const Key('arrangement'),
+                  onPressed: () => setState(() {
+                    _arrangement = _arrangement == KeyArrangement.articulatory
+                        ? KeyArrangement.qwerty
+                        : KeyArrangement.articulatory;
+                  }),
+                  // Not a keyboard glyph: on every platform that means "show the
+                  // keyboard", and this does not show anything — it swaps one
+                  // arrangement for the other.
+                  leadingIcon: const Icon(Icons.swap_horiz),
+                  // Named as the act, not the state: a menu lists things to
+                  // do, and "Articulation order" on its own could as easily be
+                  // the setting you are already on.
+                  child: Text(switch (_arrangement) {
+                    KeyArrangement.articulatory => 'Switch to QWERTY',
+                    KeyArrangement.qwerty => 'Switch to articulation',
+                  }),
+                ),
+                // CC-CEDICT asks for attribution under CC BY-SA 4.0. This is it.
+                MenuItemButton(
+                  key: const Key('credits'),
+                  onPressed: () => showAboutDialog(
+                    context: context,
+                    applicationName: 'Kǒuyǔ',
+                    // Folded away rather than listed. There is more worth saying
+                    // than fits a dialog, and a wall of it is read by nobody —
+                    // so the hints and the licences each sit behind their own
+                    // heading.
+                    children: const [_Sections()],
+                  ),
+                  leadingIcon: const Icon(Icons.info_outline),
+                  child: const Text('Hints and credits'),
+                ),
+              ],
             ),
-            suggestion: _suggestion,
-            onAccept: (suggestion) => _edit(
-              _composition.retoned(
-                suggestion.word,
-                suggestion.syllable,
-                suggestion.tone,
-              ),
+            // Away from the thumb: rare, and it throws away everything typed.
+            IconButton(
+              key: const Key('clear'),
+              onPressed: _composition.isEmpty
+                  ? null
+                  : () => _edit(_composition.cleared()),
+              // `clear_all` is drawn as a stack of lines, which reads as a
+              // list or a menu rather than as throwing anything away. This is a
+              // reset: everything typed goes and the line starts again.
+              icon: const Icon(Icons.restart_alt),
+              tooltip: 'Start again',
             ),
-          );
-          // The keyboard's height now follows the stage on show rather than a
-          // fixed fraction, which is safe because it is anchored to the far
-          // edge: text appearing in the reading area cannot move it, since the
-          // reading area takes what is left rather than the other way round.
-          final keyboard = PinyinKeyboard(
-            fillHeight: landscape,
-            arrangement: _arrangement,
-            draft: _composition.draft,
-            onInitial: (initial) => _edit(_composition.withInitial(initial)),
-            onRime: (rime) => _edit(_composition.withRime(rime)),
-            onTone: (tone) => _edit(_composition.commit(tone)),
-            onBackTo: (stage) => _edit(_composition.backTo(stage)),
-            onSpace: () => _edit(_composition.space()),
-            onBackspace: () => _edit(_composition.backspace()),
-            onAddWord: _askForWord,
-          );
+          ],
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final landscape = constraints.maxWidth > constraints.maxHeight;
+            final reading = _Reading(
+              composition: _composition,
+              translation: _translation,
+              phrase: _phrase,
+              lookingUp: _lookingUp,
+              thinking: _thinking,
+              onMoveCaret: (caret) => _edit(_composition.movedTo(caret)),
+              onReopen: (word, syllable, stage) =>
+                  _edit(_composition.redraft(word, syllable, stage)),
+              onEditLiteral: (word, text) => _askForWord(
+                at: Caret(word: word, syllable: 0),
+                existing: text,
+              ),
+              suggestion: _suggestion,
+              onAccept: (suggestion) => _edit(
+                _composition.retoned(
+                  suggestion.word,
+                  suggestion.syllable,
+                  suggestion.tone,
+                ),
+              ),
+            );
+            // The keyboard's height now follows the stage on show rather than a
+            // fixed fraction, which is safe because it is anchored to the far
+            // edge: text appearing in the reading area cannot move it, since the
+            // reading area takes what is left rather than the other way round.
+            final keyboard = PinyinKeyboard(
+              fillHeight: landscape,
+              arrangement: _arrangement,
+              draft: _composition.draft,
+              onInitial: (initial) => _edit(_composition.withInitial(initial)),
+              onRime: (rime) => _edit(_composition.withRime(rime)),
+              onTone: (tone) => _edit(_composition.commit(tone)),
+              onBackTo: (stage) => _edit(_composition.backTo(stage)),
+              onSpace: () => _edit(_composition.space()),
+              onBackspace: () => _edit(_composition.backspace()),
+              onAddWord: _askForWord,
+            );
 
-          if (landscape) {
-            return Row(
+            if (landscape) {
+              return Row(
+                children: [
+                  Expanded(child: reading),
+                  SizedBox(width: _panelWidth(constraints), child: keyboard),
+                ],
+              );
+            }
+            return Column(
               children: [
                 Expanded(child: reading),
-                SizedBox(width: _panelWidth(constraints), child: keyboard),
+                // Capped so a tall bank cannot squeeze the reading area away; it
+                // scrolls beyond this.
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * 0.75,
+                  ),
+                  child: keyboard,
+                ),
               ],
             );
-          }
-          return Column(
-            children: [
-              Expanded(child: reading),
-              // Capped so a tall bank cannot squeeze the reading area away; it
-              // scrolls beyond this.
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: constraints.maxHeight * 0.75,
-                ),
-                child: keyboard,
-              ),
-            ],
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -1395,6 +1453,13 @@ const _hints = <(IconData, String)>[
     Icons.keyboard_alt_outlined,
     'Beside the prompt, "or type a word" adds '
         'something that is not Chinese — a name. Tap it later to correct it.',
+  ),
+  (
+    Icons.keyboard_outlined,
+    'With a keyboard attached, type pinyin as it is written and a number for '
+        'the tone: ni3 hao3. Another number straight after changes that tone. '
+        'v is ü, the arrow keys move the caret, and Esc drops a half-built '
+        'syllable.',
   ),
   (
     Icons.spellcheck,

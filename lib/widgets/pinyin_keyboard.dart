@@ -120,19 +120,24 @@ class PinyinKeyboard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 14,
       children: [
+        // Narrowed to what still fits while letters are typed towards a rime
+        // they do not spell yet — `io` leaves only `iong` — which is how a
+        // physical keyboard shows where it has got to.
         for (final group in rimeRowsFor(draft.initial!))
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final rime in group)
-                _Key(
-                  id: 'rime-${rime.label}',
-                  label: rime.label,
-                  onPressed: () => onRime(rime.rime),
-                ),
-            ],
-          ),
+          if (group.any((rime) => rime.label.startsWith(draft.typed)))
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final rime in group)
+                  if (rime.label.startsWith(draft.typed))
+                    _Key(
+                      id: 'rime-${rime.label}',
+                      label: rime.label,
+                      onPressed: () => onRime(rime.rime),
+                    ),
+              ],
+            ),
       ],
     ),
     // The candidates, not abstract tone marks: the choice is between words the

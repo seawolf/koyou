@@ -46,3 +46,33 @@ composed line in `lib/screens/compose_screen.dart`.
   derived from it, so a syllable is made reachable by adding it there, never by
   adding a key to a widget. Anything the inventory omits is unreachable by
   design — that is what stops the keyboard offering `qong`.
+- **A physical keyboard types through the on-screen keys' own labels.**
+  `Composition.withLetter` checks each letter against `initialKeys` and
+  `rimeKeysFor`, so typing reaches exactly what tapping can. Do not add a
+  separate pinyin parser; the two would drift, and the first sign would be a
+  syllable one can type and the other cannot.
+- **Each typed letter moves on at once, and a later one may revise it.** `s`
+  shows s's rimes straight away and an `h` after it turns the initial into sh,
+  which is safe only because no rime begins with h. Waiting to see whether an
+  `h` was coming left nothing on screen to say where typing had got to. Letters
+  heading for a rime that they do not spell yet wait in `Draft.typed`, and the
+  rime bank narrows to what still fits.
+- **There is no setting for keyboard typing, and nothing to remember per
+  device.** The screen listens with a `Focus`, not a text field, so a phone's
+  own keyboard never comes up; where no physical keyboard is attached, no key
+  events arrive. Keep text fields off the compose screen — the word dialog is
+  a separate route on purpose — and there is a test that none is there.
+- **The two backspaces differ on purpose.** The keyboard's takes back a letter,
+  by typing the syllable again without it, so `sh` returns to `s` by the same
+  rule that built it; the on-screen one takes back a stage, because a stage is
+  what its keys chose. Either one, with nothing being built, removes the
+  previous syllable whole.
+- **Keys with a modifier held are left alone**, so Cmd+R reloads and Ctrl+A is
+  not an `a`. Tones are digits, `ni3`, because that is the convention learners
+  already type; the line still shows tone marks.
+- **A tone number with nothing being built retones the syllable before the
+  caret** (`Composition.withTone`), so `ni3` then `4` is `nì`. The window
+  closes by itself: a new syllable takes the number, and after a space the
+  caret has nothing before it in its word. It is the same syllable a retone
+  would reach by tapping, not a separate "last committed" memory — keep it
+  that way, or moving the caret and retoning would disagree.
