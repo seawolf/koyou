@@ -1,7 +1,15 @@
-  # Kǒuyǔ
+# Kǒuyǔ
 
 A Flutter app for Mandarin learners who want to **speak** — tones,
 pronunciation, comprehension — rather than learn to read and write characters.
+
+<p align="center">
+  <img src="docs/screenshots/1-main-screen-with-phrase.png" width="150" alt="Main screen with phrase">
+  <img src="docs/screenshots/2-translate-entry.png" width="150" alt="Translate entry">
+  <img src="docs/screenshots/3-translate-result.png" width="150" alt="Translate result">
+  <img src="docs/screenshots/4-translate-practice.png" width="150" alt="Translate practice">
+  <img src="docs/screenshots/5-llm.png" width="150" alt="LLM">
+</p>
 
 ## The gap it fills
 
