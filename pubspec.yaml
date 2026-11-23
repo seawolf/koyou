@@ -17,6 +17,7 @@ dependencies:
   crypto: ^3.0.7
   flutter_tts: ^4.2.5
   shared_preferences: ^2.5.5
+  material_ui: ^1.11.1
 
 dev_dependencies:
   flutter_test:
